@@ -300,11 +300,6 @@
       }
     }
 
-    .admin-box {
-      border: 1px dashed #d3c59b;
-      background: #fffdf7;
-    }
-
     .footer {
       text-align: center;
       color: var(--muted);
@@ -346,29 +341,6 @@
 
       <button class="secondary" onclick="upgradeClue()">Use Better Clue</button>
       <button class="light" onclick="resetGame()">Reset Demo</button>
-    </section>
-
-    <section class="card admin-box">
-      <h2>Prototype Setup</h2>
-
-      <label for="targetBarcodeInput">Target Barcode</label>
-      <input
-        id="targetBarcodeInput"
-        value="038000138416"
-        placeholder="Enter target UPC/EAN barcode"
-      />
-
-      <label for="targetItemInput">Target Item Name</label>
-      <input
-        id="targetItemInput"
-        value="Pringles Original can"
-        placeholder="Example: Pringles Original can"
-      />
-
-      <div class="fine-print">
-        In the real app, players would not see this setup section.
-        The target barcode would come from your database.
-      </div>
     </section>
 
     <section id="barcodePanel" class="card">
@@ -550,17 +522,13 @@
       state.scanLocked = true;
 
       const scanned = normalizeBarcode(decodedText);
-      const target = normalizeBarcode(document.getElementById("targetBarcodeInput").value);
       const product = findProductByBarcode(scanned);
-      const isCorrect = scanned === target || Boolean(product);
 
       useGuess();
 
-      if (isCorrect) {
+      if (product) {
         const prize = revealPrize();
-        const itemName = product
-          ? product.name
-          : document.getElementById("targetItemInput").value.trim() || "Target item";
+        const itemName = product.name;
 
         showStatus(
           barcodeStatus,
