@@ -1,0 +1,88 @@
+name: Add Hunt Item
+
+on:
+  workflow_dispatch:
+    inputs:
+      product_name:
+        description: Product name shown after a correct scan
+        required: true
+        type: string
+      item_id:
+        description: Optional short ID; leave blank to generate it from the name
+        required: false
+        type: string
+      hard_clue:
+        description: The first, more difficult clue
+        required: true
+        type: string
+      easier_clue:
+        description: The paid, easier clue
+        required: true
+        type: string
+      barcodes:
+        description: UPC/EAN barcode; separate multiple values with commas
+        required: true
+        type: string
+      available_from:
+        description: Optional activation date (YYYY-MM-DD); blank means tomorrow
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  add-item:
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/Denver
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate and add item
+        run: node scripts/add-hunt-item.mjs
+        env:
+          HUNT_ID: ${{ inputs.item_id }}
+          HUNT_NAME: ${{ inputs.product_name }}
+          HUNT_CLUE: ${{ inputs.hard_clue }}
+          HUNT_BETTER_CLUE: ${{ inputs.easier_clue }}
+          HUNT_BARCODES: ${{ inputs.barcodes }}
+          HUNT_AVAILABLE_FROM: ${{ inputs.available_from }}
+
+      - name: Create review branch
+        id: branch
+        shell: bash
+        run: |
+          branch="content/add-hunt-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add hunts.json
+          git commit -m "Add hunt item: ${HUNT_NAME}"
+          git push --set-upstream origin "$branch"
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+        env:
+          HUNT_NAME: ${{ inputs.product_name }}
+
+      - name: Open pull request
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/pr-body.md" <<EOF
+          Adds **${HUNT_NAME}** to the Gotcha hunt catalog.
+
+          Review the product name, both clues, and barcode values in \`hunts.json\`.
+
+          Submitted through the **Add Hunt Item** workflow.
+          EOF
+
+          gh pr create \
+            --base main \
+            --head "${BRANCH_NAME}" \
+            --title "Add hunt item: ${HUNT_NAME}" \
+            --body-file "$RUNNER_TEMP/pr-body.md"
+        env:
+          BRANCH_NAME: ${{ steps.branch.outputs.name }}
+          GH_TOKEN: ${{ github.token }}
+          HUNT_NAME: ${{ inputs.product_name }}

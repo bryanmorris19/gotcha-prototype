@@ -167,7 +167,16 @@ async function loadHunts() {
     throw new Error("Hunt database is empty.");
   }
 
-  return hunts;
+  const today = getDateKey();
+  const availableHunts = hunts.filter(
+    hunt => !hunt.availableFrom || hunt.availableFrom <= today
+  );
+
+  if (availableHunts.length === 0) {
+    throw new Error("No hunts are currently available.");
+  }
+
+  return availableHunts;
 }
 
 function createDefaultPlayer() {
