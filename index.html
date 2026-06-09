@@ -273,6 +273,14 @@
       font-size: 34px;
     }
 
+    .wrong-card {
+      border-color: #d56a6a;
+    }
+
+    .wrong-card h2 {
+      color: var(--danger);
+    }
+
     .prize-label {
       margin: 14px 0 18px;
       color: var(--gold);
@@ -377,6 +385,23 @@
     </div>
   </section>
 
+  <section
+    id="wrongOverlay"
+    class="prize-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="wrongHeading"
+  >
+    <div class="prize-card wrong-card">
+      <h2 id="wrongHeading">Wrong Item</h2>
+      <div id="wrongScanText">That barcode does not match today's hunt.</div>
+      <div class="fine-print">Move this item away from the camera before trying again.</div>
+      <button id="wrongActionButton" class="danger" onclick="closeWrongOverlay()">
+        Scan Another Item
+      </button>
+    </div>
+  </section>
+
   <script>
     const state = {
       guesses: 3,
@@ -422,6 +447,9 @@
     const prizeOverlay = document.getElementById("prizeOverlay");
     const prizeItemText = document.getElementById("prizeItemText");
     const prizeOverlayText = document.getElementById("prizeOverlayText");
+    const wrongOverlay = document.getElementById("wrongOverlay");
+    const wrongScanText = document.getElementById("wrongScanText");
+    const wrongActionButton = document.getElementById("wrongActionButton");
 
     function updateStats() {
       guessesValue.textContent = state.guesses;
@@ -545,16 +573,61 @@
           "Wrong item.<br>Scanned: " + scanned + "<br>Target does not match.",
           "fail"
         );
-
-        window.setTimeout(() => {
-          state.scanLocked = false;
-        }, 1500);
+        pauseBarcodeScanner();
+        showWrongOverlay(scanned);
       }
 
       updateStats();
 
       if (state.guesses <= 0) {
         stopBarcodeScanner();
+      }
+    }
+
+    function pauseBarcodeScanner() {
+      if (!state.scanner || !state.scannerRunning) return;
+
+      try {
+        state.scanner.pause(true);
+      } catch (error) {
+        console.error("Scanner pause error:", error);
+      }
+    }
+
+    function showWrongOverlay(scanned) {
+      wrongScanText.textContent = "Barcode " + scanned + " is not the correct item.";
+      wrongActionButton.textContent =
+        state.guesses > 0 ? "Scan Another Item" : "No Guesses Left";
+      wrongOverlay.classList.remove("hidden");
+    }
+
+    function closeWrongOverlay() {
+      wrongOverlay.classList.add("hidden");
+
+      if (state.guesses <= 0) {
+        showStatus(barcodeStatus, "No guesses left today.", "fail");
+        stopBarcodeScanner();
+        return;
+      }
+
+      try {
+        state.scanner.resume();
+        state.scanLocked = false;
+        showStatus(
+          barcodeStatus,
+          "Scanner ready. Point the camera at another product barcode.",
+          "neutral"
+        );
+      } catch (error) {
+        console.error("Scanner resume error:", error);
+        state.scanLocked = false;
+        showStatus(
+          barcodeStatus,
+          "Scanner could not resume. Tap Start Scanner to try again.",
+          "fail"
+        );
+        state.scannerRunning = false;
+        state.scanner = null;
       }
     }
 
@@ -689,6 +762,7 @@
       clearStatus(barcodeStatus);
 
       closePrizeOverlay();
+      wrongOverlay.classList.add("hidden");
       feedbackStatus.textContent = "";
 
       updateStats();
