@@ -10,19 +10,15 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css?v=6" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="app.js?v=3" defer></script>
+  <script src="app.js?v=6" defer></script>
 </head>
 
 <body>
   <svg class="icon-sprite" aria-hidden="true">
     <symbol id="icon-scan" viewBox="0 0 24 24">
       <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8" />
-    </symbol>
-    <symbol id="icon-coin" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="8" />
-      <path d="m12 7 1.45 2.94 3.25.47-2.35 2.29.55 3.23L12 14.4l-2.9 1.53.55-3.23-2.35-2.29 3.25-.47L12 7Z" />
     </symbol>
     <symbol id="icon-flame" viewBox="0 0 24 24">
       <path d="M13.7 3.3c.2 2.5-1.2 3.6-2.5 5-1.4 1.5-2.7 3-2.2 5.6.4-1.2 1.2-2.2 2.4-3 .1 1.7.8 2.8 2.2 3.8 1.4 1 2 2.2 1.7 3.8 2-1.4 3.2-3.6 3.2-6.2 0-3.9-2.1-7.1-4.8-9Z" />
@@ -83,10 +79,10 @@
       </div>
       <div class="stat">
         <span class="stat-icon stat-icon-coin">
-          <svg><use href="#icon-coin"></use></svg>
+          <img src="assets/gotcha-coin.png" alt="" />
         </span>
-        <div class="stat-label">Points</div>
-        <div class="stat-value" id="pointsValue">0</div>
+        <div class="stat-label">Gotcha Coins</div>
+        <div class="stat-value" id="coinsValue">20</div>
       </div>
       <div class="stat">
         <span class="stat-icon stat-icon-flame">
@@ -129,7 +125,7 @@
 
       <button id="betterClueButton" class="secondary" type="button">
         <svg class="button-icon"><use href="#icon-bulb"></use></svg>
-        Better Clue <span class="button-cost">-1 guess</span>
+        Better Clue <span class="button-cost">10 coins</span>
       </button>
       <button id="resetButton" class="text-button" type="button">Reset progress</button>
     </section>
@@ -292,6 +288,12 @@
         class="treasure-image"
         src="assets/treasure-chest.png"
         alt="Open emerald treasure chest overflowing with gold coins"
+      />
+      <img
+        id="prizeCoinImage"
+        class="prize-coin-image hidden"
+        src="assets/gotcha-coin.png"
+        alt="Gotcha Coin"
       />
       <h2 id="prizeHeading">Gotcha!</h2>
       <div id="prizeItemText" class="found-item"></div>

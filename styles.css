@@ -129,8 +129,14 @@ svg {
 }
 
 .stat-icon-coin {
-  color: #b77c00;
   background: #fff3c8;
+}
+
+.stat-icon-coin img {
+  width: 31px;
+  height: 31px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(132, 84, 0, 0.22));
 }
 
 .stat-icon-flame {
@@ -711,6 +717,15 @@ button:disabled {
   filter: drop-shadow(0 18px 18px rgba(57, 40, 2, 0.22));
 }
 
+.prize-coin-image {
+  display: block;
+  width: 132px;
+  height: 132px;
+  margin: -32px auto 4px;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 12px rgba(111, 65, 0, 0.24));
+}
+
 .found-item {
   color: var(--muted);
   font-size: 14px;
@@ -827,6 +842,13 @@ button:disabled {
   font-size: 27px;
   font-weight: 950;
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.6), 0 10px 22px rgba(16, 32, 43, 0.14);
+}
+
+.reward-coin-image {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 8px rgba(111, 65, 0, 0.2));
 }
 
 .reward-card strong {

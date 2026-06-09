@@ -2,6 +2,8 @@
 
 const STORAGE_KEY = "gotcha-player-v1";
 const STARTING_GUESSES = 3;
+const STARTING_COINS = 20;
+const BETTER_CLUE_COST = 10;
 const MAX_COMPLETION_HISTORY = 100;
 const DAILY_GOAL = 4;
 const MAX_ANALYTICS_EVENTS = 250;
@@ -9,20 +11,20 @@ const MAX_ANALYTICS_EVENTS = 250;
 const prizes = [
   {
     id: "bronze-star",
-    label: "Bronze Star",
-    subtitle: "10 Gotcha Points",
+    label: "10 Gotcha Coins",
+    subtitle: "Coin Reward",
     symbol: "*",
     rarity: "common",
-    points: 10,
+    coins: 10,
     weight: 60
   },
   {
     id: "gold-coin",
-    label: "Gold Coin",
-    subtitle: "25 Gotcha Points",
+    label: "25 Gotcha Coins",
+    subtitle: "Coin Reward",
     symbol: "O",
     rarity: "rare",
-    points: 25,
+    coins: 25,
     weight: 24
   },
   {
@@ -36,20 +38,20 @@ const prizes = [
   },
   {
     id: "store-trophy",
-    label: "Store Trophy",
-    subtitle: "$5 Store Reward",
+    label: "50 Gotcha Coins",
+    subtitle: "Coin Reward",
     symbol: "<>",
     rarity: "epic",
-    points: 50,
+    coins: 50,
     weight: 5
   },
   {
     id: "royal-crown",
-    label: "Royal Crown",
-    subtitle: "Rare Prize Entry",
+    label: "100 Gotcha Coins",
+    subtitle: "Coin Reward",
     symbol: "#",
     rarity: "legendary",
-    points: 100,
+    coins: 100,
     weight: 1
   }
 ];
@@ -95,7 +97,7 @@ async function initializeApp() {
 
 function cacheElements() {
   elements.guessesValue = document.getElementById("guessesValue");
-  elements.pointsValue = document.getElementById("pointsValue");
+  elements.coinsValue = document.getElementById("coinsValue");
   elements.streakValue = document.getElementById("streakValue");
   elements.clueText = document.getElementById("clueText");
   elements.huntMeta = document.getElementById("huntMeta");
@@ -113,6 +115,7 @@ function cacheElements() {
   elements.prizeOverlay = document.getElementById("prizeOverlay");
   elements.prizeItemText = document.getElementById("prizeItemText");
   elements.prizeOverlayText = document.getElementById("prizeOverlayText");
+  elements.prizeCoinImage = document.getElementById("prizeCoinImage");
   elements.nextHuntButton = document.getElementById("nextHuntButton");
   elements.wrongOverlay = document.getElementById("wrongOverlay");
   elements.wrongScanText = document.getElementById("wrongScanText");
@@ -181,7 +184,9 @@ async function loadHunts() {
 
 function createDefaultPlayer() {
   return {
-    points: 0,
+    coins: STARTING_COINS,
+    lifetimeCoins: 0,
+    coinEconomyInitialized: true,
     streak: 0,
     guesses: STARTING_GUESSES,
     dailyDate: "",
@@ -209,9 +214,26 @@ function loadPlayer() {
       return fallback;
     }
 
+    const existingBalance = Number(saved.coins ?? saved.points);
+    const migratedCoins = saved.coinEconomyInitialized === true
+      ? Number.isFinite(existingBalance)
+        ? existingBalance
+        : fallback.coins
+      : existingBalance > 0
+        ? existingBalance
+        : fallback.coins;
+    const migratedLifetimeCoins = Number.isFinite(Number(saved.lifetimeCoins))
+      ? Number(saved.lifetimeCoins)
+      : Number.isFinite(Number(saved.points))
+        ? Number(saved.points)
+        : 0;
+
     return {
       ...fallback,
       ...saved,
+      coins: migratedCoins,
+      lifetimeCoins: migratedLifetimeCoins,
+      coinEconomyInitialized: true,
       completedHunts: Array.isArray(saved.completedHunts)
         ? saved.completedHunts
         : [],
@@ -331,7 +353,7 @@ function render() {
 
   const hunt = getActiveHunt();
   elements.guessesValue.textContent = state.player.guesses;
-  elements.pointsValue.textContent = state.player.points;
+  elements.coinsValue.textContent = state.player.coins;
   elements.streakValue.textContent = state.player.streak;
   elements.clueText.textContent = state.player.betterClueUsed
     ? hunt.betterClue
@@ -347,7 +369,7 @@ function render() {
     state.player.guesses <= 0 || state.scannerRunning;
   elements.stopScannerButton.disabled = !state.scannerRunning;
   elements.betterClueButton.disabled =
-    state.player.guesses <= 0 || state.player.betterClueUsed;
+    state.player.coins < BETTER_CLUE_COST || state.player.betterClueUsed;
   renderCollection();
   renderProfile();
 }
@@ -367,16 +389,22 @@ function upgradeClue() {
     return;
   }
 
-  if (state.player.guesses <= 0) {
-    showStatus("No guesses left to spend on a clue.", "fail");
+  if (state.player.coins < BETTER_CLUE_COST) {
+    showStatus(
+      `You need ${BETTER_CLUE_COST} Gotcha Coins for the easier clue.`,
+      "fail"
+    );
     return;
   }
 
-  state.player.guesses -= 1;
+  state.player.coins -= BETTER_CLUE_COST;
   state.player.betterClueUsed = true;
   savePlayer();
   render();
-  showStatus("Better clue unlocked for 1 guess.", "neutral");
+  showStatus(
+    `Easier clue unlocked for ${BETTER_CLUE_COST} Gotcha Coins.`,
+    "neutral"
+  );
   trackEvent("better_clue_used");
 }
 
@@ -508,7 +536,7 @@ function completeHunt(hunt, scanned) {
     "success"
   );
   playSuccessFeedback();
-  showPrizeOverlay(hunt.name, `${prize.label} - ${prize.subtitle}`);
+  showPrizeOverlay(hunt.name, prize);
   stopBarcodeScanner();
 }
 
@@ -557,8 +585,9 @@ function recordCompletion(huntId) {
 function revealPrize() {
   const prize = weightedPrizePick();
 
-  if (prize.points) {
-    state.player.points += prize.points;
+  if (prize.coins) {
+    state.player.coins += prize.coins;
+    state.player.lifetimeCoins += prize.coins;
   }
 
   if (prize.extraGuess) {
@@ -685,9 +714,11 @@ function closeWrongOverlay() {
   }
 }
 
-function showPrizeOverlay(itemName, prizeLabel) {
+function showPrizeOverlay(itemName, prize) {
   elements.prizeItemText.textContent = itemName + " found";
-  elements.prizeOverlayText.textContent = "Prize: " + prizeLabel;
+  elements.prizeOverlayText.textContent =
+    `Prize: ${prize.label} - ${prize.subtitle}`;
+  elements.prizeCoinImage.classList.toggle("hidden", !prize.coins);
   elements.prizeOverlay.classList.remove("hidden");
 }
 
@@ -710,13 +741,17 @@ function renderCollection() {
   elements.collectionGrid.classList.toggle("hidden", rewards.length === 0);
 
   rewards.forEach(reward => {
+    const currentPrize = prizes.find(prize => prize.id === reward.id);
+    const displayReward = currentPrize || reward;
     const card = document.createElement("article");
     card.className = `reward-card rarity-${reward.rarity}`;
     card.innerHTML = `
       <span class="reward-rarity">${reward.rarity}</span>
-      <span class="reward-symbol" aria-hidden="true">${reward.symbol}</span>
-      <strong>${escapeHtml(reward.label)}</strong>
-      <small>${escapeHtml(reward.subtitle)}</small>
+      ${displayReward.coins
+        ? '<img class="reward-coin-image" src="assets/gotcha-coin.png" alt="">'
+        : `<span class="reward-symbol" aria-hidden="true">${displayReward.symbol}</span>`}
+      <strong>${escapeHtml(displayReward.label)}</strong>
+      <small>${escapeHtml(displayReward.subtitle)}</small>
       <span class="reward-count">x${reward.count}</span>
     `;
     elements.collectionGrid.appendChild(card);
@@ -726,7 +761,10 @@ function renderCollection() {
 function renderProfile() {
   const totalCollectibles = Object.values(state.player.collection)
     .reduce((sum, reward) => sum + reward.count, 0);
-  const level = Math.max(1, Math.floor(state.player.points / 250) + 1);
+  const level = Math.max(
+    1,
+    Math.floor(state.player.lifetimeCoins / 250) + 1
+  );
 
   elements.profileName.textContent = state.player.nickname;
   elements.nicknameInput.value = state.player.nickname;
