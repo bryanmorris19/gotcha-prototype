@@ -1,14 +1,5 @@
 [
   {
-    "id": "corn-chex",
-    "name": "Corn Chex",
-    "clue": "Find a morning box filled with woven golden squares.",
-    "betterClue": "Look for a corn cereal made of small, crunchy lattice squares.",
-    "barcodes": [
-      "016000171084"
-    ]
-  },
-  {
     "id": "zbar-cookies-n-cream",
     "name": "ZBar Cookies ‘N Cream",
     "clue": "A skateboarder on the wrapper might help you find this fiber-packed treat.",
