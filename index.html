@@ -347,7 +347,9 @@
         Find the snack that stacks its chips inside a can.
       </div>
 
-      <button class="secondary" onclick="upgradeClue()">Use Better Clue</button>
+      <button id="betterClueButton" class="secondary" onclick="upgradeClue()">
+        Better Clue (-1 Guess)
+      </button>
       <button class="light" onclick="resetGame()">Reset Demo</button>
     </section>
 
@@ -407,24 +409,38 @@
       guesses: 3,
       points: 0,
       streak: 1,
-      clueLevel: 0,
+      activeProductId: null,
+      betterClueUsed: false,
       scanner: null,
       scannerRunning: false,
       scanLocked: false,
       audioContext: null
     };
 
-    const clues = [
-      "Find the snack that stacks its chips inside a can.",
-      "Look for a tall can filled with curved potato crisps.",
-      "Find a can of Pringles."
-    ];
-
     const productDatabase = [
       {
         id: "pringles-original-5-2oz",
         name: "Pringles Original can",
+        clue: "Find the snack that stacks its chips inside a can.",
         barcodes: ["038000138416"]
+      },
+      {
+        id: "better-cheddars",
+        name: "Better Cheddars",
+        clue: "Find the thin, round crackers baked with real cheddar cheese.",
+        barcodes: ["4400003047"]
+      },
+      {
+        id: "mayonnaise",
+        name: "Mayonnaise",
+        clue: "Find the creamy condiment often spread on sandwiches.",
+        barcodes: ["4800135449"]
+      },
+      {
+        id: "corn-chex",
+        name: "Corn Chex",
+        clue: "Find the breakfast cereal made from crunchy corn squares.",
+        barcodes: ["1600017108"]
       }
     ];
 
@@ -440,6 +456,7 @@
     const pointsValue = document.getElementById("pointsValue");
     const streakValue = document.getElementById("streakValue");
     const clueText = document.getElementById("clueText");
+    const betterClueButton = document.getElementById("betterClueButton");
 
     const barcodeStatus = document.getElementById("barcodeStatus");
     const feedbackStatus = document.getElementById("feedbackStatus");
@@ -456,6 +473,7 @@
       pointsValue.textContent = state.points;
       streakValue.textContent = state.streak;
       startScannerButton.disabled = state.guesses <= 0;
+      betterClueButton.disabled = state.guesses <= 0 || state.betterClueUsed;
     }
 
     function showStatus(element, message, type) {
@@ -469,12 +487,22 @@
     }
 
     function upgradeClue() {
-      if (state.clueLevel < clues.length - 1) {
-        state.clueLevel++;
-        clueText.textContent = clues[state.clueLevel];
-      } else {
+      if (state.betterClueUsed) {
         showStatus(barcodeStatus, "You already have the best clue.", "neutral");
+        return;
       }
+
+      if (state.guesses <= 0) {
+        showStatus(barcodeStatus, "No guesses left to spend on a clue.", "fail");
+        return;
+      }
+
+      const activeProduct = getActiveProduct();
+      useGuess();
+      state.betterClueUsed = true;
+      clueText.textContent = "Find " + activeProduct.name + ".";
+      showStatus(barcodeStatus, "Better clue unlocked for 1 guess.", "neutral");
+      updateStats();
     }
 
     function startBarcodeScanner() {
@@ -550,7 +578,7 @@
       state.scanLocked = true;
 
       const scanned = normalizeBarcode(decodedText);
-      const product = findProductByBarcode(scanned);
+      const product = findActiveProductByBarcode(scanned);
 
       useGuess();
 
@@ -631,12 +659,20 @@
       }
     }
 
-    function findProductByBarcode(barcode) {
-      return productDatabase.find(product =>
-        product.barcodes.some(savedBarcode =>
-          normalizeBarcode(savedBarcode) === barcode
-        )
-      );
+    function getActiveProduct() {
+      return productDatabase.find(product => product.id === state.activeProductId);
+    }
+
+    function findActiveProductByBarcode(barcode) {
+      const activeProduct = getActiveProduct();
+      const scannedVariants = getBarcodeVariants(barcode);
+
+      const matches = activeProduct.barcodes.some(savedBarcode => {
+        const savedVariants = getBarcodeVariants(savedBarcode);
+        return savedVariants.some(variant => scannedVariants.includes(variant));
+      });
+
+      return matches ? activeProduct : null;
     }
 
     function prepareSuccessFeedback() {
@@ -706,7 +742,40 @@
     function normalizeBarcode(value) {
       return String(value || "")
         .trim()
-        .replace(/\s+/g, "");
+        .replace(/\D+/g, "");
+    }
+
+    function getBarcodeVariants(value) {
+      const barcode = normalizeBarcode(value);
+      const variants = new Set([barcode]);
+      let upc = barcode;
+
+      if (upc.length === 13 && upc.startsWith("0")) {
+        upc = upc.slice(1);
+        variants.add(upc);
+      }
+
+      if (upc.length === 12) {
+        variants.add(upc.slice(1, -1));
+        variants.add(upc.slice(0, -1));
+      }
+
+      variants.add(barcode.replace(/^0+/, ""));
+      return Array.from(variants).filter(Boolean);
+    }
+
+    function selectNextProduct() {
+      const currentIndex = productDatabase.findIndex(
+        product => product.id === state.activeProductId
+      );
+      const nextIndex = currentIndex < 0
+        ? Math.floor(Math.random() * productDatabase.length)
+        : (currentIndex + 1) % productDatabase.length;
+      const nextProduct = productDatabase[nextIndex];
+
+      state.activeProductId = nextProduct.id;
+      state.betterClueUsed = false;
+      clueText.textContent = nextProduct.clue;
     }
 
     function useGuess() {
@@ -754,10 +823,8 @@
       state.guesses = 3;
       state.points = 0;
       state.streak = 1;
-      state.clueLevel = 0;
       state.scanLocked = false;
-
-      clueText.textContent = clues[0];
+      selectNextProduct();
 
       clearStatus(barcodeStatus);
 
@@ -768,6 +835,7 @@
       updateStats();
     }
 
+    selectNextProduct();
     updateStats();
   </script>
 </body>
