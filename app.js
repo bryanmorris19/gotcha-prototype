@@ -184,16 +184,13 @@ function cacheElements() {
   elements.huntMeta = document.getElementById("huntMeta");
   elements.dailyProgressText = document.getElementById("dailyProgressText");
   elements.dailyProgressBar = document.getElementById("dailyProgressBar");
+  elements.dailyChestMessage = document.getElementById("dailyChestMessage");
   elements.resetCountdown = document.getElementById("resetCountdown");
   elements.fragmentText = document.getElementById("fragmentText");
   elements.fragmentPips = Array.from(
     document.querySelectorAll("#fragmentPips span")
   );
   elements.cacheLimitText = document.getElementById("cacheLimitText");
-  elements.dailyChestText = document.getElementById("dailyChestText");
-  elements.dailyChestProgressBar = document.getElementById(
-    "dailyChestProgressBar"
-  );
   elements.buyGuessButton = document.getElementById("buyGuessButton");
   elements.rewardOddsButton = document.getElementById("rewardOddsButton");
   elements.rewardOddsOverlay = document.getElementById("rewardOddsOverlay");
@@ -490,6 +487,18 @@ function render() {
     `${dailyCompleted} of ${DAILY_GOAL} treasures found`;
   elements.dailyProgressBar.style.width =
     `${Math.min(100, (dailyCompleted / DAILY_GOAL) * 100)}%`;
+  elements.dailyProgressBar.parentElement.setAttribute(
+    "aria-valuenow",
+    String(dailyCompleted)
+  );
+  const treasuresRemaining = DAILY_GOAL - dailyCompleted;
+  elements.dailyChestMessage.textContent = state.player.dailyChestClaimed
+    ? "Daily Chest opened. A new challenge begins at midnight."
+    : treasuresRemaining === 0
+      ? "Daily Chest ready. Your next verified treasure will reveal it."
+      : `${treasuresRemaining} more ${
+          treasuresRemaining === 1 ? "treasure" : "treasures"
+        } to open your Daily Chest.`;
   elements.startScannerButton.disabled =
     state.player.guesses <= 0 || state.scannerRunning;
   elements.stopScannerButton.disabled = !state.scannerRunning;
@@ -509,8 +518,6 @@ function renderRewardProgress() {
     0,
     MAX_DAILY_CACHES - state.player.dailyCachesOpened
   );
-  const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
-
   elements.fragmentText.textContent =
     `${fragmentCount} of ${FRAGMENTS_PER_CACHE} Signal Fragments`;
   document.getElementById("fragmentPips").setAttribute(
@@ -523,15 +530,6 @@ function renderRewardProgress() {
   elements.cacheLimitText.textContent = cachesRemaining === 0
     ? "Daily cache limit reached"
     : `${cachesRemaining} ${cachesRemaining === 1 ? "cache" : "caches"} available today`;
-  elements.dailyChestText.textContent = state.player.dailyChestClaimed
-    ? "Daily Chest opened"
-    : `${dailyCompleted} of ${DAILY_GOAL} hunts complete`;
-  elements.dailyChestProgressBar.style.width =
-    `${Math.min(100, (dailyCompleted / DAILY_GOAL) * 100)}%`;
-  elements.dailyChestProgressBar.parentElement.setAttribute(
-    "aria-valuenow",
-    String(dailyCompleted)
-  );
   elements.buyGuessButton.disabled =
     state.player.coins < EXTRA_GUESS_COST ||
     state.player.guesses >= MAX_GUESSES;

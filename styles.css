@@ -225,6 +225,13 @@ svg {
   transition: width 350ms ease;
 }
 
+.daily-reward-message {
+  margin-top: 10px;
+  color: #876000;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .app-view {
   display: none;
 }
@@ -254,9 +261,7 @@ svg {
 }
 
 .reward-meter-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  display: block;
 }
 
 .mini-reward-meter {
@@ -265,11 +270,6 @@ svg {
   border: 1px solid rgba(16, 122, 62, 0.12);
   border-radius: 18px;
   background: linear-gradient(145deg, #f6fff9, #edf8f1);
-}
-
-.daily-chest-meter {
-  border-color: rgba(242, 201, 76, 0.28);
-  background: linear-gradient(145deg, #fffdf2, #fff5cb);
 }
 
 .mini-meter-heading {
@@ -287,11 +287,6 @@ svg {
   border-radius: 12px;
   color: var(--emerald);
   background: #dff5e8;
-}
-
-.reward-meter-icon-gold {
-  color: #926000;
-  background: #ffeba5;
 }
 
 .reward-meter-icon svg {
@@ -332,23 +327,6 @@ svg {
 .fragment-pips span.earned {
   background: linear-gradient(90deg, var(--emerald), var(--emerald-bright));
   box-shadow: 0 0 9px rgba(52, 199, 89, 0.3);
-}
-
-.mini-progress-track {
-  height: 9px;
-  margin-top: 13px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(146, 96, 0, 0.12);
-}
-
-.mini-progress-track span {
-  display: block;
-  width: 0;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #f2c94c, #f0a900);
-  transition: width 350ms ease;
 }
 
 .mini-reward-meter p {
@@ -1514,7 +1492,4 @@ button:disabled {
     font-size: 11px;
   }
 
-  .reward-meter-grid {
-    grid-template-columns: 1fr;
-  }
 }

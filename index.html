@@ -10,9 +10,9 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=8" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="app.js?v=7" defer></script>
+  <script src="app.js?v=8" defer></script>
 </head>
 
 <body>
@@ -104,8 +104,18 @@
           <span id="resetCountdown">--:--:--</span>
         </span>
       </div>
-      <div class="progress-track" aria-hidden="true">
+      <div
+        class="progress-track"
+        role="progressbar"
+        aria-label="Daily Challenge progress"
+        aria-valuemin="0"
+        aria-valuemax="4"
+        aria-valuenow="0"
+      >
         <span id="dailyProgressBar"></span>
+      </div>
+      <div id="dailyChestMessage" class="daily-reward-message">
+        Complete 4 hunts to open the Daily Chest.
       </div>
     </section>
 
@@ -146,29 +156,6 @@
             <span></span>
           </div>
           <p id="cacheLimitText">3 caches available today</p>
-        </article>
-
-        <article class="mini-reward-meter daily-chest-meter">
-          <div class="mini-meter-heading">
-            <span class="reward-meter-icon reward-meter-icon-gold">
-              <svg><use href="#icon-box"></use></svg>
-            </span>
-            <div>
-              <strong>Daily Chest</strong>
-              <small id="dailyChestText">0 of 4 hunts complete</small>
-            </div>
-          </div>
-          <div
-            class="mini-progress-track"
-            role="progressbar"
-            aria-label="Daily Chest progress"
-            aria-valuemin="0"
-            aria-valuemax="4"
-            aria-valuenow="0"
-          >
-            <span id="dailyChestProgressBar"></span>
-          </div>
-          <p>Includes a simulated gift-card chance</p>
         </article>
       </div>
 
