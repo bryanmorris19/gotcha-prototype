@@ -15,9 +15,9 @@
   <title>Gotcha! Hunt Admin</title>
   <link rel="manifest" href="admin.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="admin.css?v=1" />
+  <link rel="stylesheet" href="admin.css?v=2" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
-  <script src="admin.js?v=1" defer></script>
+  <script src="admin.js?v=2" defer></script>
 </head>
 
 <body>
@@ -215,6 +215,32 @@
         <svg><use href="#icon-close"></use></svg>
         Stop Scanning
       </button>
+    </div>
+  </section>
+
+  <section
+    id="deleteOverlay"
+    class="confirm-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="deleteHeading"
+    aria-describedby="deleteMessage"
+  >
+    <div class="confirm-card">
+      <div class="confirm-icon">
+        <svg><use href="#icon-close"></use></svg>
+      </div>
+      <div class="eyebrow">Remove Catalog Item</div>
+      <h2 id="deleteHeading">Delete this hunt?</h2>
+      <p id="deleteMessage"></p>
+      <div class="confirm-actions">
+        <button id="cancelDeleteButton" class="cancel-button" type="button">
+          Cancel
+        </button>
+        <button id="confirmDeleteButton" class="delete-button" type="button">
+          Delete Hunt
+        </button>
+      </div>
     </div>
   </section>
 </body>

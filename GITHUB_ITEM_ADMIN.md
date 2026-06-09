@@ -33,6 +33,12 @@ deploys the updated catalog.
 Use the browser's **Add to Home Screen** or **Install App** command to install
 the admin page as a separate `Gotcha Admin` web app.
 
+## Delete an item
+
+After connecting GitHub, each catalog item displays a **Delete** button.
+Confirming deletion refreshes the latest catalog and creates a commit that
+removes that item from `hunts.json`. The final remaining item cannot be deleted.
+
 ## Actions fallback
 
 The **Add Hunt Item** workflow remains available in the repository's Actions

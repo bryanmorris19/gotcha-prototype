@@ -12,7 +12,8 @@ const state = {
   catalogSha: "",
   barcodes: [],
   scanner: null,
-  scannerSessionId: 0
+  scannerSessionId: 0,
+  pendingDeleteId: ""
 };
 
 const elements = {};
@@ -59,7 +60,11 @@ function cacheElements() {
     "scannerOverlay",
     "scannerState",
     "scannerMessage",
-    "stopScannerButton"
+    "stopScannerButton",
+    "deleteOverlay",
+    "deleteMessage",
+    "cancelDeleteButton",
+    "confirmDeleteButton"
   ].forEach(id => {
     elements[id] = document.getElementById(id);
   });
@@ -84,6 +89,8 @@ function bindEvents() {
   elements.stopScannerButton.addEventListener("click", stopScanner);
   elements.publishButton.addEventListener("click", publishHunt);
   elements.refreshCatalogButton.addEventListener("click", refreshCatalog);
+  elements.cancelDeleteButton.addEventListener("click", closeDeleteDialog);
+  elements.confirmDeleteButton.addEventListener("click", deletePendingHunt);
 }
 
 function setDefaultDate() {
@@ -211,12 +218,115 @@ function renderCatalog() {
       : "Available now";
     return `
       <article class="catalog-item">
-        <strong>${escapeHtml(hunt.name || hunt.id)}</strong>
+        <div class="catalog-item-heading">
+          <strong>${escapeHtml(hunt.name || hunt.id)}</strong>
+          ${state.token
+            ? `<button
+                class="catalog-delete-button"
+                type="button"
+                data-delete-hunt="${escapeHtml(hunt.id)}"
+                aria-label="Delete ${escapeHtml(hunt.name || hunt.id)}"
+              >Delete</button>`
+            : ""}
+        </div>
         <code>${escapeHtml(barcodes)}</code>
         <small>${escapeHtml(availability)} &middot; ${escapeHtml(hunt.clue || "")}</small>
       </article>
     `;
   }).join("");
+
+  elements.catalogList.querySelectorAll("[data-delete-hunt]").forEach(button => {
+    button.addEventListener("click", () => {
+      openDeleteDialog(button.dataset.deleteHunt);
+    });
+  });
+}
+
+function openDeleteDialog(huntId) {
+  const hunt = state.catalog.find(item => item.id === huntId);
+  if (!hunt) {
+    showStatus(elements.publishStatus, "That catalog item no longer exists.", "fail");
+    return;
+  }
+
+  state.pendingDeleteId = hunt.id;
+  const barcodes = Array.isArray(hunt.barcodes)
+    ? hunt.barcodes.join(", ")
+    : "No barcode";
+  elements.deleteMessage.textContent =
+    `${hunt.name} (${barcodes}) will be removed from the live catalog. ` +
+    "Existing player history will remain on their devices.";
+  elements.deleteOverlay.classList.remove("hidden");
+}
+
+function closeDeleteDialog() {
+  state.pendingDeleteId = "";
+  elements.deleteOverlay.classList.add("hidden");
+  elements.confirmDeleteButton.disabled = false;
+  elements.confirmDeleteButton.textContent = "Delete Hunt";
+}
+
+async function deletePendingHunt() {
+  const huntId = state.pendingDeleteId;
+  if (!huntId || !state.token) {
+    closeDeleteDialog();
+    showStatus(
+      elements.publishStatus,
+      "Connect GitHub before deleting a catalog item.",
+      "fail"
+    );
+    return;
+  }
+
+  elements.confirmDeleteButton.disabled = true;
+  elements.confirmDeleteButton.textContent = "Deleting...";
+
+  try {
+    await loadCatalogFromGitHub();
+    const hunt = state.catalog.find(item => item.id === huntId);
+    if (!hunt) {
+      throw new Error("That catalog item was already removed.");
+    }
+    if (state.catalog.length <= 1) {
+      throw new Error("The final catalog item cannot be deleted.");
+    }
+
+    const updatedCatalog = state.catalog.filter(item => item.id !== huntId);
+    const response = await githubRequest(
+      `/repos/${REPOSITORY}/contents/${HUNTS_PATH}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          message: `Remove hunt item: ${hunt.name}`,
+          content: encodeBase64Utf8(
+            `${JSON.stringify(updatedCatalog, null, 2)}\n`
+          ),
+          sha: state.catalogSha,
+          branch: BRANCH
+        })
+      }
+    );
+    const result = await response.json();
+    const commitUrl =
+      result.commit?.html_url ||
+      `https://github.com/${REPOSITORY}/commits/${BRANCH}`;
+
+    state.catalog = updatedCatalog;
+    state.catalogSha = result.content?.sha || "";
+    closeDeleteDialog();
+    renderCatalog();
+    showStatus(
+      elements.publishStatus,
+      `Deleted ${escapeHtml(hunt.name)}. ` +
+        `<a href="${escapeHtml(commitUrl)}" target="_blank" rel="noreferrer">View commit</a>. ` +
+        "GitHub Pages will update after deployment.",
+      "success",
+      true
+    );
+  } catch (error) {
+    closeDeleteDialog();
+    showStatus(elements.publishStatus, getFriendlyApiError(error), "fail");
+  }
 }
 
 function addBarcodeFromInput() {
