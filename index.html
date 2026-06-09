@@ -1,114 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gotcha! Prototype</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gotcha! Prototype</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f5f5f5;
-            text-align: center;
-        }
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f7f5ef;
+      text-align: center;
+    }
 
-        h1 {
-            color: #2d6a4f;
-        }
+    h1 {
+      color: #2d6a4f;
+      font-size: 42px;
+      margin-bottom: 5px;
+    }
 
-        .clue-box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,.1);
-        }
+    .subtitle {
+      color: #8a6f2a;
+      margin-bottom: 20px;
+    }
 
-        button {
-            background: #2d6a4f;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
-        }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    }
 
-        button:hover {
-            opacity: .9;
-        }
+    .clue {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
 
-        #preview {
-            margin-top: 20px;
-            max-width: 100%;
-            border-radius: 10px;
-            display: none;
-        }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
 
-        #status {
-            margin-top: 15px;
-            font-weight: bold;
-        }
+    .stat-box {
+      flex: 1;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 3px 8px rgba(0,0,0,.06);
+    }
 
-        .camera-input {
-            display: none;
-        }
-    </style>
+    .stat-number {
+      font-size: 26px;
+      font-weight: bold;
+      color: #2d6a4f;
+    }
+
+    button {
+      background: #2d6a4f;
+      color: white;
+      border: none;
+      padding: 15px 24px;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    button.secondary {
+      background: #8a6f2a;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    #preview {
+      margin-top: 20px;
+      max-width: 100%;
+      border-radius: 12px;
+      display: none;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .success {
+      color: #2d6a4f;
+    }
+
+    .fail {
+      color: #b23b3b;
+    }
+
+    .neutral {
+      color: #8a6f2a;
+    }
+
+    .camera-input {
+      display: none;
+    }
+
+    .prize {
+      font-size: 24px;
+      font-weight: bold;
+      color: #8a6f2a;
+      margin-top: 10px;
+    }
+  </style>
 </head>
+
 <body>
 
-    <h1>🎯 Gotcha!</h1>
+  <h1>Gotcha!</h1>
+  <div class="subtitle">Find it. Snap it. Win it.</div>
 
-    <div class="clue-box">
-        <h2>Today's Clue</h2>
-        <p>
-            America's pastime begins with this piece of leather.
-            Find it and take a picture.
-        </p>
+  <div class="stats">
+    <div class="stat-box">
+      <div>Guesses</div>
+      <div class="stat-number" id="guesses">3</div>
     </div>
 
-    <button onclick="openCamera()">
-        Take Photo
+    <div class="stat-box">
+      <div>Points</div>
+      <div class="stat-number" id="points">0</div>
+    </div>
+
+    <div class="stat-box">
+      <div>Streak</div>
+      <div class="stat-number" id="streak">1</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Today's Hunt</h2>
+    <p class="clue" id="clueText">
+      America's pastime begins with this piece of leather.
+    </p>
+
+    <button class="secondary" onclick="upgradeClue()">
+      Use Better Clue
     </button>
+  </div>
 
-    <input
-        type="file"
-        id="cameraInput"
-        class="camera-input"
-        accept="image/*"
-        capture="environment">
+  <button id="photoButton" onclick="openCamera()">
+    Take Photo
+  </button>
 
-    <div id="status"></div>
+  <input
+    type="file"
+    id="cameraInput"
+    class="camera-input"
+    accept="image/*"
+    capture="environment"
+  />
 
-    <img id="preview" alt="Captured Image">
+  <div id="status"></div>
+  <div id="prize" class="prize"></div>
 
-    <script>
-        const cameraInput = document.getElementById('cameraInput');
-        const preview = document.getElementById('preview');
-        const status = document.getElementById('status');
+  <img id="preview" alt="Captured Image" />
 
-        function openCamera() {
-            cameraInput.click();
-        }
+  <script>
+    const cameraInput = document.getElementById("cameraInput");
+    const preview = document.getElementById("preview");
+    const statusBox = document.getElementById("status");
+    const prizeBox = document.getElementById("prize");
+    const guessesBox = document.getElementById("guesses");
+    const pointsBox = document.getElementById("points");
+    const clueText = document.getElementById("clueText");
+    const photoButton = document.getElementById("photoButton");
 
-        cameraInput.addEventListener('change', function(event) {
+    let guesses = 3;
+    let points = 0;
+    let clueLevel = 0;
 
-            const file = event.target.files[0];
+    const clues = [
+      "America's pastime begins with this piece of leather.",
+      "Look for something used to catch a ball.",
+      "Find a baseball glove."
+    ];
 
-            if (!file) return;
+    const prizes = [
+      "10 Gotcha Points",
+      "25 Gotcha Points",
+      "Extra Guess",
+      "$5 Store Reward",
+      "Rare Prize Entry"
+    ];
 
-            const imageURL = URL.createObjectURL(file);
+    function openCamera() {
+      if (guesses <= 0) {
+        statusBox.innerHTML = "No guesses left today.";
+        statusBox.className = "fail";
+        return;
+      }
 
-            preview.src = imageURL;
-            preview.style.display = 'block';
+      cameraInput.click();
+    }
 
-            status.innerHTML =
-                "✅ Photo captured! Recognition coming next...";
-        });
-    </script>
+    function upgradeClue() {
+      if (clueLevel < clues.length - 1) {
+        clueLevel++;
+        clueText.innerHTML = clues[clueLevel];
+        statusBox.innerHTML = "Clue upgraded.";
+        statusBox.className = "neutral";
+      } else {
+        statusBox.innerHTML = "You already have the best clue.";
+        statusBox.className = "neutral";
+      }
+    }
+
+    cameraInput.addEventListener("change", function(event) {
+      const file = event.target.files[0];
+
+      if (!file) return;
+
+      const imageURL = URL.createObjectURL(file);
+
+      preview.src = imageURL;
+      preview.style.display = "block";
+
+      guesses--;
+      guessesBox.innerHTML = guesses;
+
+      statusBox.innerHTML = "Checking photo...";
+      statusBox.className = "neutral";
+      prizeBox.innerHTML = "";
+
+      setTimeout(() => {
+        fakeImageCheck();
+      }, 1200);
+    });
+
+    function fakeImageCheck() {
+      const successChance = 0.45;
+      const isCorrect = Math.random() < successChance;
+
+      if (isCorrect) {
+        const reward = revealPrize();
+
+        statusBox.innerHTML = "Gotcha! Correct item found.";
+        statusBox.className = "success";
+
+        prizeBox.innerHTML = "Prize: " + reward;
+      } else {
+        statusBox.innerHTML = getNearMissMessage();
+        statusBox.className = "fail";
+      }
+
+      if (guesses <= 0) {
+        photoButton.disabled = true;
+        photoButton.innerHTML = "No Guesses Left";
+      }
+    }
+
+    function revealPrize() {
+      const randomPrize = prizes[Math.floor(Math.random() * prizes.length)];
+
+      if (randomPrize === "10 Gotcha Points") {
+        points += 10;
+      } else if (randomPrize === "25 Gotcha Points") {
+        points += 25;
+      } else if (randomPrize === "Extra Guess") {
+        guesses++;
+        guessesBox.innerHTML = guesses;
+      } else if (randomPrize === "$5 Store Reward") {
+        points += 50;
+      } else if (randomPrize === "Rare Prize Entry") {
+        points += 100;
+      }
+
+      pointsBox.innerHTML = points;
+
+      return randomPrize;
+    }
+
+    function getNearMissMessage() {
+      const messages = [
+        "Close! Correct category, wrong item.",
+        "Almost. Try looking in the same department.",
+        "Not quite. Your item has the right idea.",
+        "Wrong item, but you're getting warmer."
+      ];
+
+      return messages[Math.floor(Math.random() * messages.length)];
+    }
+  </script>
 
 </body>
 </html>
