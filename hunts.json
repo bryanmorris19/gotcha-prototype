@@ -18,5 +18,15 @@
       "724190812877"
     ],
     "availableFrom": "2026-06-09"
+  },
+  {
+    "id": "del-monte-sleaf-spinach",
+    "name": "Del Monte SLeaf Spinach",
+    "clue": "Sailors once believed this leafy green could help prevent a nutritional deficiency. Today, you’ll find it preserved in a metal container rather than the produce section.",
+    "betterClue": "Look for a canned vegetable known for its dark green leaves and association with a famous cartoon sailor.",
+    "barcodes": [
+      "024000163176"
+    ],
+    "availableFrom": "2026-06-09"
   }
 ]
