@@ -372,13 +372,11 @@
         Scan a UPC, EAN, or QR code. If it matches the target barcode, the item is verified.
       </div>
 
-      <button id="feedbackButton" class="light" onclick="enableFeedback(true)">
-        Test Sound &amp; Vibration
-      </button>
+      <div id="reader"></div>
+
       <button id="startScannerButton" onclick="startBarcodeScanner()">Start Scanner</button>
       <button class="danger" onclick="stopBarcodeScanner()">Stop Scanner</button>
 
-      <div id="reader"></div>
       <div id="barcodeStatus" class="status"></div>
       <div id="feedbackStatus" class="fine-print"></div>
     </section>
@@ -481,7 +479,6 @@
 
     const barcodeStatus = document.getElementById("barcodeStatus");
     const feedbackStatus = document.getElementById("feedbackStatus");
-    const feedbackButton = document.getElementById("feedbackButton");
     const startScannerButton = document.getElementById("startScannerButton");
     const prizeOverlay = document.getElementById("prizeOverlay");
     const prizeItemText = document.getElementById("prizeItemText");
@@ -698,7 +695,7 @@
       return matches ? activeProduct : null;
     }
 
-    function enableFeedback(playTest) {
+    function enableFeedback() {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
       if (AudioContextClass && !state.audioContext) {
@@ -714,10 +711,10 @@
       state.feedbackEnabled = Boolean(state.audioContext);
 
       if (state.audioContext) {
-        playToneSequence(playTest ? [440, 660] : [660], {
-          duration: playTest ? 0.16 : 0.1,
+        playToneSequence([660], {
+          duration: 0.1,
           gap: 0.06,
-          volume: playTest ? 0.3 : 0.2,
+          volume: 0.2,
           type: "triangle"
         });
       }
@@ -727,7 +724,7 @@
         : "This browser could not enable sound.";
 
       if ("vibrate" in navigator) {
-        const vibrationAccepted = navigator.vibrate(playTest ? [100, 60, 180] : 60);
+        const vibrationAccepted = navigator.vibrate(60);
         feedbackStatus.textContent = vibrationAccepted
           ? soundMessage + " Vibration is supported."
           : soundMessage + " Vibration was blocked by this browser.";
@@ -735,8 +732,6 @@
         feedbackStatus.textContent =
           soundMessage + " This device does not support vibration from a web page.";
       }
-
-      feedbackButton.textContent = "Test Feedback Again";
     }
 
     function playSuccessFeedback() {
@@ -903,7 +898,6 @@
       closePrizeOverlay();
       wrongOverlay.classList.add("hidden");
       feedbackStatus.textContent = "";
-      feedbackButton.textContent = "Test Sound & Vibration";
 
       updateStats();
     }
