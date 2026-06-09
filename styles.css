@@ -234,6 +234,139 @@ svg {
   animation: view-in 180ms ease-out;
 }
 
+.reward-loop-card {
+  padding: 18px;
+}
+
+.reward-loop-heading {
+  margin-bottom: 14px;
+}
+
+.odds-button {
+  width: auto;
+  min-height: 36px;
+  margin: 0;
+  padding: 8px 11px;
+  color: var(--emerald);
+  background: #e5f6ed;
+  box-shadow: none;
+  font-size: 11px;
+}
+
+.reward-meter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mini-reward-meter {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(16, 122, 62, 0.12);
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f6fff9, #edf8f1);
+}
+
+.daily-chest-meter {
+  border-color: rgba(242, 201, 76, 0.28);
+  background: linear-gradient(145deg, #fffdf2, #fff5cb);
+}
+
+.mini-meter-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.reward-meter-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--emerald);
+  background: #dff5e8;
+}
+
+.reward-meter-icon-gold {
+  color: #926000;
+  background: #ffeba5;
+}
+
+.reward-meter-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.mini-meter-heading strong,
+.mini-meter-heading small {
+  display: block;
+}
+
+.mini-meter-heading strong {
+  font-size: 12px;
+}
+
+.mini-meter-heading small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.fragment-pips {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 13px;
+}
+
+.fragment-pips span {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(16, 122, 62, 0.13);
+  box-shadow: inset 0 1px 2px rgba(16, 32, 43, 0.08);
+}
+
+.fragment-pips span.earned {
+  background: linear-gradient(90deg, var(--emerald), var(--emerald-bright));
+  box-shadow: 0 0 9px rgba(52, 199, 89, 0.3);
+}
+
+.mini-progress-track {
+  height: 9px;
+  margin-top: 13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(146, 96, 0, 0.12);
+}
+
+.mini-progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f2c94c, #f0a900);
+  transition: width 350ms ease;
+}
+
+.mini-reward-meter p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+.coin-purchase-button {
+  min-height: 44px;
+  margin-top: 11px;
+  color: #573900;
+  background: linear-gradient(135deg, #fff1b4, var(--gold));
+  box-shadow: 0 7px 16px rgba(180, 128, 0, 0.16);
+  font-size: 13px;
+}
+
 .hunt-card {
   position: relative;
   overflow: hidden;
@@ -741,6 +874,24 @@ button:disabled {
   color: var(--danger);
 }
 
+.wrong-reward-text {
+  margin-top: 14px;
+  padding: 11px 12px;
+  border-radius: 14px;
+  color: var(--emerald-dark);
+  background: #e8f6ee;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.wrong-reward-text.reward-duplicate,
+.wrong-reward-text.reward-capped,
+.wrong-reward-text.reward-invalid {
+  color: #715314;
+  background: #fff3ce;
+}
+
 .prize-label {
   margin: 14px 0 12px;
   padding: 13px;
@@ -750,6 +901,97 @@ button:disabled {
   background: linear-gradient(135deg, #fff8dc, #ffedaf);
   font-size: 23px;
   font-weight: 950;
+}
+
+.simulated-gift-card {
+  display: grid;
+  min-height: 142px;
+  align-content: center;
+  gap: 5px;
+  margin: 12px 0 16px;
+  padding: 18px;
+  border: 2px solid #ebbd33;
+  border-radius: 22px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.24), transparent 24%),
+    linear-gradient(145deg, #107a3e, #09572b);
+  box-shadow: 0 16px 28px rgba(9, 87, 43, 0.22);
+}
+
+.simulated-gift-card span {
+  color: #ffe690;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.15em;
+}
+
+.simulated-gift-card strong {
+  font-size: 28px;
+}
+
+.simulated-gift-card small {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 10px;
+}
+
+.odds-card {
+  text-align: left;
+}
+
+.odds-card > .found-label,
+.odds-card > h2,
+.odds-intro,
+.odds-note {
+  text-align: center;
+}
+
+.odds-intro,
+.odds-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.odds-section {
+  margin-top: 15px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(248, 245, 237, 0.66);
+}
+
+.odds-section h3 {
+  margin: 0 0 8px;
+  color: var(--emerald-dark);
+  font-size: 13px;
+}
+
+.odds-list {
+  margin: 0;
+}
+
+.odds-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(18, 41, 35, 0.07);
+  font-size: 12px;
+}
+
+.odds-list div:last-child {
+  border-bottom: 0;
+}
+
+.odds-list dt,
+.odds-list dd {
+  margin: 0;
+}
+
+.odds-list dd {
+  color: var(--emerald);
+  font-weight: 900;
 }
 
 .success-pulse {
@@ -849,6 +1091,20 @@ button:disabled {
   height: 72px;
   object-fit: contain;
   filter: drop-shadow(0 8px 8px rgba(111, 65, 0, 0.2));
+}
+
+.reward-gift-badge {
+  display: grid;
+  width: 72px;
+  height: 52px;
+  place-items: center;
+  border: 2px solid #e5b626;
+  border-radius: 14px;
+  color: #ffe690;
+  background: linear-gradient(145deg, #107a3e, #09572b);
+  font-size: 20px;
+  font-weight: 950;
+  box-shadow: 0 8px 16px rgba(9, 87, 43, 0.18);
 }
 
 .reward-card strong {
@@ -1038,6 +1294,75 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
+.reward-history-card {
+  margin-top: 16px;
+}
+
+.reward-history-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.history-row:last-child {
+  border-bottom: 0;
+}
+
+.history-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--emerald);
+  background: #e5f6ed;
+  font-weight: 950;
+}
+
+.history-icon img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.history-icon.history-gift {
+  color: #ffe690;
+  background: var(--emerald-dark);
+}
+
+.history-row strong,
+.history-row small {
+  display: block;
+}
+
+.history-row strong {
+  font-size: 12px;
+}
+
+.history-row small,
+.history-row time,
+.history-empty {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.history-row time {
+  font-weight: 750;
+}
+
+.history-empty {
+  margin: 4px 0 0;
+}
+
 .install-help {
   margin-top: 12px !important;
   font-size: 12px;
@@ -1187,5 +1512,9 @@ button:disabled {
 
   .countdown {
     font-size: 11px;
+  }
+
+  .reward-meter-grid {
+    grid-template-columns: 1fr;
   }
 }

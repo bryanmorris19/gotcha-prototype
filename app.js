@@ -2,9 +2,14 @@
 
 const STORAGE_KEY = "gotcha-player-v1";
 const STARTING_GUESSES = 3;
+const MAX_GUESSES = 5;
 const STARTING_COINS = 20;
 const BETTER_CLUE_COST = 10;
+const EXTRA_GUESS_COST = 15;
+const FRAGMENTS_PER_CACHE = 3;
+const MAX_DAILY_CACHES = 3;
 const MAX_COMPLETION_HISTORY = 100;
+const MAX_REWARD_HISTORY = 50;
 const DAILY_GOAL = 4;
 const MAX_ANALYTICS_EVENTS = 250;
 
@@ -56,6 +61,80 @@ const prizes = [
   }
 ];
 
+const cacheRewards = [
+  {
+    id: "cache-coins-2",
+    label: "2 Gotcha Coins",
+    subtitle: "Discovery Cache",
+    rarity: "common",
+    coins: 2,
+    weight: 55
+  },
+  {
+    id: "cache-coins-3",
+    label: "3 Gotcha Coins",
+    subtitle: "Discovery Cache",
+    rarity: "common",
+    coins: 3,
+    weight: 30
+  },
+  {
+    id: "cache-coins-5",
+    label: "5 Gotcha Coins",
+    subtitle: "Discovery Cache",
+    rarity: "rare",
+    coins: 5,
+    weight: 12
+  },
+  {
+    id: "cache-extra-guess",
+    label: "+1 Bonus Guess",
+    subtitle: "Discovery Cache",
+    symbol: "+",
+    rarity: "rare",
+    extraGuess: 1,
+    weight: 3
+  }
+];
+
+const dailyChestRewards = [
+  {
+    id: "daily-coins-25",
+    label: "25 Gotcha Coins",
+    subtitle: "Daily Chest",
+    rarity: "common",
+    coins: 25,
+    weight: 50
+  },
+  {
+    id: "daily-coins-50",
+    label: "50 Gotcha Coins",
+    subtitle: "Daily Chest",
+    rarity: "rare",
+    coins: 50,
+    weight: 30
+  },
+  {
+    id: "daily-coins-75",
+    label: "75 Gotcha Coins",
+    subtitle: "Daily Chest",
+    rarity: "epic",
+    coins: 75,
+    weight: 15
+  },
+  {
+    id: "daily-gift-card-5",
+    label: "$5 Gift Card",
+    subtitle: "Simulated MVP Reward",
+    symbol: "$",
+    rarity: "legendary",
+    simulatedGiftCard: true,
+    weight: 5
+  }
+];
+
+const rewardCatalog = [...prizes, ...cacheRewards, ...dailyChestRewards];
+
 const state = {
   hunts: [],
   player: null,
@@ -66,7 +145,9 @@ const state = {
   torchOn: false,
   countdownTimer: null,
   deferredInstallPrompt: null,
-  activeView: "home"
+  activeView: "home",
+  pendingRewards: [],
+  resumeScannerAfterRewards: false
 };
 
 const elements = {};
@@ -104,6 +185,21 @@ function cacheElements() {
   elements.dailyProgressText = document.getElementById("dailyProgressText");
   elements.dailyProgressBar = document.getElementById("dailyProgressBar");
   elements.resetCountdown = document.getElementById("resetCountdown");
+  elements.fragmentText = document.getElementById("fragmentText");
+  elements.fragmentPips = Array.from(
+    document.querySelectorAll("#fragmentPips span")
+  );
+  elements.cacheLimitText = document.getElementById("cacheLimitText");
+  elements.dailyChestText = document.getElementById("dailyChestText");
+  elements.dailyChestProgressBar = document.getElementById(
+    "dailyChestProgressBar"
+  );
+  elements.buyGuessButton = document.getElementById("buyGuessButton");
+  elements.rewardOddsButton = document.getElementById("rewardOddsButton");
+  elements.rewardOddsOverlay = document.getElementById("rewardOddsOverlay");
+  elements.closeRewardOddsButton = document.getElementById(
+    "closeRewardOddsButton"
+  );
   elements.betterClueButton = document.getElementById("betterClueButton");
   elements.resetButton = document.getElementById("resetButton");
   elements.startScannerButton = document.getElementById("startScannerButton");
@@ -116,13 +212,21 @@ function cacheElements() {
   elements.prizeItemText = document.getElementById("prizeItemText");
   elements.prizeOverlayText = document.getElementById("prizeOverlayText");
   elements.prizeCoinImage = document.getElementById("prizeCoinImage");
+  elements.rewardOverlayLabel = document.getElementById("rewardOverlayLabel");
+  elements.rewardTreasureImage = document.getElementById("rewardTreasureImage");
+  elements.simulatedGiftCard = document.getElementById("simulatedGiftCard");
+  elements.prizeHeading = document.getElementById("prizeHeading");
+  elements.rewardFinePrint = document.getElementById("rewardFinePrint");
+  elements.rewardActionText = document.getElementById("rewardActionText");
   elements.nextHuntButton = document.getElementById("nextHuntButton");
   elements.wrongOverlay = document.getElementById("wrongOverlay");
   elements.wrongScanText = document.getElementById("wrongScanText");
+  elements.wrongRewardText = document.getElementById("wrongRewardText");
   elements.wrongActionButton = document.getElementById("wrongActionButton");
   elements.collectionGrid = document.getElementById("collectionGrid");
   elements.collectionCount = document.getElementById("collectionCount");
   elements.emptyCollection = document.getElementById("emptyCollection");
+  elements.rewardHistoryList = document.getElementById("rewardHistoryList");
   elements.profileName = document.getElementById("profileName");
   elements.profileLevel = document.getElementById("profileLevel");
   elements.nicknameInput = document.getElementById("nicknameInput");
@@ -139,6 +243,9 @@ function cacheElements() {
 
 function bindEvents() {
   elements.betterClueButton.addEventListener("click", upgradeClue);
+  elements.buyGuessButton.addEventListener("click", buyExtraGuess);
+  elements.rewardOddsButton.addEventListener("click", openRewardOdds);
+  elements.closeRewardOddsButton.addEventListener("click", closeRewardOdds);
   elements.resetButton.addEventListener("click", resetDemo);
   elements.startScannerButton.addEventListener("click", startBarcodeScanner);
   elements.stopScannerButton.addEventListener("click", stopBarcodeScanner);
@@ -192,11 +299,16 @@ function createDefaultPlayer() {
     dailyDate: "",
     dailyProgress: 0,
     betterClueUsed: false,
+    signalFragments: 0,
+    dailyCachesOpened: 0,
+    dailyScannedBarcodes: [],
+    dailyChestClaimed: false,
     lastCompletionDate: "",
     completedHunts: [],
     nickname: "Treasure Hunter",
     bestStreak: 0,
     collection: {},
+    rewardHistory: [],
     analytics: {
       counters: {},
       events: []
@@ -240,6 +352,12 @@ function loadPlayer() {
       collection: saved.collection && typeof saved.collection === "object"
         ? saved.collection
         : {},
+      dailyScannedBarcodes: Array.isArray(saved.dailyScannedBarcodes)
+        ? saved.dailyScannedBarcodes
+        : [],
+      rewardHistory: Array.isArray(saved.rewardHistory)
+        ? saved.rewardHistory
+        : [],
       analytics: {
         counters: saved.analytics?.counters || {},
         events: Array.isArray(saved.analytics?.events)
@@ -272,6 +390,10 @@ function applyDailyReset() {
   state.player.dailyProgress = 0;
   state.player.guesses = STARTING_GUESSES;
   state.player.betterClueUsed = false;
+  state.player.signalFragments = 0;
+  state.player.dailyCachesOpened = 0;
+  state.player.dailyScannedBarcodes = [];
+  state.player.dailyChestClaimed = false;
   savePlayer();
 }
 
@@ -288,8 +410,11 @@ function scheduleMidnightReset() {
     stopBarcodeScanner();
     applyDailyReset();
     state.scanLocked = false;
+    state.pendingRewards = [];
+    state.resumeScannerAfterRewards = false;
     elements.prizeOverlay.classList.add("hidden");
     elements.wrongOverlay.classList.add("hidden");
+    elements.rewardOddsOverlay.classList.add("hidden");
     clearStatus();
     render();
     scheduleMidnightReset();
@@ -370,8 +495,48 @@ function render() {
   elements.stopScannerButton.disabled = !state.scannerRunning;
   elements.betterClueButton.disabled =
     state.player.coins < BETTER_CLUE_COST || state.player.betterClueUsed;
+  renderRewardProgress();
   renderCollection();
   renderProfile();
+}
+
+function renderRewardProgress() {
+  const fragmentCount = Math.min(
+    state.player.signalFragments,
+    FRAGMENTS_PER_CACHE
+  );
+  const cachesRemaining = Math.max(
+    0,
+    MAX_DAILY_CACHES - state.player.dailyCachesOpened
+  );
+  const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
+
+  elements.fragmentText.textContent =
+    `${fragmentCount} of ${FRAGMENTS_PER_CACHE} Signal Fragments`;
+  document.getElementById("fragmentPips").setAttribute(
+    "aria-valuenow",
+    String(fragmentCount)
+  );
+  elements.fragmentPips.forEach((pip, index) => {
+    pip.classList.toggle("earned", index < fragmentCount);
+  });
+  elements.cacheLimitText.textContent = cachesRemaining === 0
+    ? "Daily cache limit reached"
+    : `${cachesRemaining} ${cachesRemaining === 1 ? "cache" : "caches"} available today`;
+  elements.dailyChestText.textContent = state.player.dailyChestClaimed
+    ? "Daily Chest opened"
+    : `${dailyCompleted} of ${DAILY_GOAL} hunts complete`;
+  elements.dailyChestProgressBar.style.width =
+    `${Math.min(100, (dailyCompleted / DAILY_GOAL) * 100)}%`;
+  elements.dailyChestProgressBar.parentElement.setAttribute(
+    "aria-valuenow",
+    String(dailyCompleted)
+  );
+  elements.buyGuessButton.disabled =
+    state.player.coins < EXTRA_GUESS_COST ||
+    state.player.guesses >= MAX_GUESSES;
+  elements.buyGuessButton.querySelector("span:first-child").textContent =
+    state.player.guesses >= MAX_GUESSES ? "Guess Wallet Full" : "Buy +1 Guess";
 }
 
 function formatDate(dateKey) {
@@ -406,6 +571,39 @@ function upgradeClue() {
     "neutral"
   );
   trackEvent("better_clue_used");
+}
+
+function buyExtraGuess() {
+  if (state.player.guesses >= MAX_GUESSES) {
+    showStatus(`You can hold up to ${MAX_GUESSES} guesses.`, "neutral");
+    return;
+  }
+
+  if (state.player.coins < EXTRA_GUESS_COST) {
+    showStatus(
+      `You need ${EXTRA_GUESS_COST} Gotcha Coins for an extra guess.`,
+      "fail"
+    );
+    return;
+  }
+
+  state.player.coins -= EXTRA_GUESS_COST;
+  state.player.guesses += 1;
+  savePlayer();
+  render();
+  showStatus(
+    `Extra guess purchased for ${EXTRA_GUESS_COST} Gotcha Coins.`,
+    "neutral"
+  );
+  trackEvent("extra_guess_purchased");
+}
+
+function openRewardOdds() {
+  elements.rewardOddsOverlay.classList.remove("hidden");
+}
+
+function closeRewardOdds() {
+  elements.rewardOddsOverlay.classList.add("hidden");
 }
 
 function startBarcodeScanner() {
@@ -514,7 +712,7 @@ function onBarcodeScanned(decodedText) {
     completeHunt(hunt, scanned);
   } else {
     trackEvent("scan_wrong");
-    handleWrongScan(scanned);
+    handleWrongScan(scanned, awardSignalFragment(scanned));
   }
 
   savePlayer();
@@ -529,25 +727,54 @@ function completeHunt(hunt, scanned) {
   state.player.guesses = STARTING_GUESSES;
   state.player.betterClueUsed = false;
 
-  const prize = revealPrize();
-  addPrizeToCollection(prize);
+  const prize = weightedRewardPick(prizes);
+  grantReward(prize, "Correct Hunt");
+
+  if (
+    state.player.dailyProgress >= DAILY_GOAL &&
+    !state.player.dailyChestClaimed
+  ) {
+    state.player.dailyChestClaimed = true;
+    const dailyReward = weightedRewardPick(dailyChestRewards);
+    grantReward(dailyReward, "Daily Chest");
+    queueReward({
+      label: "Daily Chest opened!",
+      title: "Daily reward",
+      context: `${DAILY_GOAL} hunts completed today`,
+      reward: dailyReward,
+      finePrint: dailyReward.simulatedGiftCard
+        ? "This gift card is a simulated MVP reward with no cash value."
+        : "Daily Chest rewards are limited to one per day.",
+      actionLabel: "Continue"
+    });
+  }
+
   showStatus(
     `Gotcha! ${hunt.name} verified.<br>Scanned: ${scanned}`,
     "success"
   );
   playSuccessFeedback();
-  showPrizeOverlay(hunt.name, prize);
+  showRewardOverlay({
+    label: "Treasure found!",
+    title: "Gotcha!",
+    context: `${hunt.name} found`,
+    reward: prize,
+    finePrint: "Your guesses have been refreshed for the next hunt.",
+    actionLabel: state.pendingRewards.length > 0
+      ? "Open Daily Chest"
+      : "Start Next Hunt"
+  });
   stopBarcodeScanner();
 }
 
-function handleWrongScan(scanned) {
+function handleWrongScan(scanned, fragmentResult) {
   showStatus(
     `Wrong item.<br>Scanned: ${scanned}<br>Target does not match.`,
     "fail"
   );
   playWrongFeedback();
   pauseBarcodeScanner();
-  showWrongOverlay(scanned);
+  showWrongOverlay(scanned, fragmentResult);
 }
 
 function updateStreak() {
@@ -582,19 +809,21 @@ function recordCompletion(huntId) {
     state.player.completedHunts.slice(-MAX_COMPLETION_HISTORY);
 }
 
-function revealPrize() {
-  const prize = weightedPrizePick();
-
-  if (prize.coins) {
-    state.player.coins += prize.coins;
-    state.player.lifetimeCoins += prize.coins;
+function grantReward(reward, source) {
+  if (reward.coins) {
+    state.player.coins += reward.coins;
+    state.player.lifetimeCoins += reward.coins;
   }
 
-  if (prize.extraGuess) {
-    state.player.guesses += prize.extraGuess;
+  if (reward.extraGuess) {
+    state.player.guesses = Math.min(
+      MAX_GUESSES,
+      state.player.guesses + reward.extraGuess
+    );
   }
 
-  return prize;
+  addPrizeToCollection(reward);
+  recordRewardHistory(reward, source);
 }
 
 function addPrizeToCollection(prize) {
@@ -617,19 +846,94 @@ function addPrizeToCollection(prize) {
   });
 }
 
-function weightedPrizePick() {
-  const totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
+function recordRewardHistory(reward, source) {
+  state.player.rewardHistory.unshift({
+    id: reward.id,
+    label: reward.label,
+    source,
+    simulated: Boolean(reward.simulatedGiftCard),
+    earnedAt: new Date().toISOString()
+  });
+  state.player.rewardHistory =
+    state.player.rewardHistory.slice(0, MAX_REWARD_HISTORY);
+}
+
+function weightedRewardPick(rewards) {
+  const totalWeight = rewards.reduce((sum, reward) => sum + reward.weight, 0);
   let random = Math.random() * totalWeight;
 
-  for (const prize of prizes) {
-    random -= prize.weight;
+  for (const reward of rewards) {
+    random -= reward.weight;
 
     if (random <= 0) {
-      return prize;
+      return reward;
     }
   }
 
-  return prizes[0];
+  return rewards[0];
+}
+
+function awardSignalFragment(scanned) {
+  const barcode = getBarcodeFingerprint(scanned);
+
+  if (barcode.length < 8) {
+    return {
+      status: "invalid",
+      message: "This scan did not contain a valid product barcode."
+    };
+  }
+
+  if (state.player.dailyCachesOpened >= MAX_DAILY_CACHES) {
+    return {
+      status: "capped",
+      message: "You reached today's Discovery Cache limit."
+    };
+  }
+
+  if (state.player.dailyScannedBarcodes.includes(barcode)) {
+    return {
+      status: "duplicate",
+      message: "You already scanned this barcode today, so no new fragment was earned."
+    };
+  }
+
+  state.player.dailyScannedBarcodes.push(barcode);
+  state.player.signalFragments += 1;
+
+  if (state.player.signalFragments < FRAGMENTS_PER_CACHE) {
+    return {
+      status: "earned",
+      message:
+        `Signal Fragment earned: ${state.player.signalFragments} of ${FRAGMENTS_PER_CACHE}.`
+    };
+  }
+
+  state.player.signalFragments = 0;
+  state.player.dailyCachesOpened += 1;
+  const reward = weightedRewardPick(cacheRewards);
+  grantReward(reward, "Discovery Cache");
+  queueReward({
+    label: "Discovery Cache!",
+    title: "Signal decoded",
+    context: "Three unique product signals collected",
+    reward,
+    finePrint:
+      `${state.player.dailyCachesOpened} of ${MAX_DAILY_CACHES} Discovery Caches opened today.`,
+    actionLabel: "Keep Scanning"
+  });
+
+  return {
+    status: "cache",
+    message: "Third fragment found. Your Discovery Cache is ready to open."
+  };
+}
+
+function getBarcodeFingerprint(value) {
+  return normalizeBarcode(value).replace(/^0+/, "");
+}
+
+function queueReward(rewardDetails) {
+  state.pendingRewards.push(rewardDetails);
 }
 
 function findActiveHuntByBarcode(barcode) {
@@ -678,17 +982,34 @@ function pauseBarcodeScanner() {
   }
 }
 
-function showWrongOverlay(scanned) {
+function showWrongOverlay(scanned, fragmentResult) {
   elements.wrongScanText.textContent =
     `Barcode ${scanned} is not the correct item.`;
+  elements.wrongRewardText.textContent = fragmentResult.message;
+  elements.wrongRewardText.className =
+    `wrong-reward-text reward-${fragmentResult.status}`;
   elements.wrongActionButton.textContent =
-    state.player.guesses > 0 ? "Scan Another Item" : "No Guesses Left";
+    fragmentResult.status === "cache"
+      ? "Open Discovery Cache"
+      : state.player.guesses > 0
+        ? "Scan Another Item"
+        : "No Guesses Left";
   elements.wrongOverlay.classList.remove("hidden");
 }
 
 function closeWrongOverlay() {
   elements.wrongOverlay.classList.add("hidden");
 
+  if (state.pendingRewards.length > 0) {
+    state.resumeScannerAfterRewards = true;
+    showNextQueuedReward();
+    return;
+  }
+
+  resumeScannerAfterOverlay();
+}
+
+function resumeScannerAfterOverlay() {
   if (state.player.guesses <= 0) {
     showStatus("No guesses left for this hunt.", "fail");
     stopBarcodeScanner();
@@ -714,19 +1035,49 @@ function closeWrongOverlay() {
   }
 }
 
-function showPrizeOverlay(itemName, prize) {
-  elements.prizeItemText.textContent = itemName + " found";
+function showRewardOverlay(details) {
+  const reward = details.reward;
+  elements.rewardOverlayLabel.textContent = details.label;
+  elements.prizeHeading.textContent = details.title;
+  elements.prizeItemText.textContent = details.context;
   elements.prizeOverlayText.textContent =
-    `Prize: ${prize.label} - ${prize.subtitle}`;
-  elements.prizeCoinImage.classList.toggle("hidden", !prize.coins);
+    `${reward.label} - ${reward.subtitle}`;
+  elements.prizeCoinImage.classList.toggle("hidden", !reward.coins);
+  elements.simulatedGiftCard.classList.toggle(
+    "hidden",
+    !reward.simulatedGiftCard
+  );
+  elements.rewardTreasureImage.classList.toggle(
+    "hidden",
+    Boolean(reward.simulatedGiftCard)
+  );
+  elements.rewardFinePrint.textContent = details.finePrint;
+  elements.rewardActionText.textContent = details.actionLabel;
   elements.prizeOverlay.classList.remove("hidden");
 }
 
+function showNextQueuedReward() {
+  const nextReward = state.pendingRewards.shift();
+  if (nextReward) {
+    showRewardOverlay(nextReward);
+  }
+}
+
 function closePrizeOverlay() {
+  if (state.pendingRewards.length > 0) {
+    showNextQueuedReward();
+    return;
+  }
+
   elements.prizeOverlay.classList.add("hidden");
   state.scanLocked = false;
   clearStatus();
   render();
+
+  if (state.resumeScannerAfterRewards) {
+    state.resumeScannerAfterRewards = false;
+    resumeScannerAfterOverlay();
+  }
 }
 
 function renderCollection() {
@@ -741,7 +1092,7 @@ function renderCollection() {
   elements.collectionGrid.classList.toggle("hidden", rewards.length === 0);
 
   rewards.forEach(reward => {
-    const currentPrize = prizes.find(prize => prize.id === reward.id);
+    const currentPrize = rewardCatalog.find(prize => prize.id === reward.id);
     const displayReward = currentPrize || reward;
     const card = document.createElement("article");
     card.className = `reward-card rarity-${reward.rarity}`;
@@ -749,6 +1100,8 @@ function renderCollection() {
       <span class="reward-rarity">${reward.rarity}</span>
       ${displayReward.coins
         ? '<img class="reward-coin-image" src="assets/gotcha-coin.png" alt="">'
+        : displayReward.simulatedGiftCard
+          ? '<span class="reward-gift-badge" aria-hidden="true">$5</span>'
         : `<span class="reward-symbol" aria-hidden="true">${displayReward.symbol}</span>`}
       <strong>${escapeHtml(displayReward.label)}</strong>
       <small>${escapeHtml(displayReward.subtitle)}</small>
@@ -756,6 +1109,54 @@ function renderCollection() {
     `;
     elements.collectionGrid.appendChild(card);
   });
+
+  renderRewardHistory();
+}
+
+function renderRewardHistory() {
+  const history = state.player.rewardHistory.slice(0, 8);
+
+  if (history.length === 0) {
+    elements.rewardHistoryList.innerHTML =
+      '<p class="history-empty">Your rewards will appear here.</p>';
+    return;
+  }
+
+  elements.rewardHistoryList.innerHTML = history.map(entry => {
+    const reward = rewardCatalog.find(item => item.id === entry.id);
+    const label = reward?.label || entry.label;
+    const historyVisual = entry.simulated
+      ? "$"
+      : reward?.coins
+        ? '<img src="assets/gotcha-coin.png" alt="">'
+        : escapeHtml(reward?.symbol || "+");
+    return `
+      <article class="history-row">
+        <span class="history-icon ${entry.simulated ? "history-gift" : ""}">
+          ${historyVisual}
+        </span>
+        <div>
+          <strong>${escapeHtml(label)}</strong>
+          <small>${escapeHtml(entry.source)}</small>
+        </div>
+        <time datetime="${escapeHtml(entry.earnedAt)}">
+          ${formatRewardTime(entry.earnedAt)}
+        </time>
+      </article>
+    `;
+  }).join("");
+}
+
+function formatRewardTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric"
+  }).format(date);
 }
 
 function renderProfile() {
@@ -1022,8 +1423,11 @@ function resetDemo() {
   state.player = createDefaultPlayer();
   applyDailyReset();
   state.scanLocked = false;
+  state.pendingRewards = [];
+  state.resumeScannerAfterRewards = false;
   elements.prizeOverlay.classList.add("hidden");
   elements.wrongOverlay.classList.add("hidden");
+  elements.rewardOddsOverlay.classList.add("hidden");
   elements.feedbackStatus.textContent = "";
   clearStatus();
   render();

@@ -10,9 +10,9 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="stylesheet" href="styles.css?v=7" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="app.js?v=6" defer></script>
+  <script src="app.js?v=7" defer></script>
 </head>
 
 <body>
@@ -110,6 +110,74 @@
     </section>
 
     <section id="homeView" class="app-view active" data-view="home">
+    <section class="card reward-loop-card">
+      <div class="card-heading reward-loop-heading">
+        <div>
+          <div class="eyebrow">Rewards in Motion</div>
+          <div class="hunt-title">Every Scan Moves You Forward</div>
+        </div>
+        <button id="rewardOddsButton" class="odds-button" type="button">
+          View Odds
+        </button>
+      </div>
+
+      <div class="reward-meter-grid">
+        <article class="mini-reward-meter">
+          <div class="mini-meter-heading">
+            <span class="reward-meter-icon">
+              <svg><use href="#icon-sparkle"></use></svg>
+            </span>
+            <div>
+              <strong>Discovery Cache</strong>
+              <small id="fragmentText">0 of 3 Signal Fragments</small>
+            </div>
+          </div>
+          <div
+            id="fragmentPips"
+            class="fragment-pips"
+            role="progressbar"
+            aria-label="Signal Fragment progress"
+            aria-valuemin="0"
+            aria-valuemax="3"
+            aria-valuenow="0"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p id="cacheLimitText">3 caches available today</p>
+        </article>
+
+        <article class="mini-reward-meter daily-chest-meter">
+          <div class="mini-meter-heading">
+            <span class="reward-meter-icon reward-meter-icon-gold">
+              <svg><use href="#icon-box"></use></svg>
+            </span>
+            <div>
+              <strong>Daily Chest</strong>
+              <small id="dailyChestText">0 of 4 hunts complete</small>
+            </div>
+          </div>
+          <div
+            class="mini-progress-track"
+            role="progressbar"
+            aria-label="Daily Chest progress"
+            aria-valuemin="0"
+            aria-valuemax="4"
+            aria-valuenow="0"
+          >
+            <span id="dailyChestProgressBar"></span>
+          </div>
+          <p>Includes a simulated gift-card chance</p>
+        </article>
+      </div>
+
+      <button id="buyGuessButton" class="coin-purchase-button" type="button">
+        <span>Buy +1 Guess</span>
+        <span class="button-cost">15 coins</span>
+      </button>
+    </section>
+
     <section class="card hunt-card">
       <div class="card-heading">
         <div>
@@ -209,6 +277,17 @@
         <p>Complete a hunt to reveal your first collectible reward.</p>
         <button class="view-link" data-target-view="home" type="button">Start Hunting</button>
       </section>
+      <section class="card reward-history-card">
+        <div class="card-heading">
+          <div>
+            <div class="eyebrow">Recent Activity</div>
+            <div class="hunt-title">Reward History</div>
+          </div>
+        </div>
+        <div id="rewardHistoryList" class="reward-history-list">
+          <p class="history-empty">Your rewards will appear here.</p>
+        </div>
+      </section>
     </section>
 
     <section id="profileView" class="app-view" data-view="profile">
@@ -256,7 +335,8 @@
     </section>
 
     <footer class="footer">
-      Camera access requires HTTPS and browser permission.
+      MVP rewards have no cash value. Camera access requires HTTPS and browser
+      permission.
     </footer>
 
     <nav class="bottom-nav" aria-label="Primary navigation">
@@ -283,8 +363,9 @@
     aria-labelledby="prizeHeading"
   >
     <div class="overlay-card">
-      <div class="found-label">Treasure found!</div>
+      <div id="rewardOverlayLabel" class="found-label">Treasure found!</div>
       <img
+        id="rewardTreasureImage"
         class="treasure-image"
         src="assets/treasure-chest.png"
         alt="Open emerald treasure chest overflowing with gold coins"
@@ -295,12 +376,17 @@
         src="assets/gotcha-coin.png"
         alt="Gotcha Coin"
       />
+      <div id="simulatedGiftCard" class="simulated-gift-card hidden">
+        <span>SIMULATED REWARD</span>
+        <strong>$5 Gift Card</strong>
+        <small>No cash value during MVP testing</small>
+      </div>
       <h2 id="prizeHeading">Gotcha!</h2>
       <div id="prizeItemText" class="found-item"></div>
       <div id="prizeOverlayText" class="prize-label"></div>
-      <div class="fine-print">Your guesses have been refreshed for the next hunt.</div>
+      <div id="rewardFinePrint" class="fine-print">Your guesses have been refreshed for the next hunt.</div>
       <button id="nextHuntButton" type="button">
-        Start Next Hunt
+        <span id="rewardActionText">Start Next Hunt</span>
         <svg class="button-icon button-icon-end"><use href="#icon-arrow"></use></svg>
       </button>
     </div>
@@ -316,10 +402,67 @@
     <div class="overlay-card wrong-card">
       <h2 id="wrongHeading">Wrong Item</h2>
       <div id="wrongScanText">That barcode does not match this hunt.</div>
+      <div id="wrongRewardText" class="wrong-reward-text"></div>
       <div class="fine-print">Move this item away from the camera before trying again.</div>
       <button id="wrongActionButton" class="danger" type="button">
         Scan Another Item
       </button>
+    </div>
+  </section>
+
+  <section
+    id="rewardOddsOverlay"
+    class="overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="rewardOddsHeading"
+  >
+    <div class="overlay-card odds-card">
+      <div class="found-label">Transparent Rewards</div>
+      <h2 id="rewardOddsHeading">Reward Odds</h2>
+      <p class="odds-intro">
+        Rewards use Gotcha Coins and test-only prizes. Coins cannot be purchased
+        or wagered.
+      </p>
+
+      <div class="odds-section">
+        <h3>Correct Hunt</h3>
+        <dl class="odds-list">
+          <div><dt>10 coins</dt><dd>60%</dd></div>
+          <div><dt>25 coins</dt><dd>24%</dd></div>
+          <div><dt>Extra guess</dt><dd>10%</dd></div>
+          <div><dt>50 coins</dt><dd>5%</dd></div>
+          <div><dt>100 coins</dt><dd>1%</dd></div>
+        </dl>
+      </div>
+
+      <div class="odds-section">
+        <h3>Discovery Cache</h3>
+        <dl class="odds-list">
+          <div><dt>2 coins</dt><dd>55%</dd></div>
+          <div><dt>3 coins</dt><dd>30%</dd></div>
+          <div><dt>5 coins</dt><dd>12%</dd></div>
+          <div><dt>Extra guess</dt><dd>3%</dd></div>
+        </dl>
+      </div>
+
+      <div class="odds-section">
+        <h3>Daily Chest</h3>
+        <dl class="odds-list">
+          <div><dt>25 coins</dt><dd>50%</dd></div>
+          <div><dt>50 coins</dt><dd>30%</dd></div>
+          <div><dt>75 coins</dt><dd>15%</dd></div>
+          <div><dt>Simulated $5 gift card</dt><dd>5%</dd></div>
+        </dl>
+      </div>
+
+      <p class="odds-note">
+        Only unique wrong barcodes earn fragments. Discovery Caches are capped
+        at three per day. All gift cards are simulated MVP rewards with no cash
+        value. Gotcha! is not designed for children under 13; family
+        participation should be supervised by a parent or guardian.
+      </p>
+      <button id="closeRewardOddsButton" type="button">Close</button>
     </div>
   </section>
 </body>
