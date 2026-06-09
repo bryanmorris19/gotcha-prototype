@@ -1,19 +1,42 @@
-# GitHub Hunt Item Admin
+# Gotcha Hunt Admin
 
-New hunt items can be added without editing source files locally.
+The separate admin web app is available at:
+
+`https://bryanmorris19.github.io/gotcha-prototype/admin.html`
+
+It scans product barcodes, validates clues and catalog duplicates, and commits
+the new item directly to `hunts.json` through GitHub's Contents API.
+
+## One-time token setup
+
+Create a fine-grained personal access token in GitHub:
+
+1. Limit repository access to `bryanmorris19/gotcha-prototype`.
+2. Set **Contents** permission to **Read and write**.
+3. Do not grant unrelated permissions.
+4. Paste the token into the admin page.
+
+The token is saved only in the browser tab's session storage. It is not added
+to the repository or sent anywhere other than `api.github.com`.
 
 ## Add an item
 
-1. Open the repository on GitHub.
-2. Select **Actions**.
-3. Select **Add Hunt Item**.
-4. Select **Run workflow**.
-5. Enter the product name, hard clue, easier clue, and barcode.
-   Leave the activation date blank to make the item available tomorrow.
-6. Run the workflow.
-7. Review and merge the pull request it creates.
+1. Open `admin.html` and connect the GitHub token.
+2. Enter the product name and both clues.
+3. Scan the barcode or enter it manually.
+4. Confirm the activation date. New items default to tomorrow.
+5. Select **Publish Hunt**.
 
-GitHub Pages redeploys after the pull request is merged into `main`.
+The page creates one commit that updates only `hunts.json`. GitHub Pages then
+deploys the updated catalog.
+
+Use the browser's **Add to Home Screen** or **Install App** command to install
+the admin page as a separate `Gotcha Admin` web app.
+
+## Actions fallback
+
+The **Add Hunt Item** workflow remains available in the repository's Actions
+tab. It creates a review pull request instead of publishing immediately.
 
 ## Validation
 

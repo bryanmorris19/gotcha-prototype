@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#107A3E" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Gotcha Admin" />
+  <meta name="referrer" content="no-referrer" />
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'"
+  />
+  <title>Gotcha! Hunt Admin</title>
+  <link rel="manifest" href="admin.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="stylesheet" href="admin.css?v=1" />
+  <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
+  <script src="admin.js?v=1" defer></script>
+</head>
+
+<body>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-scan" viewBox="0 0 24 24">
+      <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8" />
+    </symbol>
+    <symbol id="icon-key" viewBox="0 0 24 24">
+      <circle cx="8" cy="15" r="4" />
+      <path d="m11 12 8-8M15 8l3 3M17 6l2 2" />
+    </symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14" />
+    </symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24">
+      <path d="m7 7 10 10M17 7 7 17" />
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m5 12 4 4L19 6" />
+    </symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24">
+      <path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" />
+    </symbol>
+  </svg>
+
+  <main class="admin-app">
+    <header class="admin-header">
+      <img src="assets/gotcha-wordmark.svg" alt="Gotcha!" />
+      <div>
+        <span>Catalog Tools</span>
+        <h1>Hunt Admin</h1>
+      </div>
+    </header>
+
+    <section class="admin-card access-card">
+      <div class="section-heading">
+        <span class="section-icon"><svg><use href="#icon-key"></use></svg></span>
+        <div>
+          <div class="eyebrow">GitHub Connection</div>
+          <h2>Connect this browser tab</h2>
+        </div>
+        <span id="connectionBadge" class="connection-badge">Not connected</span>
+      </div>
+
+      <p class="section-copy">
+        Use a fine-grained GitHub token limited to
+        <strong>bryanmorris19/gotcha-prototype</strong> with
+        <strong>Contents: Read and write</strong> permission.
+      </p>
+
+      <label for="githubToken">Fine-grained token</label>
+      <div class="token-row">
+        <input
+          id="githubToken"
+          type="password"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="github_pat_..."
+        />
+        <button id="connectButton" type="button">Connect</button>
+      </div>
+      <div class="access-actions">
+        <a
+          href="https://github.com/settings/personal-access-tokens/new"
+          target="_blank"
+          rel="noreferrer"
+        >Create token</a>
+        <button id="disconnectButton" class="text-button hidden" type="button">
+          Disconnect
+        </button>
+      </div>
+      <p class="security-note">
+        The token is stored only in this tab's session storage and is sent only
+        to api.github.com.
+      </p>
+      <div id="connectionStatus" class="inline-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="admin-card">
+      <div class="section-heading">
+        <span class="section-icon"><svg><use href="#icon-plus"></use></svg></span>
+        <div>
+          <div class="eyebrow">New Catalog Item</div>
+          <h2>Build a treasure hunt</h2>
+        </div>
+      </div>
+
+      <fieldset id="huntFieldset" disabled>
+        <div class="form-grid">
+          <label class="full-field">
+            <span>Product name</span>
+            <input id="productName" maxlength="80" placeholder="Pringles Original can" />
+          </label>
+
+          <label>
+            <span>Item ID <small>Optional</small></span>
+            <input id="itemId" maxlength="80" placeholder="Generated from name" />
+          </label>
+
+          <label>
+            <span>Available from</span>
+            <input id="availableFrom" type="date" />
+          </label>
+
+          <label class="full-field">
+            <span>Hard clue</span>
+            <textarea id="hardClue" rows="3" maxlength="220" placeholder="A playful clue that does not name the item"></textarea>
+          </label>
+
+          <label class="full-field">
+            <span>Easier clue</span>
+            <textarea id="easierClue" rows="3" maxlength="220" placeholder="A clearer clue that still does not give away the answer"></textarea>
+          </label>
+        </div>
+
+        <div class="barcode-builder">
+          <div class="field-heading">
+            <div>
+              <strong>Product barcode</strong>
+              <small>Scan it or enter 8-14 digits manually.</small>
+            </div>
+            <button id="openScannerButton" class="scan-button" type="button">
+              <svg><use href="#icon-scan"></use></svg>
+              Scan
+            </button>
+          </div>
+          <div class="barcode-entry">
+            <input
+              id="barcodeInput"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="012345678905"
+            />
+            <button id="addBarcodeButton" type="button">Add</button>
+          </div>
+          <div id="barcodeList" class="barcode-list"></div>
+          <div id="barcodeStatus" class="inline-status" role="status" aria-live="polite"></div>
+        </div>
+
+        <section class="publish-summary">
+          <div>
+            <strong>Publish to the live catalog</strong>
+            <small>
+              This creates a commit that updates only hunts.json. GitHub Pages
+              will deploy the change afterward.
+            </small>
+          </div>
+          <button id="publishButton" class="publish-button" type="button">
+            <svg><use href="#icon-check"></use></svg>
+            Publish Hunt
+          </button>
+        </section>
+      </fieldset>
+
+      <div id="publishStatus" class="publish-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="admin-card catalog-card">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Current Data</div>
+          <h2>Catalog</h2>
+        </div>
+        <button id="refreshCatalogButton" class="icon-button" type="button" aria-label="Refresh catalog">
+          <svg><use href="#icon-refresh"></use></svg>
+        </button>
+      </div>
+      <div id="catalogSummary" class="catalog-summary">Loading catalog...</div>
+      <div id="catalogList" class="catalog-list"></div>
+    </section>
+
+    <footer>
+      Admin URL: <strong>/gotcha-prototype/admin.html</strong>
+    </footer>
+  </main>
+
+  <section
+    id="scannerOverlay"
+    class="scanner-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="scannerHeading"
+  >
+    <div class="scanner-card">
+      <div class="scanner-header">
+        <div>
+          <div class="eyebrow">Barcode Capture</div>
+          <h2 id="scannerHeading">Scan a product</h2>
+        </div>
+        <span id="scannerState">Starting</span>
+      </div>
+      <div id="adminReader" class="scanner-reader"></div>
+      <p id="scannerMessage">Line up the barcode inside the camera frame.</p>
+      <button id="stopScannerButton" class="stop-button" type="button">
+        <svg><use href="#icon-close"></use></svg>
+        Stop Scanning
+      </button>
+    </div>
+  </section>
+</body>
+</html>
