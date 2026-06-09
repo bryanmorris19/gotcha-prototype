@@ -257,6 +257,10 @@
       animation: success-pulse 0.7s ease-out;
     }
 
+    .wrong-pulse {
+      animation: wrong-pulse 0.55s ease-out;
+    }
+
     .prize-card {
       width: min(100%, 420px);
       padding: 28px 22px;
@@ -305,6 +309,15 @@
       }
       35% {
         background: #ccebd9;
+      }
+    }
+
+    @keyframes wrong-pulse {
+      0%, 100% {
+        background: var(--cream);
+      }
+      35% {
+        background: #f1caca;
       }
     }
 
@@ -359,6 +372,9 @@
         Scan a UPC, EAN, or QR code. If it matches the target barcode, the item is verified.
       </div>
 
+      <button id="feedbackButton" class="light" onclick="enableFeedback(true)">
+        Test Sound &amp; Vibration
+      </button>
       <button id="startScannerButton" onclick="startBarcodeScanner()">Start Scanner</button>
       <button class="danger" onclick="stopBarcodeScanner()">Stop Scanner</button>
 
@@ -414,7 +430,8 @@
       scanner: null,
       scannerRunning: false,
       scanLocked: false,
-      audioContext: null
+      audioContext: null,
+      feedbackEnabled: false
     };
 
     const productDatabase = [
@@ -460,6 +477,7 @@
 
     const barcodeStatus = document.getElementById("barcodeStatus");
     const feedbackStatus = document.getElementById("feedbackStatus");
+    const feedbackButton = document.getElementById("feedbackButton");
     const startScannerButton = document.getElementById("startScannerButton");
     const prizeOverlay = document.getElementById("prizeOverlay");
     const prizeItemText = document.getElementById("prizeItemText");
@@ -517,7 +535,7 @@
       }
 
       clearStatus(barcodeStatus);
-      prepareSuccessFeedback();
+      enableFeedback(false);
 
       const formatsToSupport = [
         Html5QrcodeSupportedFormats.QR_CODE,
@@ -601,6 +619,7 @@
           "Wrong item.<br>Scanned: " + scanned + "<br>Target does not match.",
           "fail"
         );
+        playWrongFeedback();
         pauseBarcodeScanner();
         showWrongOverlay(scanned);
       }
@@ -675,7 +694,7 @@
       return matches ? activeProduct : null;
     }
 
-    function prepareSuccessFeedback() {
+    function enableFeedback(playTest) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
       if (AudioContextClass && !state.audioContext) {
@@ -683,49 +702,98 @@
       }
 
       if (state.audioContext?.state === "suspended") {
-        state.audioContext.resume();
+        state.audioContext.resume().catch(error => {
+          console.error("Audio resume error:", error);
+        });
       }
 
+      state.feedbackEnabled = Boolean(state.audioContext);
+
+      if (state.audioContext) {
+        playToneSequence(playTest ? [440, 660] : [660], {
+          duration: playTest ? 0.16 : 0.1,
+          gap: 0.06,
+          volume: playTest ? 0.3 : 0.2,
+          type: "triangle"
+        });
+      }
+
+      const soundMessage = state.audioContext
+        ? "Sound is ready."
+        : "This browser could not enable sound.";
+
       if ("vibrate" in navigator) {
-        const vibrationAccepted = navigator.vibrate(80);
+        const vibrationAccepted = navigator.vibrate(playTest ? [100, 60, 180] : 60);
         feedbackStatus.textContent = vibrationAccepted
-          ? "Vibration and sound feedback enabled."
-          : "Vibration was blocked by this browser. Success sound and screen feedback are enabled.";
+          ? soundMessage + " Vibration is supported."
+          : soundMessage + " Vibration was blocked by this browser.";
       } else {
         feedbackStatus.textContent =
-          "This browser does not support web vibration. Success sound and screen feedback are enabled.";
+          soundMessage + " This device does not support vibration from a web page.";
       }
+
+      feedbackButton.textContent = "Test Feedback Again";
     }
 
     function playSuccessFeedback() {
       if ("vibrate" in navigator) {
-        navigator.vibrate([200, 100, 200, 100, 450]);
+        navigator.vibrate([250, 100, 250, 100, 500]);
       }
 
-      playSuccessSound();
+      playToneSequence([523.25, 659.25, 783.99, 1046.5], {
+        duration: 0.2,
+        gap: 0.04,
+        volume: 0.38,
+        type: "triangle"
+      });
       document.body.classList.remove("success-pulse");
       void document.body.offsetWidth;
       document.body.classList.add("success-pulse");
     }
 
-    function playSuccessSound() {
+    function playWrongFeedback() {
+      if ("vibrate" in navigator) {
+        navigator.vibrate([120, 70, 120]);
+      }
+
+      playToneSequence([220, 164.81], {
+        duration: 0.25,
+        gap: 0.04,
+        volume: 0.34,
+        type: "square"
+      });
+      document.body.classList.remove("wrong-pulse");
+      void document.body.offsetWidth;
+      document.body.classList.add("wrong-pulse");
+    }
+
+    function playToneSequence(frequencies, options) {
       if (!state.audioContext) return;
 
+      if (state.audioContext.state === "suspended") {
+        state.audioContext.resume().catch(error => {
+          console.error("Audio resume error:", error);
+        });
+      }
+
       const now = state.audioContext.currentTime;
-      [523.25, 659.25, 783.99].forEach((frequency, index) => {
+      frequencies.forEach((frequency, index) => {
         const oscillator = state.audioContext.createOscillator();
         const gain = state.audioContext.createGain();
-        const start = now + index * 0.12;
+        const start = now + index * (options.duration + options.gap);
 
         oscillator.frequency.value = frequency;
-        oscillator.type = "sine";
+        oscillator.type = options.type;
         gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+        gain.gain.exponentialRampToValueAtTime(options.volume, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          start + options.duration
+        );
         oscillator.connect(gain);
         gain.connect(state.audioContext.destination);
         oscillator.start(start);
-        oscillator.stop(start + 0.24);
+        oscillator.stop(start + options.duration + 0.02);
       });
     }
 
@@ -831,6 +899,7 @@
       closePrizeOverlay();
       wrongOverlay.classList.add("hidden");
       feedbackStatus.textContent = "";
+      feedbackButton.textContent = "Test Sound & Vibration";
 
       updateStats();
     }
