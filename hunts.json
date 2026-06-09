@@ -44,5 +44,15 @@
       "722252069597"
     ],
     "availableFrom": "2026-06-09"
+  },
+  {
+    "id": "poppi-orange",
+    "name": "Poppi Orange",
+    "clue": "This modern take on a classic soft drink contains only 5 grams of sugar and shares its name with a burst of citrus color.",
+    "betterClue": "Find the orange-flavored prebiotic soda in the bright orange can featuring a large citrus slice on the front.",
+    "barcodes": [
+      "724190812877"
+    ],
+    "availableFrom": "2026-06-09"
   }
 ]
