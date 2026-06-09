@@ -393,6 +393,15 @@ svg {
   font-weight: 900;
 }
 
+.hunt-heading {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(20px, 5.2vw, 25px);
+  font-weight: 950;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
 .clue-panel {
   position: relative;
   z-index: 1;
