@@ -4,7 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#2d6a4f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Gotcha!" />
   <title>Gotcha!</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="app.js" defer></script>
@@ -35,12 +40,33 @@
     <symbol id="icon-close" viewBox="0 0 24 24">
       <path d="m7 7 10 10M17 7 7 17" />
     </symbol>
+    <symbol id="icon-home" viewBox="0 0 24 24">
+      <path d="m4 10 8-7 8 7v10h-6v-6h-4v6H4V10Z" />
+    </symbol>
+    <symbol id="icon-box" viewBox="0 0 24 24">
+      <path d="m4 7 8-4 8 4-8 4-8-4ZM4 7v10l8 4 8-4V7M12 11v10" />
+    </symbol>
+    <symbol id="icon-user" viewBox="0 0 24 24">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </symbol>
+    <symbol id="icon-sparkle" viewBox="0 0 24 24">
+      <path d="m12 3 1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3ZM19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" />
+    </symbol>
+    <symbol id="icon-light" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </symbol>
   </svg>
 
   <main class="app">
     <header class="header">
       <div class="brand-mark" aria-hidden="true">
-        <span class="brand-spark">✦</span>
+        <span class="brand-spark">&#10022;</span>
         <svg viewBox="0 0 64 64">
           <path d="M8 17 32 6l24 11v28L32 58 8 45V17Z" />
           <path d="m8 17 24 14 24-14M32 31v27M18 24v18l14 8 14-8V24" />
@@ -76,6 +102,23 @@
       </div>
     </section>
 
+    <section class="daily-progress card">
+      <div class="daily-progress-copy">
+        <div>
+          <div class="eyebrow">Daily Challenge</div>
+          <strong id="dailyProgressText">0 of 4 treasures found</strong>
+        </div>
+        <span class="countdown">
+          <svg><use href="#icon-clock"></use></svg>
+          <span id="resetCountdown">--:--:--</span>
+        </span>
+      </div>
+      <div class="progress-track" aria-hidden="true">
+        <span id="dailyProgressBar"></span>
+      </div>
+    </section>
+
+    <section id="homeView" class="app-view active" data-view="home">
     <section class="card hunt-card">
       <div class="card-heading">
         <div>
@@ -122,9 +165,13 @@
           <svg class="button-icon"><use href="#icon-scan"></use></svg>
           Start Scanner
         </button>
-        <button id="stopScannerButton" class="stop-button" type="button">
+        <button id="stopScannerButton" class="stop-button" type="button" disabled>
           <svg class="button-icon"><use href="#icon-close"></use></svg>
           Stop
+        </button>
+        <button id="torchButton" class="torch-button hidden" type="button">
+          <svg class="button-icon"><use href="#icon-light"></use></svg>
+          Light
         </button>
       </div>
 
@@ -154,10 +201,87 @@
         </div>
       </div>
     </section>
+    </section>
+
+    <section id="collectionView" class="app-view" data-view="collection">
+      <section class="view-header">
+        <div>
+          <div class="eyebrow">Your Rewards</div>
+          <h1>Collection</h1>
+        </div>
+        <span class="collection-count" id="collectionCount">0 items</span>
+      </section>
+      <section id="collectionGrid" class="collection-grid"></section>
+      <section id="emptyCollection" class="card empty-state">
+        <span><svg><use href="#icon-box"></use></svg></span>
+        <h2>Your treasure shelf is empty</h2>
+        <p>Complete a hunt to reveal your first collectible reward.</p>
+        <button class="view-link" data-target-view="home" type="button">Start Hunting</button>
+      </section>
+    </section>
+
+    <section id="profileView" class="app-view" data-view="profile">
+      <section class="profile-hero card">
+        <div class="profile-avatar"><svg><use href="#icon-user"></use></svg></div>
+        <div>
+          <div class="eyebrow">Player Profile</div>
+          <h1 id="profileName">Treasure Hunter</h1>
+          <div class="profile-level" id="profileLevel">Level 1</div>
+        </div>
+      </section>
+
+      <section class="card profile-card">
+        <label for="nicknameInput">Player nickname</label>
+        <div class="profile-form">
+          <input id="nicknameInput" maxlength="24" autocomplete="nickname" />
+          <button id="saveNicknameButton" type="button">Save</button>
+        </div>
+      </section>
+
+      <section class="profile-metrics">
+        <div class="metric-card">
+          <strong id="totalHuntsValue">0</strong>
+          <span>Hunts found</span>
+        </div>
+        <div class="metric-card">
+          <strong id="collectionMetricValue">0</strong>
+          <span>Collectibles</span>
+        </div>
+        <div class="metric-card">
+          <strong id="bestStreakValue">0</strong>
+          <span>Best streak</span>
+        </div>
+      </section>
+
+      <section class="card install-card">
+        <span><svg><use href="#icon-sparkle"></use></svg></span>
+        <div>
+          <h2>Install Gotcha!</h2>
+          <p>Add the app to your home screen for a faster, fullscreen experience.</p>
+        </div>
+        <button id="installButton" class="secondary hidden" type="button">Install App</button>
+        <p id="installHelp" class="install-help">Use your browser menu and choose "Add to Home Screen."</p>
+      </section>
+    </section>
 
     <footer class="footer">
       Camera access requires HTTPS and browser permission.
     </footer>
+
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <button class="nav-button active" data-view-button="home" type="button">
+        <svg><use href="#icon-home"></use></svg>
+        <span>Hunt</span>
+      </button>
+      <button class="nav-button" data-view-button="collection" type="button">
+        <svg><use href="#icon-box"></use></svg>
+        <span>Collection</span>
+      </button>
+      <button class="nav-button" data-view-button="profile" type="button">
+        <svg><use href="#icon-user"></use></svg>
+        <span>Profile</span>
+      </button>
+    </nav>
   </main>
 
   <section

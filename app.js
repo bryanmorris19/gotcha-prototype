@@ -3,13 +3,55 @@
 const STORAGE_KEY = "gotcha-player-v1";
 const STARTING_GUESSES = 3;
 const MAX_COMPLETION_HISTORY = 100;
+const DAILY_GOAL = 4;
+const MAX_ANALYTICS_EVENTS = 250;
 
 const prizes = [
-  { label: "10 Gotcha Points", points: 10, weight: 60 },
-  { label: "25 Gotcha Points", points: 25, weight: 24 },
-  { label: "Extra Guess", extraGuess: 1, weight: 10 },
-  { label: "$5 Store Reward", points: 50, weight: 5 },
-  { label: "Rare Prize Entry", points: 100, weight: 1 }
+  {
+    id: "bronze-star",
+    label: "Bronze Star",
+    subtitle: "10 Gotcha Points",
+    symbol: "*",
+    rarity: "common",
+    points: 10,
+    weight: 60
+  },
+  {
+    id: "gold-coin",
+    label: "Gold Coin",
+    subtitle: "25 Gotcha Points",
+    symbol: "O",
+    rarity: "rare",
+    points: 25,
+    weight: 24
+  },
+  {
+    id: "lucky-key",
+    label: "Lucky Key",
+    subtitle: "Extra Guess",
+    symbol: "+",
+    rarity: "common",
+    extraGuess: 1,
+    weight: 10
+  },
+  {
+    id: "store-trophy",
+    label: "Store Trophy",
+    subtitle: "$5 Store Reward",
+    symbol: "<>",
+    rarity: "epic",
+    points: 50,
+    weight: 5
+  },
+  {
+    id: "royal-crown",
+    label: "Royal Crown",
+    subtitle: "Rare Prize Entry",
+    symbol: "#",
+    rarity: "legendary",
+    points: 100,
+    weight: 1
+  }
 ];
 
 const state = {
@@ -18,7 +60,11 @@ const state = {
   scanner: null,
   scannerRunning: false,
   scanLocked: false,
-  audioContext: null
+  audioContext: null,
+  torchOn: false,
+  countdownTimer: null,
+  deferredInstallPrompt: null,
+  activeView: "home"
 };
 
 const elements = {};
@@ -35,6 +81,9 @@ async function initializeApp() {
     applyDailyReset();
     render();
     scheduleMidnightReset();
+    startCountdown();
+    registerServiceWorker();
+    trackEvent("app_opened");
   } catch (error) {
     console.error("App initialization error:", error);
     showStatus(
@@ -50,10 +99,14 @@ function cacheElements() {
   elements.streakValue = document.getElementById("streakValue");
   elements.clueText = document.getElementById("clueText");
   elements.huntMeta = document.getElementById("huntMeta");
+  elements.dailyProgressText = document.getElementById("dailyProgressText");
+  elements.dailyProgressBar = document.getElementById("dailyProgressBar");
+  elements.resetCountdown = document.getElementById("resetCountdown");
   elements.betterClueButton = document.getElementById("betterClueButton");
   elements.resetButton = document.getElementById("resetButton");
   elements.startScannerButton = document.getElementById("startScannerButton");
   elements.stopScannerButton = document.getElementById("stopScannerButton");
+  elements.torchButton = document.getElementById("torchButton");
   elements.scannerShell = document.getElementById("scannerShell");
   elements.barcodeStatus = document.getElementById("barcodeStatus");
   elements.feedbackStatus = document.getElementById("feedbackStatus");
@@ -64,6 +117,21 @@ function cacheElements() {
   elements.wrongOverlay = document.getElementById("wrongOverlay");
   elements.wrongScanText = document.getElementById("wrongScanText");
   elements.wrongActionButton = document.getElementById("wrongActionButton");
+  elements.collectionGrid = document.getElementById("collectionGrid");
+  elements.collectionCount = document.getElementById("collectionCount");
+  elements.emptyCollection = document.getElementById("emptyCollection");
+  elements.profileName = document.getElementById("profileName");
+  elements.profileLevel = document.getElementById("profileLevel");
+  elements.nicknameInput = document.getElementById("nicknameInput");
+  elements.saveNicknameButton = document.getElementById("saveNicknameButton");
+  elements.totalHuntsValue = document.getElementById("totalHuntsValue");
+  elements.collectionMetricValue = document.getElementById("collectionMetricValue");
+  elements.bestStreakValue = document.getElementById("bestStreakValue");
+  elements.installButton = document.getElementById("installButton");
+  elements.installHelp = document.getElementById("installHelp");
+  elements.views = Array.from(document.querySelectorAll(".app-view"));
+  elements.navButtons = Array.from(document.querySelectorAll("[data-view-button]"));
+  elements.viewLinks = Array.from(document.querySelectorAll("[data-target-view]"));
 }
 
 function bindEvents() {
@@ -71,8 +139,19 @@ function bindEvents() {
   elements.resetButton.addEventListener("click", resetDemo);
   elements.startScannerButton.addEventListener("click", startBarcodeScanner);
   elements.stopScannerButton.addEventListener("click", stopBarcodeScanner);
+  elements.torchButton.addEventListener("click", toggleTorch);
   elements.nextHuntButton.addEventListener("click", closePrizeOverlay);
   elements.wrongActionButton.addEventListener("click", closeWrongOverlay);
+  elements.saveNicknameButton.addEventListener("click", saveNickname);
+  elements.installButton.addEventListener("click", installApp);
+  elements.navButtons.forEach(button => {
+    button.addEventListener("click", () => switchView(button.dataset.viewButton));
+  });
+  elements.viewLinks.forEach(button => {
+    button.addEventListener("click", () => switchView(button.dataset.targetView));
+  });
+  window.addEventListener("beforeinstallprompt", handleInstallPrompt);
+  window.addEventListener("appinstalled", handleAppInstalled);
 }
 
 async function loadHunts() {
@@ -100,7 +179,14 @@ function createDefaultPlayer() {
     dailyProgress: 0,
     betterClueUsed: false,
     lastCompletionDate: "",
-    completedHunts: []
+    completedHunts: [],
+    nickname: "Treasure Hunter",
+    bestStreak: 0,
+    collection: {},
+    analytics: {
+      counters: {},
+      events: []
+    }
   };
 }
 
@@ -119,7 +205,16 @@ function loadPlayer() {
       ...saved,
       completedHunts: Array.isArray(saved.completedHunts)
         ? saved.completedHunts
-        : []
+        : [],
+      collection: saved.collection && typeof saved.collection === "object"
+        ? saved.collection
+        : {},
+      analytics: {
+        counters: saved.analytics?.counters || {},
+        events: Array.isArray(saved.analytics?.events)
+          ? saved.analytics.events
+          : []
+      }
     };
   } catch (error) {
     console.error("Local progress could not be read:", error);
@@ -170,6 +265,29 @@ function scheduleMidnightReset() {
   }, delay);
 }
 
+function startCountdown() {
+  updateCountdown();
+  window.clearInterval(state.countdownTimer);
+  state.countdownTimer = window.setInterval(updateCountdown, 1000);
+}
+
+function updateCountdown() {
+  const now = new Date();
+  const nextMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1
+  );
+  const remaining = Math.max(0, nextMidnight.getTime() - now.getTime());
+  const hours = Math.floor(remaining / 3600000);
+  const minutes = Math.floor((remaining % 3600000) / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  elements.resetCountdown.textContent =
+    `${String(hours).padStart(2, "0")}:` +
+    `${String(minutes).padStart(2, "0")}:` +
+    `${String(seconds).padStart(2, "0")}`;
+}
+
 function getDateKey(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -211,9 +329,18 @@ function render() {
     : hunt.clue;
   elements.huntMeta.textContent =
     `Hunt ${state.player.dailyProgress + 1} for ${formatDate(state.player.dailyDate)}`;
-  elements.startScannerButton.disabled = state.player.guesses <= 0;
+  const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
+  elements.dailyProgressText.textContent =
+    `${dailyCompleted} of ${DAILY_GOAL} treasures found`;
+  elements.dailyProgressBar.style.width =
+    `${Math.min(100, (dailyCompleted / DAILY_GOAL) * 100)}%`;
+  elements.startScannerButton.disabled =
+    state.player.guesses <= 0 || state.scannerRunning;
+  elements.stopScannerButton.disabled = !state.scannerRunning;
   elements.betterClueButton.disabled =
     state.player.guesses <= 0 || state.player.betterClueUsed;
+  renderCollection();
+  renderProfile();
 }
 
 function formatDate(dateKey) {
@@ -241,6 +368,7 @@ function upgradeClue() {
   savePlayer();
   render();
   showStatus("Better clue unlocked for 1 guess.", "neutral");
+  trackEvent("better_clue_used");
 }
 
 function startBarcodeScanner() {
@@ -261,6 +389,7 @@ function startBarcodeScanner() {
 
   clearStatus();
   enableFeedback();
+  trackEvent("scanner_started");
 
   const formatsToSupport = [
     Html5QrcodeSupportedFormats.QR_CODE,
@@ -289,6 +418,9 @@ function startBarcodeScanner() {
   ).then(() => {
     state.scannerRunning = true;
     elements.scannerShell.classList.add("is-live");
+    elements.startScannerButton.disabled = true;
+    elements.stopScannerButton.disabled = false;
+    updateTorchAvailability();
     showStatus(
       "Scanner running. Point the camera at a product barcode.",
       "neutral"
@@ -296,6 +428,8 @@ function startBarcodeScanner() {
   }).catch(error => {
     state.scanner = null;
     elements.scannerShell.classList.remove("is-live");
+    elements.startScannerButton.disabled = state.player.guesses <= 0;
+    elements.stopScannerButton.disabled = true;
     showStatus(
       "Scanner failed to start. Check HTTPS and camera permission.",
       "fail"
@@ -313,7 +447,12 @@ function stopBarcodeScanner() {
   const scanner = state.scanner;
   state.scanner = null;
   state.scannerRunning = false;
+  state.torchOn = false;
+  elements.torchButton.classList.add("hidden");
+  elements.torchButton.classList.remove("active");
   elements.scannerShell.classList.remove("is-live");
+  elements.startScannerButton.disabled = state.player.guesses <= 0;
+  elements.stopScannerButton.disabled = true;
 
   return scanner.stop()
     .then(() => scanner.clear())
@@ -334,8 +473,10 @@ function onBarcodeScanned(decodedText) {
   state.player.guesses = Math.max(0, state.player.guesses - 1);
 
   if (hunt) {
+    trackEvent("scan_correct", { huntId: hunt.id });
     completeHunt(hunt, scanned);
   } else {
+    trackEvent("scan_wrong");
     handleWrongScan(scanned);
   }
 
@@ -352,12 +493,13 @@ function completeHunt(hunt, scanned) {
   state.player.betterClueUsed = false;
 
   const prize = revealPrize();
+  addPrizeToCollection(prize);
   showStatus(
     `Gotcha! ${hunt.name} verified.<br>Scanned: ${scanned}`,
     "success"
   );
   playSuccessFeedback();
-  showPrizeOverlay(hunt.name, prize.label);
+  showPrizeOverlay(hunt.name, `${prize.label} - ${prize.subtitle}`);
   stopBarcodeScanner();
 }
 
@@ -386,6 +528,10 @@ function updateStreak() {
       ? state.player.streak + 1
       : 1;
   state.player.lastCompletionDate = today;
+  state.player.bestStreak = Math.max(
+    state.player.bestStreak || 0,
+    state.player.streak
+  );
 }
 
 function recordCompletion(huntId) {
@@ -411,6 +557,26 @@ function revealPrize() {
   }
 
   return prize;
+}
+
+function addPrizeToCollection(prize) {
+  const existing = state.player.collection[prize.id] || {
+    id: prize.id,
+    label: prize.label,
+    subtitle: prize.subtitle,
+    symbol: prize.symbol,
+    rarity: prize.rarity,
+    count: 0,
+    firstEarnedAt: new Date().toISOString()
+  };
+
+  existing.count += 1;
+  existing.lastEarnedAt = new Date().toISOString();
+  state.player.collection[prize.id] = existing;
+  trackEvent("reward_earned", {
+    rewardId: prize.id,
+    rarity: prize.rarity
+  });
 }
 
 function weightedPrizePick() {
@@ -521,6 +687,179 @@ function closePrizeOverlay() {
   state.scanLocked = false;
   clearStatus();
   render();
+}
+
+function renderCollection() {
+  const rewards = Object.values(state.player.collection)
+    .sort((a, b) => new Date(b.lastEarnedAt) - new Date(a.lastEarnedAt));
+  const totalItems = rewards.reduce((sum, reward) => sum + reward.count, 0);
+
+  elements.collectionCount.textContent =
+    `${totalItems} ${totalItems === 1 ? "item" : "items"}`;
+  elements.collectionGrid.innerHTML = "";
+  elements.emptyCollection.classList.toggle("hidden", rewards.length > 0);
+  elements.collectionGrid.classList.toggle("hidden", rewards.length === 0);
+
+  rewards.forEach(reward => {
+    const card = document.createElement("article");
+    card.className = `reward-card rarity-${reward.rarity}`;
+    card.innerHTML = `
+      <span class="reward-rarity">${reward.rarity}</span>
+      <span class="reward-symbol" aria-hidden="true">${reward.symbol}</span>
+      <strong>${escapeHtml(reward.label)}</strong>
+      <small>${escapeHtml(reward.subtitle)}</small>
+      <span class="reward-count">x${reward.count}</span>
+    `;
+    elements.collectionGrid.appendChild(card);
+  });
+}
+
+function renderProfile() {
+  const totalCollectibles = Object.values(state.player.collection)
+    .reduce((sum, reward) => sum + reward.count, 0);
+  const level = Math.max(1, Math.floor(state.player.points / 250) + 1);
+
+  elements.profileName.textContent = state.player.nickname;
+  elements.nicknameInput.value = state.player.nickname;
+  elements.profileLevel.textContent = `Level ${level}`;
+  elements.totalHuntsValue.textContent = state.player.completedHunts.length;
+  elements.collectionMetricValue.textContent = totalCollectibles;
+  elements.bestStreakValue.textContent =
+    Math.max(state.player.bestStreak || 0, state.player.streak);
+}
+
+function saveNickname() {
+  const nickname = elements.nicknameInput.value.trim().slice(0, 24);
+
+  if (!nickname) {
+    elements.nicknameInput.focus();
+    return;
+  }
+
+  state.player.nickname = nickname;
+  savePlayer();
+  renderProfile();
+  trackEvent("nickname_saved");
+  elements.saveNicknameButton.textContent = "Saved";
+  window.setTimeout(() => {
+    elements.saveNicknameButton.textContent = "Save";
+  }, 1200);
+}
+
+function switchView(viewName) {
+  if (viewName !== "home" && state.scannerRunning) {
+    stopBarcodeScanner();
+  }
+
+  state.activeView = viewName;
+  elements.views.forEach(view => {
+    view.classList.toggle("active", view.dataset.view === viewName);
+  });
+  elements.navButtons.forEach(button => {
+    button.classList.toggle("active", button.dataset.viewButton === viewName);
+  });
+  trackEvent("view_opened", { view: viewName });
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function trackEvent(name, details = {}) {
+  if (!state.player) {
+    return;
+  }
+
+  const analytics = state.player.analytics;
+  analytics.counters[name] = (analytics.counters[name] || 0) + 1;
+  analytics.events.push({
+    name,
+    details,
+    at: new Date().toISOString()
+  });
+  analytics.events = analytics.events.slice(-MAX_ANALYTICS_EVENTS);
+  savePlayer();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function updateTorchAvailability() {
+  try {
+    const capabilities =
+      typeof state.scanner.getRunningTrackCapabilities === "function"
+        ? state.scanner.getRunningTrackCapabilities()
+        : {};
+    const hasTorch = Boolean(capabilities?.torch);
+    elements.torchButton.classList.toggle("hidden", !hasTorch);
+  } catch (error) {
+    elements.torchButton.classList.add("hidden");
+  }
+}
+
+async function toggleTorch() {
+  if (!state.scanner || !state.scannerRunning) {
+    return;
+  }
+
+  state.torchOn = !state.torchOn;
+
+  try {
+    await state.scanner.applyVideoConstraints({
+      advanced: [{ torch: state.torchOn }]
+    });
+    elements.torchButton.classList.toggle("active", state.torchOn);
+    elements.torchButton.lastChild.textContent =
+      state.torchOn ? " Light On" : " Light";
+    trackEvent("torch_toggled", { on: state.torchOn });
+  } catch (error) {
+    state.torchOn = false;
+    elements.torchButton.classList.add("hidden");
+    console.error("Torch error:", error);
+  }
+}
+
+function handleInstallPrompt(event) {
+  event.preventDefault();
+  state.deferredInstallPrompt = event;
+  elements.installButton.classList.remove("hidden");
+  elements.installHelp.classList.add("hidden");
+}
+
+async function installApp() {
+  if (!state.deferredInstallPrompt) {
+    elements.installHelp.textContent =
+      "Use your browser menu and choose Add to Home Screen.";
+    elements.installHelp.classList.remove("hidden");
+    return;
+  }
+
+  state.deferredInstallPrompt.prompt();
+  const result = await state.deferredInstallPrompt.userChoice;
+  trackEvent("install_prompt_result", { outcome: result.outcome });
+  state.deferredInstallPrompt = null;
+  elements.installButton.classList.add("hidden");
+}
+
+function handleAppInstalled() {
+  state.deferredInstallPrompt = null;
+  elements.installButton.classList.add("hidden");
+  elements.installHelp.textContent = "Gotcha! is installed on this device.";
+  elements.installHelp.classList.remove("hidden");
+  trackEvent("app_installed");
+}
+
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  navigator.serviceWorker.register("service-worker.js").catch(error => {
+    console.error("Service worker registration error:", error);
+  });
 }
 
 function enableFeedback() {
@@ -641,4 +980,5 @@ function resetDemo() {
   elements.feedbackStatus.textContent = "";
   clearStatus();
   render();
+  trackEvent("progress_reset");
 }
