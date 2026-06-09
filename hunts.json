@@ -1,14 +1,5 @@
 [
   {
-    "id": "better-cheddars",
-    "name": "Better Cheddars",
-    "clue": "Seek a crisp golden circle with a sharper point of view.",
-    "betterClue": "Look for thin, round cheese crackers in the snack aisle.",
-    "barcodes": [
-      "044000030476"
-    ]
-  },
-  {
     "id": "mayonnaise",
     "name": "Mayonnaise",
     "clue": "I bring pale, creamy balance between two slices.",
