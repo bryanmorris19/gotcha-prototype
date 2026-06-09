@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 220" role="img" aria-labelledby="title">
+  <title id="title">Gotcha!</title>
+  <defs>
+    <linearGradient id="wordmark-green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#107A3E"/>
+      <stop offset="1" stop-color="#34C759"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#wordmark-green)" stroke-linecap="round" stroke-width="16">
+    <path d="M38 72V38h34"/>
+    <path d="M548 38h34v34"/>
+    <path d="M38 148v34h34"/>
+    <path d="M548 182h34v-34"/>
+  </g>
+  <text
+    x="310"
+    y="146"
+    fill="url(#wordmark-green)"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="112"
+    font-weight="900"
+    letter-spacing="-5"
+    text-anchor="middle"
+  >Gotcha!</text>
+</svg>

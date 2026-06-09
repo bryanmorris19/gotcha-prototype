@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#2d6a4f" />
+  <meta name="theme-color" content="#107A3E" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Gotcha!" />
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=3" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=3" defer></script>
 </head>
 
 <body>
@@ -65,17 +65,12 @@
 
   <main class="app">
     <header class="header">
-      <div class="brand-mark" aria-hidden="true">
-        <span class="brand-spark">&#10022;</span>
-        <svg viewBox="0 0 64 64">
-          <path d="M8 17 32 6l24 11v28L32 58 8 45V17Z" />
-          <path d="m8 17 24 14 24-14M32 31v27M18 24v18l14 8 14-8V24" />
-        </svg>
-      </div>
-      <div>
-        <div class="logo">Gotcha<span>!</span></div>
-        <div class="tagline">Find it. Scan it. Win big.</div>
-      </div>
+      <img
+        class="brand-wordmark"
+        src="assets/gotcha-wordmark.svg"
+        alt="Gotcha!"
+      />
+      <div class="tagline">Capture. Discover. Win.</div>
     </header>
 
     <section class="stats" aria-label="Player stats">

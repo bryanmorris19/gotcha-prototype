@@ -1,13 +1,13 @@
 :root {
-  --emerald: #0d8457;
-  --emerald-bright: #12a66c;
-  --emerald-dark: #092f28;
-  --emerald-ink: #0b3b31;
-  --gold: #e9ad21;
-  --gold-soft: #fff0b8;
-  --cream: #f8f5ed;
-  --cream-deep: #efe8d8;
-  --ink: #10202b;
+  --emerald: #107a3e;
+  --emerald-bright: #34c759;
+  --emerald-dark: #09572b;
+  --emerald-ink: #0d6634;
+  --gold: #f2c94c;
+  --gold-soft: #fff3bf;
+  --cream: #fffaf0;
+  --cream-deep: #f3e8d4;
+  --ink: #1a1a1a;
   --muted: #687276;
   --danger: #d94e42;
   --card: rgba(255, 255, 255, 0.92);
@@ -24,19 +24,17 @@ body {
   margin: 0;
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 50% -10%, rgba(236, 194, 90, 0.18), transparent 34%),
-    linear-gradient(180deg, #fffdf8 0%, var(--cream) 48%, #f4efe4 100%);
+  background-color: var(--cream);
+  background-image:
+    linear-gradient(rgba(255, 250, 240, 0.18), rgba(255, 250, 240, 0.18)),
+    url("images/background.png");
+  background-position: center top;
+  background-size: 1080px auto;
+  background-attachment: fixed;
 }
 
 body::before {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-image: radial-gradient(rgba(13, 132, 87, 0.07) 1px, transparent 1px);
-  background-size: 24px 24px;
-  content: "";
-  mask-image: linear-gradient(to bottom, black, transparent 55%);
+  display: none;
 }
 
 .icon-sprite {
@@ -63,57 +61,27 @@ svg {
 }
 
 .header {
-  display: flex;
+  display: grid;
   align-items: center;
   justify-content: center;
-  gap: 13px;
-  padding: 8px 0 22px;
+  justify-items: center;
+  gap: 0;
+  padding: 4px 0 22px;
 }
 
-.brand-mark {
-  position: relative;
-  display: grid;
-  width: 58px;
-  height: 58px;
-  place-items: center;
-  color: var(--emerald);
-}
-
-.brand-mark svg {
-  width: 52px;
-  height: 52px;
-  fill: rgba(13, 132, 87, 0.08);
-  stroke-width: 3;
-}
-
-.brand-spark {
-  position: absolute;
-  top: -10px;
-  right: 3px;
-  color: var(--gold);
-  font-size: 25px;
-  filter: drop-shadow(0 2px 3px rgba(233, 173, 33, 0.25));
-}
-
-.logo {
-  color: var(--ink);
-  font-size: clamp(34px, 10vw, 48px);
-  font-weight: 950;
-  letter-spacing: -2px;
-  line-height: 0.95;
-  text-transform: uppercase;
-}
-
-.logo span {
-  color: var(--emerald);
+.brand-wordmark {
+  display: block;
+  width: min(100%, 310px);
+  height: auto;
+  margin: -18px 0 -29px;
 }
 
 .tagline {
-  margin-top: 7px;
+  margin-top: 0;
   color: var(--emerald);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 850;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
@@ -1150,18 +1118,12 @@ button:disabled {
   }
 
   .header {
-    justify-content: flex-start;
-    padding-inline: 7px;
+    justify-content: center;
+    padding-inline: 0;
   }
 
-  .brand-mark {
-    width: 48px;
-    height: 48px;
-  }
-
-  .brand-mark svg {
-    width: 45px;
-    height: 45px;
+  .brand-wordmark {
+    width: min(100%, 280px);
   }
 
   .stat {
