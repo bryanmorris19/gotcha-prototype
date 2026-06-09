@@ -54,6 +54,7 @@ function cacheElements() {
   elements.resetButton = document.getElementById("resetButton");
   elements.startScannerButton = document.getElementById("startScannerButton");
   elements.stopScannerButton = document.getElementById("stopScannerButton");
+  elements.scannerShell = document.getElementById("scannerShell");
   elements.barcodeStatus = document.getElementById("barcodeStatus");
   elements.feedbackStatus = document.getElementById("feedbackStatus");
   elements.prizeOverlay = document.getElementById("prizeOverlay");
@@ -287,12 +288,14 @@ function startBarcodeScanner() {
     }
   ).then(() => {
     state.scannerRunning = true;
+    elements.scannerShell.classList.add("is-live");
     showStatus(
       "Scanner running. Point the camera at a product barcode.",
       "neutral"
     );
   }).catch(error => {
     state.scanner = null;
+    elements.scannerShell.classList.remove("is-live");
     showStatus(
       "Scanner failed to start. Check HTTPS and camera permission.",
       "fail"
@@ -310,6 +313,7 @@ function stopBarcodeScanner() {
   const scanner = state.scanner;
   state.scanner = null;
   state.scannerRunning = false;
+  elements.scannerShell.classList.remove("is-live");
 
   return scanner.stop()
     .then(() => scanner.clear())
