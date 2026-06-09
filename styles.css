@@ -394,18 +394,21 @@ svg {
 }
 
 .hunt-heading {
+  min-width: 0;
+  flex: 1;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(20px, 5.2vw, 25px);
+  font-size: clamp(16px, 4.5vw, 20px);
   font-weight: 950;
   letter-spacing: -0.025em;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .clue-panel {
   position: relative;
   z-index: 1;
-  margin-top: 20px;
+  margin-top: 13px;
   padding: 17px;
   overflow: hidden;
   border: 2px solid rgba(16, 122, 62, 0.24);
@@ -496,9 +499,9 @@ button.scan-launch-button {
   position: relative;
   z-index: 2;
   display: grid;
-  width: 52px;
-  height: 52px;
-  min-height: 52px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
   flex: 0 0 auto;
   place-items: center;
   margin: 0;
@@ -511,8 +514,8 @@ button.scan-launch-button {
 }
 
 button.scan-launch-button svg {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
 
 .button-icon {

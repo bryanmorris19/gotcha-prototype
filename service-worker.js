@@ -1,11 +1,11 @@
 "use strict";
 
-const CACHE_NAME = "gotcha-mvp-v10";
+const CACHE_NAME = "gotcha-mvp-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=10",
-  "./app.js?v=10",
+  "./styles.css?v=11",
+  "./app.js?v=11",
   "./hunts.json",
   "./manifest.webmanifest",
   "./images/background.png",
