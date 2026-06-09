@@ -941,7 +941,7 @@ button:disabled {
   display: block;
   width: 132px;
   height: 132px;
-  margin: -32px auto 4px;
+  margin: 10px auto 4px;
   object-fit: contain;
   filter: drop-shadow(0 12px 12px rgba(111, 65, 0, 0.24));
 }

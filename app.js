@@ -775,6 +775,7 @@ function completeHunt(hunt, scanned) {
       title: "Daily reward",
       context: `${DAILY_GOAL} hunts completed today`,
       reward: dailyReward,
+      showChest: true,
       finePrint: dailyReward.simulatedGiftCard
         ? "This gift card is a simulated MVP reward with no cash value."
         : "Daily Chest rewards are limited to one per day.",
@@ -1084,7 +1085,7 @@ function showRewardOverlay(details) {
   );
   elements.rewardTreasureImage.classList.toggle(
     "hidden",
-    Boolean(reward.simulatedGiftCard)
+    !details.showChest
   );
   elements.rewardFinePrint.textContent = details.finePrint;
   elements.rewardActionText.textContent = details.actionLabel;
