@@ -147,7 +147,8 @@ const state = {
   deferredInstallPrompt: null,
   activeView: "home",
   pendingRewards: [],
-  resumeScannerAfterRewards: false
+  resumeScannerAfterRewards: false,
+  scannerSessionId: 0
 };
 
 const elements = {};
@@ -192,6 +193,8 @@ function cacheElements() {
   );
   elements.cacheLimitText = document.getElementById("cacheLimitText");
   elements.buyGuessButton = document.getElementById("buyGuessButton");
+  elements.buyGuessLabel = document.getElementById("buyGuessLabel");
+  elements.huntNotice = document.getElementById("huntNotice");
   elements.rewardOddsButton = document.getElementById("rewardOddsButton");
   elements.rewardOddsOverlay = document.getElementById("rewardOddsOverlay");
   elements.closeRewardOddsButton = document.getElementById(
@@ -199,7 +202,11 @@ function cacheElements() {
   );
   elements.betterClueButton = document.getElementById("betterClueButton");
   elements.resetButton = document.getElementById("resetButton");
-  elements.startScannerButton = document.getElementById("startScannerButton");
+  elements.scannerLaunchButton = document.getElementById(
+    "scannerLaunchButton"
+  );
+  elements.scannerOverlay = document.getElementById("scannerOverlay");
+  elements.scannerState = document.getElementById("scannerState");
   elements.stopScannerButton = document.getElementById("stopScannerButton");
   elements.torchButton = document.getElementById("torchButton");
   elements.scannerShell = document.getElementById("scannerShell");
@@ -244,7 +251,7 @@ function bindEvents() {
   elements.rewardOddsButton.addEventListener("click", openRewardOdds);
   elements.closeRewardOddsButton.addEventListener("click", closeRewardOdds);
   elements.resetButton.addEventListener("click", resetDemo);
-  elements.startScannerButton.addEventListener("click", startBarcodeScanner);
+  elements.scannerLaunchButton.addEventListener("click", startBarcodeScanner);
   elements.stopScannerButton.addEventListener("click", stopBarcodeScanner);
   elements.torchButton.addEventListener("click", toggleTorch);
   elements.nextHuntButton.addEventListener("click", closePrizeOverlay);
@@ -499,9 +506,8 @@ function render() {
       : `${treasuresRemaining} more ${
           treasuresRemaining === 1 ? "treasure" : "treasures"
         } to open your Daily Chest.`;
-  elements.startScannerButton.disabled =
+  elements.scannerLaunchButton.disabled =
     state.player.guesses <= 0 || state.scannerRunning;
-  elements.stopScannerButton.disabled = !state.scannerRunning;
   elements.betterClueButton.disabled =
     state.player.coins < BETTER_CLUE_COST || state.player.betterClueUsed;
   renderRewardProgress();
@@ -533,8 +539,8 @@ function renderRewardProgress() {
   elements.buyGuessButton.disabled =
     state.player.coins < EXTRA_GUESS_COST ||
     state.player.guesses >= MAX_GUESSES;
-  elements.buyGuessButton.querySelector("span:first-child").textContent =
-    state.player.guesses >= MAX_GUESSES ? "Guess Wallet Full" : "Buy +1 Guess";
+  elements.buyGuessLabel.textContent =
+    state.player.guesses >= MAX_GUESSES ? "Guesses Full" : "+1 Guess";
 }
 
 function formatDate(dateKey) {
@@ -548,12 +554,12 @@ function formatDate(dateKey) {
 
 function upgradeClue() {
   if (state.player.betterClueUsed) {
-    showStatus("You already have the better clue.", "neutral");
+    showHuntNotice("You already have the better clue.", "neutral");
     return;
   }
 
   if (state.player.coins < BETTER_CLUE_COST) {
-    showStatus(
+    showHuntNotice(
       `You need ${BETTER_CLUE_COST} Gotcha Coins for the easier clue.`,
       "fail"
     );
@@ -564,7 +570,7 @@ function upgradeClue() {
   state.player.betterClueUsed = true;
   savePlayer();
   render();
-  showStatus(
+  showHuntNotice(
     `Easier clue unlocked for ${BETTER_CLUE_COST} Gotcha Coins.`,
     "neutral"
   );
@@ -573,12 +579,15 @@ function upgradeClue() {
 
 function buyExtraGuess() {
   if (state.player.guesses >= MAX_GUESSES) {
-    showStatus(`You can hold up to ${MAX_GUESSES} guesses.`, "neutral");
+    showHuntNotice(
+      `You can hold up to ${MAX_GUESSES} guesses.`,
+      "neutral"
+    );
     return;
   }
 
   if (state.player.coins < EXTRA_GUESS_COST) {
-    showStatus(
+    showHuntNotice(
       `You need ${EXTRA_GUESS_COST} Gotcha Coins for an extra guess.`,
       "fail"
     );
@@ -589,7 +598,7 @@ function buyExtraGuess() {
   state.player.guesses += 1;
   savePlayer();
   render();
-  showStatus(
+  showHuntNotice(
     `Extra guess purchased for ${EXTRA_GUESS_COST} Gotcha Coins.`,
     "neutral"
   );
@@ -606,18 +615,24 @@ function closeRewardOdds() {
 
 function startBarcodeScanner() {
   if (state.player.guesses <= 0) {
-    showStatus("No guesses left for this hunt.", "fail");
-    return;
+    showHuntNotice("No guesses left for this hunt.", "fail");
+    return Promise.resolve();
   }
 
   if (state.scannerRunning) {
-    showStatus("Scanner is already running.", "neutral");
-    return;
+    elements.scannerOverlay.classList.remove("hidden");
+    return Promise.resolve();
   }
 
+  elements.scannerOverlay.classList.remove("hidden");
+  elements.scannerState.textContent = "Starting";
+  elements.scannerLaunchButton.disabled = true;
+  clearHuntNotice();
+
   if (typeof Html5Qrcode === "undefined") {
+    elements.scannerState.textContent = "Unavailable";
     showStatus("The barcode scanner could not be loaded.", "fail");
-    return;
+    return Promise.resolve();
   }
 
   clearStatus();
@@ -634,10 +649,12 @@ function startBarcodeScanner() {
     Html5QrcodeSupportedFormats.CODE_39
   ];
 
-  state.scanner = new Html5Qrcode("reader", { formatsToSupport });
+  const sessionId = ++state.scannerSessionId;
+  const scanner = new Html5Qrcode("reader", { formatsToSupport });
+  state.scanner = scanner;
   state.scanLocked = false;
 
-  state.scanner.start(
+  return scanner.start(
     { facingMode: "environment" },
     {
       fps: 10,
@@ -648,23 +665,37 @@ function startBarcodeScanner() {
     () => {
       // Scanning errors are expected while the camera searches.
     }
-  ).then(() => {
+  ).then(async () => {
+    if (sessionId !== state.scannerSessionId) {
+      try {
+        await scanner.stop();
+        await scanner.clear();
+      } catch (error) {
+        console.error("Scanner cleanup error:", error);
+      }
+      return;
+    }
+
     state.scannerRunning = true;
     elements.scannerShell.classList.add("is-live");
-    elements.startScannerButton.disabled = true;
-    elements.stopScannerButton.disabled = false;
+    elements.scannerState.textContent = "Live";
     updateTorchAvailability();
     showStatus(
       "Scanner running. Point the camera at a product barcode.",
       "neutral"
     );
   }).catch(error => {
+    if (sessionId !== state.scannerSessionId) {
+      return;
+    }
+
     state.scanner = null;
+    state.scannerRunning = false;
     elements.scannerShell.classList.remove("is-live");
-    elements.startScannerButton.disabled = state.player.guesses <= 0;
-    elements.stopScannerButton.disabled = true;
+    elements.scannerState.textContent = "Error";
+    elements.scannerLaunchButton.disabled = state.player.guesses <= 0;
     showStatus(
-      "Scanner failed to start. Check HTTPS and camera permission.",
+      "Scanner failed to start. Check camera permission, then close and try again.",
       "fail"
     );
     console.error("Scanner start error:", error);
@@ -672,8 +703,13 @@ function startBarcodeScanner() {
 }
 
 function stopBarcodeScanner() {
+  state.scannerSessionId += 1;
+  elements.scannerOverlay.classList.add("hidden");
+  elements.scannerState.textContent = "Starting";
+
   if (!state.scanner) {
     state.scannerRunning = false;
+    elements.scannerLaunchButton.disabled = state.player?.guesses <= 0;
     return Promise.resolve();
   }
 
@@ -684,8 +720,7 @@ function stopBarcodeScanner() {
   elements.torchButton.classList.add("hidden");
   elements.torchButton.classList.remove("active");
   elements.scannerShell.classList.remove("is-live");
-  elements.startScannerButton.disabled = state.player.guesses <= 0;
-  elements.stopScannerButton.disabled = true;
+  elements.scannerLaunchButton.disabled = state.player.guesses <= 0;
 
   return scanner.stop()
     .then(() => scanner.clear())
@@ -752,6 +787,7 @@ function completeHunt(hunt, scanned) {
     "success"
   );
   playSuccessFeedback();
+  stopBarcodeScanner();
   showRewardOverlay({
     label: "Treasure found!",
     title: "Gotcha!",
@@ -762,7 +798,6 @@ function completeHunt(hunt, scanned) {
       ? "Open Daily Chest"
       : "Start Next Hunt"
   });
-  stopBarcodeScanner();
 }
 
 function handleWrongScan(scanned, fragmentResult) {
@@ -1009,7 +1044,7 @@ function closeWrongOverlay() {
 
 function resumeScannerAfterOverlay() {
   if (state.player.guesses <= 0) {
-    showStatus("No guesses left for this hunt.", "fail");
+    showHuntNotice("No guesses left for this hunt.", "fail");
     stopBarcodeScanner();
     return;
   }
@@ -1017,6 +1052,7 @@ function resumeScannerAfterOverlay() {
   try {
     state.scanner.resume();
     state.scanLocked = false;
+    elements.scannerState.textContent = "Live";
     showStatus(
       "Scanner ready. Point the camera at another product barcode.",
       "neutral"
@@ -1026,8 +1062,9 @@ function resumeScannerAfterOverlay() {
     state.scanLocked = false;
     state.scannerRunning = false;
     state.scanner = null;
+    elements.scannerState.textContent = "Error";
     showStatus(
-      "Scanner could not resume. Tap Start Scanner to try again.",
+      "Scanner could not resume. Close it and tap the scan icon to try again.",
       "fail"
     );
   }
@@ -1415,6 +1452,16 @@ function clearStatus() {
   elements.barcodeStatus.className = "status";
 }
 
+function showHuntNotice(message, type) {
+  elements.huntNotice.textContent = message;
+  elements.huntNotice.className = "hunt-notice show " + type;
+}
+
+function clearHuntNotice() {
+  elements.huntNotice.textContent = "";
+  elements.huntNotice.className = "hunt-notice";
+}
+
 function resetDemo() {
   stopBarcodeScanner();
   localStorage.removeItem(STORAGE_KEY);
@@ -1428,6 +1475,7 @@ function resetDemo() {
   elements.rewardOddsOverlay.classList.add("hidden");
   elements.feedbackStatus.textContent = "";
   clearStatus();
+  clearHuntNotice();
   render();
   trackEvent("progress_reset");
 }
