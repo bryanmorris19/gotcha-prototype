@@ -1,0 +1,30 @@
+[
+  {
+    "id": "pringles-original-5-2oz",
+    "name": "Pringles Original can",
+    "clue": "Once you pop, this tidy tower is hard to stop.",
+    "betterClue": "Look for curved potato crisps stacked inside a tall can.",
+    "barcodes": ["038000138416"]
+  },
+  {
+    "id": "better-cheddars",
+    "name": "Better Cheddars",
+    "clue": "Seek a crisp golden circle with a sharper point of view.",
+    "betterClue": "Look for thin, round cheese crackers in the snack aisle.",
+    "barcodes": ["044000030476"]
+  },
+  {
+    "id": "mayonnaise",
+    "name": "Mayonnaise",
+    "clue": "I bring pale, creamy balance between two slices.",
+    "betterClue": "Look for a creamy white sandwich condiment in a jar.",
+    "barcodes": ["048001354494"]
+  },
+  {
+    "id": "corn-chex",
+    "name": "Corn Chex",
+    "clue": "Find a morning box filled with woven golden squares.",
+    "betterClue": "Look for a corn cereal made of small, crunchy lattice squares.",
+    "barcodes": ["016000171084"]
+  }
+]

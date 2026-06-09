@@ -1,0 +1,279 @@
+:root {
+  --emerald: #2d6a4f;
+  --emerald-dark: #1f4d3a;
+  --gold: #b68a2c;
+  --cream: #f7f5ef;
+  --text: #222;
+  --muted: #777;
+  --success: #2d6a4f;
+  --danger: #b23b3b;
+  --card: #fff;
+  --shadow: rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cream);
+  color: var(--text);
+}
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 18px;
+}
+
+.header {
+  padding: 10px 0 18px;
+  text-align: center;
+}
+
+.logo {
+  color: var(--emerald);
+  font-size: 46px;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.tagline {
+  margin-top: 6px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.card {
+  margin-bottom: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat {
+  padding: 14px 8px;
+  border-radius: 16px;
+  background: var(--card);
+  text-align: center;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.stat-label {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.stat-value {
+  color: var(--emerald);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+h2 {
+  margin: 0 0 10px;
+  color: var(--emerald-dark);
+}
+
+.hunt-title {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.clue {
+  margin: 10px 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.hunt-meta,
+.fine-print {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.hunt-meta {
+  margin-bottom: 10px;
+}
+
+button {
+  width: 100%;
+  margin-top: 10px;
+  padding: 15px 18px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--emerald);
+  color: #fff;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 3px 8px rgba(45, 106, 79, 0.25);
+}
+
+button.secondary {
+  background: var(--gold);
+  box-shadow: 0 3px 8px rgba(182, 138, 44, 0.25);
+}
+
+button.light {
+  background: #e9e2cf;
+  color: var(--emerald-dark);
+  box-shadow: none;
+}
+
+button.danger {
+  background: var(--danger);
+  box-shadow: none;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.status {
+  display: none;
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.status.show {
+  display: block;
+}
+
+.status.success {
+  background: #e8f3ed;
+  color: var(--success);
+}
+
+.status.fail {
+  background: #f8eaea;
+  color: var(--danger);
+}
+
+.status.neutral {
+  background: #f3eddd;
+  color: #7b5d16;
+}
+
+.hidden {
+  display: none;
+}
+
+#reader {
+  width: 100%;
+  min-height: 12px;
+  margin-top: 12px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(18, 43, 32, 0.78);
+  backdrop-filter: blur(5px);
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  width: min(100%, 420px);
+  padding: 28px 22px;
+  border: 3px solid #e4c56a;
+  border-radius: 24px;
+  background: #fffdf7;
+  text-align: center;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
+  animation: overlay-pop 0.35s ease-out;
+}
+
+.overlay-card h2 {
+  margin-bottom: 6px;
+  font-size: 34px;
+}
+
+.wrong-card {
+  border-color: #d56a6a;
+}
+
+.wrong-card h2 {
+  color: var(--danger);
+}
+
+.prize-label {
+  margin: 14px 0 18px;
+  color: var(--gold);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.success-pulse {
+  animation: success-pulse 0.7s ease-out;
+}
+
+.wrong-pulse {
+  animation: wrong-pulse 0.55s ease-out;
+}
+
+.footer {
+  padding: 8px 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@keyframes overlay-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.78);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes success-pulse {
+  0%, 100% {
+    background: var(--cream);
+  }
+  35% {
+    background: #ccebd9;
+  }
+}
+
+@keyframes wrong-pulse {
+  0%, 100% {
+    background: var(--cream);
+  }
+  35% {
+    background: #f1caca;
+  }
+}

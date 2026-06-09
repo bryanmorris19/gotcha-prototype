@@ -3,331 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Gotcha! Web App Prototype</title>
-
-  <!--
-    Gotcha! Prototype Source File
-    Version: 0.2
-    Purpose:
-      - Mobile web app proof of concept
-      - Clue-based treasure hunt
-      - Barcode / QR scanner verification
-      - Points, guesses, streaks, prize reveal
-
-    Deployment:
-      - Save this file as index.html
-      - Upload to GitHub Pages, Netlify, Vercel, or another HTTPS host
-      - Camera access requires HTTPS on most phones
-
-    Barcode library:
-      html5-qrcode
-      Supports QR codes and many barcode formats including UPC and EAN.
-  -->
-
+  <meta name="theme-color" content="#2d6a4f" />
+  <title>Gotcha!</title>
+  <link rel="stylesheet" href="styles.css" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
-  <style>
-    :root {
-      --emerald: #2d6a4f;
-      --emerald-dark: #1f4d3a;
-      --gold: #b68a2c;
-      --cream: #f7f5ef;
-      --text: #222;
-      --muted: #777;
-      --success: #2d6a4f;
-      --danger: #b23b3b;
-      --card: #ffffff;
-      --shadow: rgba(0, 0, 0, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: var(--cream);
-      color: var(--text);
-    }
-
-    .app {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 18px;
-    }
-
-    .header {
-      text-align: center;
-      padding: 10px 0 18px;
-    }
-
-    .logo {
-      font-size: 46px;
-      line-height: 1;
-      font-weight: 900;
-      color: var(--emerald);
-      letter-spacing: -1.5px;
-    }
-
-    .tagline {
-      margin-top: 6px;
-      color: var(--gold);
-      font-weight: 700;
-    }
-
-    .card {
-      background: var(--card);
-      border-radius: 18px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 16px var(--shadow);
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .stat {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 14px 8px;
-      text-align: center;
-      box-shadow: 0 4px 12px var(--shadow);
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: 900;
-      color: var(--emerald);
-    }
-
-    h2 {
-      margin: 0 0 10px;
-      color: var(--emerald-dark);
-    }
-
-    .hunt-title {
-      font-size: 14px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 800;
-    }
-
-    .clue {
-      font-size: 22px;
-      font-weight: 800;
-      line-height: 1.25;
-      margin: 10px 0 16px;
-    }
-
-    .fine-print {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.4;
-      margin-top: 10px;
-    }
-
-    button {
-      width: 100%;
-      border: 0;
-      border-radius: 13px;
-      padding: 15px 18px;
-      font-size: 17px;
-      font-weight: 800;
-      cursor: pointer;
-      margin-top: 10px;
-      color: white;
-      background: var(--emerald);
-      box-shadow: 0 3px 8px rgba(45, 106, 79, 0.25);
-    }
-
-    button.secondary {
-      background: var(--gold);
-      box-shadow: 0 3px 8px rgba(182, 138, 44, 0.25);
-    }
-
-    button.light {
-      background: #e9e2cf;
-      color: var(--emerald-dark);
-      box-shadow: none;
-    }
-
-    button.danger {
-      background: var(--danger);
-      box-shadow: none;
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
-    input {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-      margin: 8px 0;
-    }
-
-    label {
-      display: block;
-      text-align: left;
-      font-weight: 800;
-      color: var(--emerald-dark);
-      margin-top: 8px;
-      margin-bottom: 4px;
-    }
-
-    .status {
-      margin-top: 14px;
-      padding: 12px;
-      border-radius: 12px;
-      font-weight: 800;
-      display: none;
-      line-height: 1.35;
-    }
-
-    .status.show {
-      display: block;
-    }
-
-    .status.success {
-      background: #e8f3ed;
-      color: var(--success);
-    }
-
-    .status.fail {
-      background: #f8eaea;
-      color: var(--danger);
-    }
-
-    .status.neutral {
-      background: #f3eddd;
-      color: #7b5d16;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    #reader {
-      width: 100%;
-      margin-top: 12px;
-      overflow: hidden;
-      border-radius: 14px;
-    }
-
-    .prize {
-      color: var(--gold);
-      font-size: 24px;
-      font-weight: 900;
-      margin-top: 10px;
-    }
-
-    .prize-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      display: grid;
-      place-items: center;
-      padding: 22px;
-      background: rgba(18, 43, 32, 0.78);
-      backdrop-filter: blur(5px);
-    }
-
-    .prize-overlay.hidden {
-      display: none;
-    }
-
-    .success-pulse {
-      animation: success-pulse 0.7s ease-out;
-    }
-
-    .wrong-pulse {
-      animation: wrong-pulse 0.55s ease-out;
-    }
-
-    .prize-card {
-      width: min(100%, 420px);
-      padding: 28px 22px;
-      border: 3px solid #e4c56a;
-      border-radius: 24px;
-      background: #fffdf7;
-      text-align: center;
-      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32);
-      animation: prize-pop 0.35s ease-out;
-    }
-
-    .prize-card h2 {
-      margin-bottom: 6px;
-      font-size: 34px;
-    }
-
-    .wrong-card {
-      border-color: #d56a6a;
-    }
-
-    .wrong-card h2 {
-      color: var(--danger);
-    }
-
-    .prize-label {
-      margin: 14px 0 18px;
-      color: var(--gold);
-      font-size: 28px;
-      font-weight: 900;
-    }
-
-    @keyframes prize-pop {
-      from {
-        opacity: 0;
-        transform: scale(0.78);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    @keyframes success-pulse {
-      0%, 100% {
-        background: var(--cream);
-      }
-      35% {
-        background: #ccebd9;
-      }
-    }
-
-    @keyframes wrong-pulse {
-      0%, 100% {
-        background: var(--cream);
-      }
-      35% {
-        background: #f1caca;
-      }
-    }
-
-    .footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 12px;
-      padding: 8px 0 18px;
-    }
-  </style>
+  <script src="app.js" defer></script>
 </head>
 
 <body>
@@ -337,573 +17,83 @@
       <div class="tagline">Find it. Scan it. Win it.</div>
     </header>
 
-    <section class="stats">
+    <section class="stats" aria-label="Player stats">
       <div class="stat">
         <div class="stat-label">Guesses</div>
         <div class="stat-value" id="guessesValue">3</div>
       </div>
-
       <div class="stat">
         <div class="stat-label">Points</div>
         <div class="stat-value" id="pointsValue">0</div>
       </div>
-
       <div class="stat">
         <div class="stat-label">Streak</div>
-        <div class="stat-value" id="streakValue">1</div>
+        <div class="stat-value" id="streakValue">0</div>
       </div>
     </section>
 
     <section class="card">
-      <div class="hunt-title">Today's Hunt</div>
-      <div class="clue" id="clueText">
-        Find the snack that stacks its chips inside a can.
-      </div>
+      <div class="hunt-title">Current Hunt</div>
+      <div class="clue" id="clueText">Loading today's hunt...</div>
+      <div class="hunt-meta" id="huntMeta"></div>
 
-      <button id="betterClueButton" class="secondary" onclick="upgradeClue()">
+      <button id="betterClueButton" class="secondary" type="button">
         Better Clue (-1 Guess)
       </button>
-      <button class="light" onclick="resetGame()">Reset Demo</button>
+      <button id="resetButton" class="light" type="button">Reset Demo</button>
     </section>
 
     <section id="barcodePanel" class="card">
       <h2>Barcode Verification</h2>
       <div class="fine-print">
-        Scan a UPC, EAN, or QR code. If it matches the target barcode, the item is verified.
+        Scan a UPC, EAN, or QR code. A correct find starts your next hunt.
       </div>
 
       <div id="reader"></div>
 
-      <button id="startScannerButton" onclick="startBarcodeScanner()">Start Scanner</button>
-      <button class="danger" onclick="stopBarcodeScanner()">Stop Scanner</button>
+      <button id="startScannerButton" type="button">Start Scanner</button>
+      <button id="stopScannerButton" class="danger" type="button">Stop Scanner</button>
 
-      <div id="barcodeStatus" class="status"></div>
+      <div id="barcodeStatus" class="status" role="status" aria-live="polite"></div>
       <div id="feedbackStatus" class="fine-print"></div>
     </section>
 
     <footer class="footer">
-      Gotcha! prototype source file. Camera features require HTTPS on most phones.
+      Camera access requires HTTPS and browser permission.
     </footer>
   </main>
 
   <section
     id="prizeOverlay"
-    class="prize-overlay hidden"
+    class="overlay hidden"
     role="dialog"
     aria-modal="true"
     aria-labelledby="prizeHeading"
   >
-    <div class="prize-card">
+    <div class="overlay-card">
       <h2 id="prizeHeading">Gotcha!</h2>
-      <div id="prizeItemText">Pringles found</div>
+      <div id="prizeItemText"></div>
       <div id="prizeOverlayText" class="prize-label"></div>
-      <button onclick="closePrizeOverlay()">Keep Hunting</button>
+      <div class="fine-print">Your guesses have been refreshed for the next hunt.</div>
+      <button id="nextHuntButton" type="button">Start Next Hunt</button>
     </div>
   </section>
 
   <section
     id="wrongOverlay"
-    class="prize-overlay hidden"
+    class="overlay hidden"
     role="dialog"
     aria-modal="true"
     aria-labelledby="wrongHeading"
   >
-    <div class="prize-card wrong-card">
+    <div class="overlay-card wrong-card">
       <h2 id="wrongHeading">Wrong Item</h2>
-      <div id="wrongScanText">That barcode does not match today's hunt.</div>
+      <div id="wrongScanText">That barcode does not match this hunt.</div>
       <div class="fine-print">Move this item away from the camera before trying again.</div>
-      <button id="wrongActionButton" class="danger" onclick="closeWrongOverlay()">
+      <button id="wrongActionButton" class="danger" type="button">
         Scan Another Item
       </button>
     </div>
   </section>
-
-  <script>
-    const state = {
-      guesses: 3,
-      points: 0,
-      streak: 1,
-      activeProductId: null,
-      betterClueUsed: false,
-      scanner: null,
-      scannerRunning: false,
-      scanLocked: false,
-      audioContext: null,
-      feedbackEnabled: false
-    };
-
-    const productDatabase = [
-      {
-        id: "pringles-original-5-2oz",
-        name: "Pringles Original can",
-        clue: "Once you pop, this tidy tower is hard to stop.",
-        betterClue: "Look for curved potato crisps stacked inside a tall can.",
-        barcodes: ["038000138416"]
-      },
-      {
-        id: "better-cheddars",
-        name: "Better Cheddars",
-        clue: "Seek a crisp golden circle with a sharper point of view.",
-        betterClue: "Look for thin, round cheese crackers in the snack aisle.",
-        barcodes: ["044000030476"]
-      },
-      {
-        id: "mayonnaise",
-        name: "Mayonnaise",
-        clue: "I bring pale, creamy balance between two slices.",
-        betterClue: "Look for a creamy white sandwich condiment in a jar.",
-        barcodes: ["048001354494"]
-      },
-      {
-        id: "corn-chex",
-        name: "Corn Chex",
-        clue: "Find a morning box filled with woven golden squares.",
-        betterClue: "Look for a corn cereal made of small, crunchy lattice squares.",
-        barcodes: ["016000171084"]
-      }
-    ];
-
-    const prizes = [
-      { label: "10 Gotcha Points", points: 10, weight: 60 },
-      { label: "25 Gotcha Points", points: 25, weight: 24 },
-      { label: "Extra Guess", extraGuess: 1, weight: 10 },
-      { label: "$5 Store Reward", points: 50, weight: 5 },
-      { label: "Rare Prize Entry", points: 100, weight: 1 }
-    ];
-
-    const guessesValue = document.getElementById("guessesValue");
-    const pointsValue = document.getElementById("pointsValue");
-    const streakValue = document.getElementById("streakValue");
-    const clueText = document.getElementById("clueText");
-    const betterClueButton = document.getElementById("betterClueButton");
-
-    const barcodeStatus = document.getElementById("barcodeStatus");
-    const feedbackStatus = document.getElementById("feedbackStatus");
-    const startScannerButton = document.getElementById("startScannerButton");
-    const prizeOverlay = document.getElementById("prizeOverlay");
-    const prizeItemText = document.getElementById("prizeItemText");
-    const prizeOverlayText = document.getElementById("prizeOverlayText");
-    const wrongOverlay = document.getElementById("wrongOverlay");
-    const wrongScanText = document.getElementById("wrongScanText");
-    const wrongActionButton = document.getElementById("wrongActionButton");
-
-    function updateStats() {
-      guessesValue.textContent = state.guesses;
-      pointsValue.textContent = state.points;
-      streakValue.textContent = state.streak;
-      startScannerButton.disabled = state.guesses <= 0;
-      betterClueButton.disabled = state.guesses <= 0 || state.betterClueUsed;
-    }
-
-    function showStatus(element, message, type) {
-      element.innerHTML = message;
-      element.className = "status show " + type;
-    }
-
-    function clearStatus(element) {
-      element.innerHTML = "";
-      element.className = "status";
-    }
-
-    function upgradeClue() {
-      if (state.betterClueUsed) {
-        showStatus(barcodeStatus, "You already have the best clue.", "neutral");
-        return;
-      }
-
-      if (state.guesses <= 0) {
-        showStatus(barcodeStatus, "No guesses left to spend on a clue.", "fail");
-        return;
-      }
-
-      const activeProduct = getActiveProduct();
-      useGuess();
-      state.betterClueUsed = true;
-      clueText.textContent = activeProduct.betterClue;
-      showStatus(barcodeStatus, "Better clue unlocked for 1 guess.", "neutral");
-      updateStats();
-    }
-
-    function startBarcodeScanner() {
-      if (state.guesses <= 0) {
-        showStatus(barcodeStatus, "No guesses left today.", "fail");
-        return;
-      }
-
-      if (state.scannerRunning) {
-        showStatus(barcodeStatus, "Scanner is already running.", "neutral");
-        return;
-      }
-
-      clearStatus(barcodeStatus);
-      enableFeedback(false);
-
-      const formatsToSupport = [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39
-      ];
-
-      state.scanner = new Html5Qrcode("reader", { formatsToSupport });
-
-      const config = {
-        fps: 10,
-        qrbox: { width: 260, height: 160 },
-        aspectRatio: 1.333
-      };
-
-      state.scanner.start(
-        { facingMode: "environment" },
-        config,
-        onBarcodeScanned,
-        () => {
-          // Ignore scanning errors while camera is searching.
-        }
-      ).then(() => {
-        state.scannerRunning = true;
-        showStatus(barcodeStatus, "Scanner running. Point camera at the product barcode.", "neutral");
-      }).catch(error => {
-        showStatus(
-          barcodeStatus,
-          "Scanner failed to start. Make sure this page is hosted on HTTPS and camera permission is allowed.",
-          "fail"
-        );
-        console.error(error);
-      });
-    }
-
-    function stopBarcodeScanner() {
-      if (!state.scanner || !state.scannerRunning) return;
-
-      state.scanner.stop()
-        .then(() => {
-          state.scanner.clear();
-          state.scannerRunning = false;
-          state.scanner = null;
-        })
-        .catch(error => {
-          console.error("Scanner stop error:", error);
-          state.scannerRunning = false;
-          state.scanner = null;
-        });
-    }
-
-    function onBarcodeScanned(decodedText) {
-      if (state.scanLocked) return;
-      state.scanLocked = true;
-
-      const scanned = normalizeBarcode(decodedText);
-      const product = findActiveProductByBarcode(scanned);
-
-      useGuess();
-
-      if (product) {
-        const prize = revealPrize();
-        const itemName = product.name;
-
-        showStatus(
-          barcodeStatus,
-          "Gotcha! " + itemName + " verified.<br>Scanned: " + scanned,
-          "success"
-        );
-
-        playSuccessFeedback();
-        showPrizeOverlay(itemName, prize);
-        stopBarcodeScanner();
-      } else {
-        showStatus(
-          barcodeStatus,
-          "Wrong item.<br>Scanned: " + scanned + "<br>Target does not match.",
-          "fail"
-        );
-        playWrongFeedback();
-        pauseBarcodeScanner();
-        showWrongOverlay(scanned);
-      }
-
-      updateStats();
-
-      if (state.guesses <= 0) {
-        stopBarcodeScanner();
-      }
-    }
-
-    function pauseBarcodeScanner() {
-      if (!state.scanner || !state.scannerRunning) return;
-
-      try {
-        state.scanner.pause(true);
-      } catch (error) {
-        console.error("Scanner pause error:", error);
-      }
-    }
-
-    function showWrongOverlay(scanned) {
-      wrongScanText.textContent = "Barcode " + scanned + " is not the correct item.";
-      wrongActionButton.textContent =
-        state.guesses > 0 ? "Scan Another Item" : "No Guesses Left";
-      wrongOverlay.classList.remove("hidden");
-    }
-
-    function closeWrongOverlay() {
-      wrongOverlay.classList.add("hidden");
-
-      if (state.guesses <= 0) {
-        showStatus(barcodeStatus, "No guesses left today.", "fail");
-        stopBarcodeScanner();
-        return;
-      }
-
-      try {
-        state.scanner.resume();
-        state.scanLocked = false;
-        showStatus(
-          barcodeStatus,
-          "Scanner ready. Point the camera at another product barcode.",
-          "neutral"
-        );
-      } catch (error) {
-        console.error("Scanner resume error:", error);
-        state.scanLocked = false;
-        showStatus(
-          barcodeStatus,
-          "Scanner could not resume. Tap Start Scanner to try again.",
-          "fail"
-        );
-        state.scannerRunning = false;
-        state.scanner = null;
-      }
-    }
-
-    function getActiveProduct() {
-      return productDatabase.find(product => product.id === state.activeProductId);
-    }
-
-    function findActiveProductByBarcode(barcode) {
-      const activeProduct = getActiveProduct();
-      const scannedVariants = getBarcodeVariants(barcode);
-
-      const matches = activeProduct.barcodes.some(savedBarcode => {
-        const savedVariants = getBarcodeVariants(savedBarcode);
-        return savedVariants.some(variant => scannedVariants.includes(variant));
-      });
-
-      return matches ? activeProduct : null;
-    }
-
-    function enableFeedback() {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-
-      if (AudioContextClass && !state.audioContext) {
-        state.audioContext = new AudioContextClass();
-      }
-
-      if (state.audioContext?.state === "suspended") {
-        state.audioContext.resume().catch(error => {
-          console.error("Audio resume error:", error);
-        });
-      }
-
-      state.feedbackEnabled = Boolean(state.audioContext);
-
-      if (state.audioContext) {
-        playToneSequence([660], {
-          duration: 0.1,
-          gap: 0.06,
-          volume: 0.2,
-          type: "triangle"
-        });
-      }
-
-      const soundMessage = state.audioContext
-        ? "Sound is ready."
-        : "This browser could not enable sound.";
-
-      if ("vibrate" in navigator) {
-        const vibrationAccepted = navigator.vibrate(60);
-        feedbackStatus.textContent = vibrationAccepted
-          ? soundMessage + " Vibration is supported."
-          : soundMessage + " Vibration was blocked by this browser.";
-      } else {
-        feedbackStatus.textContent =
-          soundMessage + " This device does not support vibration from a web page.";
-      }
-    }
-
-    function playSuccessFeedback() {
-      if ("vibrate" in navigator) {
-        navigator.vibrate([250, 100, 250, 100, 500]);
-      }
-
-      playToneSequence([523.25, 659.25, 783.99, 1046.5], {
-        duration: 0.2,
-        gap: 0.04,
-        volume: 0.38,
-        type: "triangle"
-      });
-      document.body.classList.remove("success-pulse");
-      void document.body.offsetWidth;
-      document.body.classList.add("success-pulse");
-    }
-
-    function playWrongFeedback() {
-      if ("vibrate" in navigator) {
-        navigator.vibrate([120, 70, 120]);
-      }
-
-      playToneSequence([220, 164.81], {
-        duration: 0.25,
-        gap: 0.04,
-        volume: 0.34,
-        type: "square"
-      });
-      document.body.classList.remove("wrong-pulse");
-      void document.body.offsetWidth;
-      document.body.classList.add("wrong-pulse");
-    }
-
-    function playToneSequence(frequencies, options) {
-      if (!state.audioContext) return;
-
-      if (state.audioContext.state === "suspended") {
-        state.audioContext.resume().catch(error => {
-          console.error("Audio resume error:", error);
-        });
-      }
-
-      const now = state.audioContext.currentTime;
-      frequencies.forEach((frequency, index) => {
-        const oscillator = state.audioContext.createOscillator();
-        const gain = state.audioContext.createGain();
-        const start = now + index * (options.duration + options.gap);
-
-        oscillator.frequency.value = frequency;
-        oscillator.type = options.type;
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(options.volume, start + 0.02);
-        gain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          start + options.duration
-        );
-        oscillator.connect(gain);
-        gain.connect(state.audioContext.destination);
-        oscillator.start(start);
-        oscillator.stop(start + options.duration + 0.02);
-      });
-    }
-
-    function showPrizeOverlay(itemName, prize) {
-      prizeItemText.textContent = itemName + " found";
-      prizeOverlayText.textContent = "Prize: " + prize;
-      prizeOverlay.classList.remove("hidden");
-    }
-
-    function closePrizeOverlay() {
-      prizeOverlay.classList.add("hidden");
-    }
-
-    function normalizeBarcode(value) {
-      return String(value || "")
-        .trim()
-        .replace(/\D+/g, "");
-    }
-
-    function getBarcodeVariants(value) {
-      const barcode = normalizeBarcode(value);
-      const variants = new Set([barcode]);
-      let upc = barcode;
-
-      if (upc.length === 13 && upc.startsWith("0")) {
-        upc = upc.slice(1);
-        variants.add(upc);
-      }
-
-      if (upc.length === 12) {
-        variants.add(upc.slice(1, -1));
-        variants.add(upc.slice(0, -1));
-      }
-
-      variants.add(barcode.replace(/^0+/, ""));
-      return Array.from(variants).filter(Boolean);
-    }
-
-    function selectNextProduct() {
-      const currentIndex = productDatabase.findIndex(
-        product => product.id === state.activeProductId
-      );
-      const nextIndex = currentIndex < 0
-        ? Math.floor(Math.random() * productDatabase.length)
-        : (currentIndex + 1) % productDatabase.length;
-      const nextProduct = productDatabase[nextIndex];
-
-      state.activeProductId = nextProduct.id;
-      state.betterClueUsed = false;
-      clueText.textContent = nextProduct.clue;
-    }
-
-    function useGuess() {
-      if (state.guesses > 0) {
-        state.guesses--;
-      }
-
-      updateStats();
-    }
-
-    function revealPrize() {
-      const prize = weightedPrizePick();
-
-      if (prize.points) {
-        state.points += prize.points;
-      }
-
-      if (prize.extraGuess) {
-        state.guesses += prize.extraGuess;
-      }
-
-      updateStats();
-
-      return prize.label;
-    }
-
-    function weightedPrizePick() {
-      const totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
-      let random = Math.random() * totalWeight;
-
-      for (const prize of prizes) {
-        random -= prize.weight;
-
-        if (random <= 0) {
-          return prize;
-        }
-      }
-
-      return prizes[0];
-    }
-
-    function resetGame() {
-      stopBarcodeScanner();
-
-      state.guesses = 3;
-      state.points = 0;
-      state.streak = 1;
-      state.scanLocked = false;
-      selectNextProduct();
-
-      clearStatus(barcodeStatus);
-
-      closePrizeOverlay();
-      wrongOverlay.classList.add("hidden");
-      feedbackStatus.textContent = "";
-
-      updateStats();
-    }
-
-    selectNextProduct();
-    updateStats();
-  </script>
 </body>
 </html>
