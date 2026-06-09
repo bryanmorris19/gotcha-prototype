@@ -10,9 +10,9 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=10" />
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="app.js?v=9" defer></script>
+  <script src="app.js?v=10" defer></script>
 </head>
 
 <body>
@@ -111,6 +111,29 @@
         </button>
       </div>
 
+      <div class="clue-panel">
+        <div class="clue-label">
+          <svg><use href="#icon-bulb"></use></svg>
+          Your Clue
+        </div>
+        <div class="clue" id="clueText">Loading today's hunt...</div>
+        <div class="hunt-meta" id="huntMeta"></div>
+      </div>
+
+      <div class="hunt-actions">
+        <button id="betterClueButton" class="secondary hunt-action-button" type="button">
+          <svg class="button-icon"><use href="#icon-bulb"></use></svg>
+          <span>Better Clue</span>
+          <span class="button-cost">10 coins</span>
+        </button>
+        <button id="buyGuessButton" class="coin-purchase-button hunt-action-button" type="button">
+          <svg class="button-icon"><use href="#icon-scan"></use></svg>
+          <span id="buyGuessLabel">+1 Guess</span>
+          <span class="button-cost">15 coins</span>
+        </button>
+      </div>
+      <div id="huntNotice" class="hunt-notice" role="status" aria-live="polite"></div>
+
       <div class="hunt-progress">
         <div class="daily-progress-copy">
           <strong id="dailyProgressText">0 of 4 treasures found</strong>
@@ -134,22 +157,6 @@
         </div>
       </div>
 
-      <div class="clue" id="clueText">Loading today's hunt...</div>
-      <div class="hunt-meta" id="huntMeta"></div>
-
-      <div class="hunt-actions">
-        <button id="betterClueButton" class="secondary hunt-action-button" type="button">
-          <svg class="button-icon"><use href="#icon-bulb"></use></svg>
-          <span>Better Clue</span>
-          <span class="button-cost">10 coins</span>
-        </button>
-        <button id="buyGuessButton" class="coin-purchase-button hunt-action-button" type="button">
-          <svg class="button-icon"><use href="#icon-scan"></use></svg>
-          <span id="buyGuessLabel">+1 Guess</span>
-          <span class="button-cost">15 coins</span>
-        </button>
-      </div>
-      <div id="huntNotice" class="hunt-notice" role="status" aria-live="polite"></div>
       <button id="resetButton" class="text-button" type="button">Reset progress</button>
     </section>
 
