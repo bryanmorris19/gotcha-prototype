@@ -12,8 +12,6 @@
     Purpose:
       - Mobile web app proof of concept
       - Clue-based treasure hunt
-      - Camera photo capture
-      - Fake AI result simulation
       - Barcode / QR scanner verification
       - Points, guesses, streaks, prize reveal
 
@@ -222,13 +220,6 @@
       color: #7b5d16;
     }
 
-    #photoPreview {
-      width: 100%;
-      margin-top: 14px;
-      border-radius: 14px;
-      display: none;
-    }
-
     .hidden {
       display: none;
     }
@@ -260,6 +251,10 @@
 
     .prize-overlay.hidden {
       display: none;
+    }
+
+    .success-pulse {
+      animation: success-pulse 0.7s ease-out;
     }
 
     .prize-card {
@@ -296,23 +291,13 @@
       }
     }
 
-    .mode-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .mode-tabs button {
-      margin-top: 0;
-      padding: 12px;
-      font-size: 15px;
-    }
-
-    .mode-tabs button.inactive {
-      background: #e9e2cf;
-      color: var(--emerald-dark);
-      box-shadow: none;
+    @keyframes success-pulse {
+      0%, 100% {
+        background: var(--cream);
+      }
+      35% {
+        background: #ccebd9;
+      }
     }
 
     .admin-box {
@@ -353,11 +338,6 @@
       </div>
     </section>
 
-    <section class="mode-tabs">
-      <button id="photoModeButton" onclick="setMode('photo')">Photo Hunt</button>
-      <button id="barcodeModeButton" class="inactive" onclick="setMode('barcode')">Barcode Hunt</button>
-    </section>
-
     <section class="card">
       <div class="hunt-title">Today's Hunt</div>
       <div class="clue" id="clueText">
@@ -391,28 +371,7 @@
       </div>
     </section>
 
-    <section id="photoPanel" class="card">
-      <h2>Photo Verification</h2>
-      <div class="fine-print">
-        This prototype simulates AI verification. Later, this can be connected to an image recognition API or custom model.
-      </div>
-
-      <button id="photoButton" onclick="openPhotoCapture()">Take Photo</button>
-
-      <input
-        id="photoInput"
-        class="hidden"
-        type="file"
-        accept="image/*"
-        capture="environment"
-      />
-
-      <div id="photoStatus" class="status"></div>
-      <div id="prizeText" class="prize"></div>
-      <img id="photoPreview" alt="Captured item photo" />
-    </section>
-
-    <section id="barcodePanel" class="card hidden">
+    <section id="barcodePanel" class="card">
       <h2>Barcode Verification</h2>
       <div class="fine-print">
         Scan a UPC, EAN, or QR code. If it matches the target barcode, the item is verified.
@@ -423,6 +382,7 @@
 
       <div id="reader"></div>
       <div id="barcodeStatus" class="status"></div>
+      <div id="feedbackStatus" class="fine-print"></div>
     </section>
 
     <footer class="footer">
@@ -451,10 +411,10 @@
       points: 0,
       streak: 1,
       clueLevel: 0,
-      mode: "photo",
       scanner: null,
       scannerRunning: false,
-      scanLocked: false
+      scanLocked: false,
+      audioContext: null
     };
 
     const clues = [
@@ -479,30 +439,13 @@
       { label: "Rare Prize Entry", points: 100, weight: 1 }
     ];
 
-    const nearMissMessages = [
-      "Close! Correct category, wrong item.",
-      "Almost. Try looking in the same department.",
-      "Not quite. Your item has the right idea.",
-      "Wrong item, but you're getting warmer."
-    ];
-
     const guessesValue = document.getElementById("guessesValue");
     const pointsValue = document.getElementById("pointsValue");
     const streakValue = document.getElementById("streakValue");
     const clueText = document.getElementById("clueText");
 
-    const photoModeButton = document.getElementById("photoModeButton");
-    const barcodeModeButton = document.getElementById("barcodeModeButton");
-    const photoPanel = document.getElementById("photoPanel");
-    const barcodePanel = document.getElementById("barcodePanel");
-
-    const photoButton = document.getElementById("photoButton");
-    const photoInput = document.getElementById("photoInput");
-    const photoPreview = document.getElementById("photoPreview");
-    const photoStatus = document.getElementById("photoStatus");
-    const prizeText = document.getElementById("prizeText");
-
     const barcodeStatus = document.getElementById("barcodeStatus");
+    const feedbackStatus = document.getElementById("feedbackStatus");
     const startScannerButton = document.getElementById("startScannerButton");
     const prizeOverlay = document.getElementById("prizeOverlay");
     const prizeItemText = document.getElementById("prizeItemText");
@@ -512,7 +455,6 @@
       guessesValue.textContent = state.guesses;
       pointsValue.textContent = state.points;
       streakValue.textContent = state.streak;
-      photoButton.disabled = state.guesses <= 0;
       startScannerButton.disabled = state.guesses <= 0;
     }
 
@@ -526,75 +468,13 @@
       element.className = "status";
     }
 
-    function setMode(mode) {
-      state.mode = mode;
-
-      if (mode === "photo") {
-        photoPanel.classList.remove("hidden");
-        barcodePanel.classList.add("hidden");
-        photoModeButton.classList.remove("inactive");
-        barcodeModeButton.classList.add("inactive");
-        stopBarcodeScanner();
-      } else {
-        photoPanel.classList.add("hidden");
-        barcodePanel.classList.remove("hidden");
-        photoModeButton.classList.add("inactive");
-        barcodeModeButton.classList.remove("inactive");
-      }
-    }
-
     function upgradeClue() {
       if (state.clueLevel < clues.length - 1) {
         state.clueLevel++;
         clueText.textContent = clues[state.clueLevel];
       } else {
-        showStatus(photoStatus, "You already have the best clue.", "neutral");
+        showStatus(barcodeStatus, "You already have the best clue.", "neutral");
       }
-    }
-
-    function openPhotoCapture() {
-      if (state.guesses <= 0) {
-        showStatus(photoStatus, "No guesses left today.", "fail");
-        return;
-      }
-
-      photoInput.click();
-    }
-
-    photoInput.addEventListener("change", event => {
-      const file = event.target.files[0];
-
-      if (!file) return;
-
-      const imageUrl = URL.createObjectURL(file);
-      photoPreview.src = imageUrl;
-      photoPreview.style.display = "block";
-
-      useGuess();
-
-      clearStatus(photoStatus);
-      prizeText.textContent = "";
-      showStatus(photoStatus, "Checking photo...", "neutral");
-
-      setTimeout(() => {
-        runFakeImageCheck();
-      }, 1200);
-    });
-
-    function runFakeImageCheck() {
-      const successChance = 0.45;
-      const isCorrect = Math.random() < successChance;
-
-      if (isCorrect) {
-        const prize = revealPrize();
-        showStatus(photoStatus, "Gotcha! Correct item found.", "success");
-        prizeText.textContent = "Prize: " + prize;
-      } else {
-        const message = nearMissMessages[Math.floor(Math.random() * nearMissMessages.length)];
-        showStatus(photoStatus, message, "fail");
-      }
-
-      updateStats();
     }
 
     function startBarcodeScanner() {
@@ -609,6 +489,7 @@
       }
 
       clearStatus(barcodeStatus);
+      prepareSuccessFeedback();
 
       const formatsToSupport = [
         Html5QrcodeSupportedFormats.QR_CODE,
@@ -687,7 +568,7 @@
           "success"
         );
 
-        vibrateSuccess();
+        playSuccessFeedback();
         showPrizeOverlay(itemName, prize);
         stopBarcodeScanner();
       } else {
@@ -717,10 +598,58 @@
       );
     }
 
-    function vibrateSuccess() {
-      if ("vibrate" in navigator) {
-        navigator.vibrate([180, 80, 180, 80, 350]);
+    function prepareSuccessFeedback() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+
+      if (AudioContextClass && !state.audioContext) {
+        state.audioContext = new AudioContextClass();
       }
+
+      if (state.audioContext?.state === "suspended") {
+        state.audioContext.resume();
+      }
+
+      if ("vibrate" in navigator) {
+        const vibrationAccepted = navigator.vibrate(80);
+        feedbackStatus.textContent = vibrationAccepted
+          ? "Vibration and sound feedback enabled."
+          : "Vibration was blocked by this browser. Success sound and screen feedback are enabled.";
+      } else {
+        feedbackStatus.textContent =
+          "This browser does not support web vibration. Success sound and screen feedback are enabled.";
+      }
+    }
+
+    function playSuccessFeedback() {
+      if ("vibrate" in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 450]);
+      }
+
+      playSuccessSound();
+      document.body.classList.remove("success-pulse");
+      void document.body.offsetWidth;
+      document.body.classList.add("success-pulse");
+    }
+
+    function playSuccessSound() {
+      if (!state.audioContext) return;
+
+      const now = state.audioContext.currentTime;
+      [523.25, 659.25, 783.99].forEach((frequency, index) => {
+        const oscillator = state.audioContext.createOscillator();
+        const gain = state.audioContext.createGain();
+        const start = now + index * 0.12;
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = "sine";
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+        oscillator.connect(gain);
+        gain.connect(state.audioContext.destination);
+        oscillator.start(start);
+        oscillator.stop(start + 0.24);
+      });
     }
 
     function showPrizeOverlay(itemName, prize) {
@@ -789,13 +718,10 @@
 
       clueText.textContent = clues[0];
 
-      clearStatus(photoStatus);
       clearStatus(barcodeStatus);
 
-      prizeText.textContent = "";
       closePrizeOverlay();
-      photoPreview.style.display = "none";
-      photoInput.value = "";
+      feedbackStatus.textContent = "";
 
       updateStats();
     }
