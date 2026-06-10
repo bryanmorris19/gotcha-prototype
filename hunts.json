@@ -28,5 +28,15 @@
       "024000163176"
     ],
     "availableFrom": "2026-06-09"
+  },
+  {
+    "id": "town-house-original-crackers",
+    "name": "Town House Original Crackers",
+    "clue": "Not all crackers are square. Search for the oven-baked classic whose name suggests a place where people live.",
+    "betterClue": "You’re looking for Town House Original crackers in a bright red box.",
+    "barcodes": [
+      "030100100553"
+    ],
+    "availableFrom": "2026-06-09"
   }
 ]
