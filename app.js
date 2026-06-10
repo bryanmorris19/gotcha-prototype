@@ -3,7 +3,8 @@
 const STORAGE_KEY = "gotcha-player-v1";
 const STARTING_GUESSES = 3;
 const MAX_GUESSES = 5;
-const STARTING_COINS = 20;
+const STARTING_COINS = 0;
+const TRAINING_BONUS_COINS = 20;
 const BETTER_CLUE_COST = 10;
 const EXTRA_GUESS_COST = 15;
 const FRAGMENTS_PER_CACHE = 3;
@@ -133,7 +134,20 @@ const dailyChestRewards = [
   }
 ];
 
-const rewardCatalog = [...prizes, ...cacheRewards, ...dailyChestRewards];
+const trainingReward = {
+  id: "training-bonus-20",
+  label: `${TRAINING_BONUS_COINS} Gotcha Coins`,
+  subtitle: "Training Bonus",
+  rarity: "common",
+  coins: TRAINING_BONUS_COINS
+};
+
+const rewardCatalog = [
+  ...prizes,
+  ...cacheRewards,
+  ...dailyChestRewards,
+  trainingReward
+];
 
 const state = {
   hunts: [],
@@ -298,6 +312,7 @@ function createDefaultPlayer() {
     coins: STARTING_COINS,
     lifetimeCoins: 0,
     coinEconomyInitialized: true,
+    trainingBonusClaimed: false,
     streak: 0,
     guesses: STARTING_GUESSES,
     dailyDate: "",
@@ -343,13 +358,29 @@ function loadPlayer() {
       : Number.isFinite(Number(saved.points))
         ? Number(saved.points)
         : 0;
+    const hasRecordedScan =
+      (Array.isArray(saved.completedHunts) && saved.completedHunts.length > 0) ||
+      (Array.isArray(saved.dailyScannedBarcodes) &&
+        saved.dailyScannedBarcodes.length > 0) ||
+      Number(saved.analytics?.counters?.scan_correct || 0) > 0 ||
+      Number(saved.analytics?.counters?.scan_wrong || 0) > 0;
+    const isPristineLegacyPlayer =
+      saved.trainingBonusClaimed === undefined &&
+      saved.coinEconomyInitialized === true &&
+      existingBalance === 20 &&
+      migratedLifetimeCoins === 0 &&
+      !hasRecordedScan;
 
     return {
       ...fallback,
       ...saved,
-      coins: migratedCoins,
+      coins: isPristineLegacyPlayer ? STARTING_COINS : migratedCoins,
       lifetimeCoins: migratedLifetimeCoins,
       coinEconomyInitialized: true,
+      trainingBonusClaimed:
+        typeof saved.trainingBonusClaimed === "boolean"
+          ? saved.trainingBonusClaimed
+          : !isPristineLegacyPlayer,
       completedHunts: Array.isArray(saved.completedHunts)
         ? saved.completedHunts
         : [],
@@ -739,6 +770,7 @@ function onBarcodeScanned(decodedText) {
   const hunt = findActiveHuntByBarcode(scanned);
 
   state.player.guesses = Math.max(0, state.player.guesses - 1);
+  awardTrainingBonus();
 
   if (hunt) {
     trackEvent("scan_correct", { huntId: hunt.id });
@@ -750,6 +782,28 @@ function onBarcodeScanned(decodedText) {
 
   savePlayer();
   render();
+}
+
+function awardTrainingBonus() {
+  if (state.player.trainingBonusClaimed) {
+    return;
+  }
+
+  state.player.trainingBonusClaimed = true;
+  grantReward(trainingReward, "Training Module");
+  queueReward({
+    openActionLabel: "Claim Training Bonus",
+    label: "Training complete!",
+    title: "First scan bonus",
+    context: "Your first barcode scan",
+    reward: trainingReward,
+    finePrint:
+      "Use Gotcha Coins for an easier clue, another guess, or future rewards.",
+    actionLabel: "Continue"
+  });
+  trackEvent("training_bonus_earned", {
+    coins: TRAINING_BONUS_COINS
+  });
 }
 
 function completeHunt(hunt, scanned) {
@@ -771,6 +825,7 @@ function completeHunt(hunt, scanned) {
     const dailyReward = weightedRewardPick(dailyChestRewards);
     grantReward(dailyReward, "Daily Chest");
     queueReward({
+      openActionLabel: "Open Daily Chest",
       label: "Daily Chest opened!",
       title: "Daily reward",
       context: `${DAILY_GOAL} hunts completed today`,
@@ -795,9 +850,7 @@ function completeHunt(hunt, scanned) {
     context: `${hunt.name} found`,
     reward: prize,
     finePrint: "Your guesses have been refreshed for the next hunt.",
-    actionLabel: state.pendingRewards.length > 0
-      ? "Open Daily Chest"
-      : "Start Next Hunt"
+    actionLabel: "Start Next Hunt"
   });
 }
 
@@ -947,6 +1000,7 @@ function awardSignalFragment(scanned) {
   const reward = weightedRewardPick(cacheRewards);
   grantReward(reward, "Discovery Cache");
   queueReward({
+    openActionLabel: "Open Discovery Cache",
     label: "Discovery Cache!",
     title: "Signal decoded",
     context: "Three unique product signals collected",
@@ -1022,12 +1076,13 @@ function showWrongOverlay(scanned, fragmentResult) {
   elements.wrongRewardText.textContent = fragmentResult.message;
   elements.wrongRewardText.className =
     `wrong-reward-text reward-${fragmentResult.status}`;
-  elements.wrongActionButton.textContent =
+  elements.wrongActionButton.textContent = getNextRewardActionLabel(
     fragmentResult.status === "cache"
       ? "Open Discovery Cache"
       : state.player.guesses > 0
         ? "Scan Another Item"
-        : "No Guesses Left";
+        : "No Guesses Left"
+  );
   elements.wrongOverlay.classList.remove("hidden");
 }
 
@@ -1088,8 +1143,13 @@ function showRewardOverlay(details) {
     !details.showChest
   );
   elements.rewardFinePrint.textContent = details.finePrint;
-  elements.rewardActionText.textContent = details.actionLabel;
+  elements.rewardActionText.textContent =
+    getNextRewardActionLabel(details.actionLabel);
   elements.prizeOverlay.classList.remove("hidden");
+}
+
+function getNextRewardActionLabel(fallback) {
+  return state.pendingRewards[0]?.openActionLabel || fallback;
 }
 
 function showNextQueuedReward() {
