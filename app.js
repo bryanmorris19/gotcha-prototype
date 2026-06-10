@@ -14,6 +14,7 @@ const MAX_REWARD_HISTORY = 50;
 const DAILY_GOAL = 4;
 const MAX_ANALYTICS_EVENTS = 250;
 const MUSIC_VOLUME = 0.16;
+const MUSIC_PREFERENCE_VERSION = 1;
 
 const prizes = [
   {
@@ -391,7 +392,8 @@ function createDefaultPlayer() {
     collection: {},
     rewardHistory: [],
     groceryItems: [],
-    musicMuted: false,
+    musicMuted: true,
+    musicPreferenceVersion: MUSIC_PREFERENCE_VERSION,
     analytics: {
       counters: {},
       events: []
@@ -498,7 +500,11 @@ function loadPlayer() {
             }))
             .filter(item => item.text)
         : [],
-      musicMuted: Boolean(saved.musicMuted),
+      musicMuted:
+        Number(saved.musicPreferenceVersion) === MUSIC_PREFERENCE_VERSION
+          ? Boolean(saved.musicMuted)
+          : true,
+      musicPreferenceVersion: MUSIC_PREFERENCE_VERSION,
       analytics: {
         counters: saved.analytics?.counters || {},
         events: Array.isArray(saved.analytics?.events)
@@ -1281,27 +1287,30 @@ function renderCollection() {
     const status = unlocked
       ? artifact.rarity
       : artifact.available
-        ? "Hidden"
+        ? "Locked"
         : "Coming Soon";
+    const displayLabel = unlocked ? artifact.label : "Mystery Artifact";
+    const displayIcon = unlocked ? artifact.icon : "icon-mystery";
+    const displaySubtitle = unlocked
+      ? artifact.subtitle
+      : artifact.available
+        ? "Keep hunting to reveal it"
+        : "A future surprise awaits";
 
     return `
       <article
         class="reward-card artifact-card rarity-${artifact.rarity} ${unlocked ? "unlocked" : "locked"}"
-        aria-label="${escapeHtml(artifact.label)}: ${unlocked ? "unlocked" : "locked"}"
+        aria-label="${escapeHtml(displayLabel)}: ${unlocked ? "unlocked" : "locked"}"
       >
         <span class="reward-rarity">${escapeHtml(status)}</span>
         <span class="artifact-symbol" aria-hidden="true">
-          <svg><use href="#${escapeHtml(artifact.icon)}"></use></svg>
+          <svg><use href="#${escapeHtml(displayIcon)}"></use></svg>
           ${unlocked
             ? ""
             : '<span class="artifact-lock"><svg><use href="#icon-lock"></use></svg></span>'}
         </span>
-        <strong>${escapeHtml(artifact.label)}</strong>
-        <small>${escapeHtml(unlocked
-          ? artifact.subtitle
-          : artifact.available
-            ? "Keep hunting to reveal it"
-            : "A future artifact awaits")}</small>
+        <strong>${escapeHtml(displayLabel)}</strong>
+        <small>${escapeHtml(displaySubtitle)}</small>
         ${unlocked && savedArtifact.count > 1
           ? `<span class="reward-count">x${savedArtifact.count}</span>`
           : ""}
@@ -1660,6 +1669,7 @@ function toggleBackgroundMusic() {
   }
 
   state.player.musicMuted = !state.player.musicMuted;
+  state.player.musicPreferenceVersion = MUSIC_PREFERENCE_VERSION;
   if (state.player.musicMuted) {
     stopBackgroundMusic();
   } else {
