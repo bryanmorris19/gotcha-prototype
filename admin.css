@@ -229,6 +229,28 @@ fieldset:disabled button {
   cursor: not-allowed;
 }
 
+.walkthrough-card p {
+  margin: 14px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.walkthrough-link {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #d9ac24, #9b6800);
+  box-shadow: 0 8px 18px rgba(155, 104, 0, 0.2);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .token-row,
 .barcode-entry {
   display: grid;

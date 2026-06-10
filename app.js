@@ -106,45 +106,45 @@ const rewardCatalog = [...prizes, ...cacheRewards];
 const artifactCatalog = [
   {
     id: "lucky-key",
-    label: "Hidden Key",
-    subtitle: "One piece of the larger prize puzzle",
+    label: "Tablet Fragment I",
+    subtitle: "The first section of the glowing route",
     rarity: "common",
-    icon: "icon-key"
+    icon: "icon-map"
   },
   {
     id: "signal-compass",
-    label: "Signal Compass",
-    subtitle: "One piece of the larger prize puzzle",
+    label: "Tablet Fragment II",
+    subtitle: "The route turns toward a distant marker",
     rarity: "rare",
-    icon: "icon-compass"
+    icon: "icon-map"
   },
   {
     id: "emerald-lantern",
-    label: "Emerald Lantern",
-    subtitle: "One piece of the larger prize puzzle",
+    label: "Tablet Fragment III",
+    subtitle: "Ancient lines continue across the stone",
     rarity: "rare",
-    icon: "icon-lantern"
+    icon: "icon-map"
   },
   {
     id: "secret-map",
-    label: "Secret Map",
-    subtitle: "One piece of the larger prize puzzle",
+    label: "Tablet Fragment IV",
+    subtitle: "A hidden landmark appears on the route",
     rarity: "epic",
     icon: "icon-map"
   },
   {
     id: "vault-crown",
-    label: "Vault Crown",
-    subtitle: "One piece of the larger prize puzzle",
+    label: "Tablet Fragment V",
+    subtitle: "The path approaches its final destination",
     rarity: "legendary",
-    icon: "icon-crown"
+    icon: "icon-map"
   },
   {
     id: "star-relic",
-    label: "Star Relic",
-    subtitle: "The final piece of the larger prize puzzle",
+    label: "Tablet Fragment VI",
+    subtitle: "The final route and scanner seal",
     rarity: "legendary",
-    icon: "icon-relic"
+    icon: "icon-map"
   }
 ];
 const artifactIds = new Set(artifactCatalog.map(artifact => artifact.id));
@@ -179,7 +179,11 @@ const state = {
   tutorialIndex: 0,
   tutorialTouchStartX: null,
   tutorialTouchStartY: null,
-  tutorialPreviousFocus: null
+  tutorialPreviousFocus: null,
+  tabletPreviewEnabled:
+    new URLSearchParams(window.location.search).get("tablet-preview") === "1",
+  tabletPreviewCount: 0,
+  tabletPreviewFinalSuccess: false
 };
 
 const elements = {};
@@ -202,6 +206,7 @@ async function initializeApp() {
       savePlayer();
     }
     render();
+    initializeTabletPreview();
     scheduleMidnightReset();
     startCountdown();
     registerServiceWorker();
@@ -275,7 +280,6 @@ function cacheElements() {
   elements.wrongScanText = document.getElementById("wrongScanText");
   elements.wrongRewardText = document.getElementById("wrongRewardText");
   elements.wrongActionButton = document.getElementById("wrongActionButton");
-  elements.collectionGrid = document.getElementById("collectionGrid");
   elements.collectionCount = document.getElementById("collectionCount");
   elements.artifactPuzzleText = document.getElementById(
     "artifactPuzzleText"
@@ -283,6 +287,45 @@ function cacheElements() {
   elements.artifactPuzzleBar = document.getElementById("artifactPuzzleBar");
   elements.artifactPuzzleMessage = document.getElementById(
     "artifactPuzzleMessage"
+  );
+  elements.tabletStage = document.getElementById("tabletStage");
+  elements.tabletPieces = Array.from(
+    document.querySelectorAll("[data-tablet-piece]")
+  );
+  elements.finalHuntPanel = document.getElementById("finalHuntPanel");
+  elements.finalHuntSealUse = document.getElementById("finalHuntSealUse");
+  elements.finalHuntLocked = document.getElementById("finalHuntLocked");
+  elements.finalHuntUnlocked = document.getElementById("finalHuntUnlocked");
+  elements.openFinalScannerButton = document.getElementById(
+    "openFinalScannerButton"
+  );
+  elements.tabletAdminPanel = document.getElementById("tabletAdminPanel");
+  elements.tabletPreviewStatus = document.getElementById(
+    "tabletPreviewStatus"
+  );
+  elements.tabletPreviewPrevious = document.getElementById(
+    "tabletPreviewPrevious"
+  );
+  elements.tabletPreviewNext = document.getElementById("tabletPreviewNext");
+  elements.tabletPreviewComplete = document.getElementById(
+    "tabletPreviewComplete"
+  );
+  elements.tabletPreviewReset = document.getElementById("tabletPreviewReset");
+  elements.finalScannerOverlay = document.getElementById(
+    "finalScannerOverlay"
+  );
+  elements.finalScannerReady = document.getElementById("finalScannerReady");
+  elements.finalScannerSuccess = document.getElementById(
+    "finalScannerSuccess"
+  );
+  elements.simulateFinalScanButton = document.getElementById(
+    "simulateFinalScanButton"
+  );
+  elements.closeFinalScannerButton = document.getElementById(
+    "closeFinalScannerButton"
+  );
+  elements.closeFinalSuccessButton = document.getElementById(
+    "closeFinalSuccessButton"
   );
   elements.rewardHistoryList = document.getElementById("rewardHistoryList");
   elements.groceryListCount = document.getElementById("groceryListCount");
@@ -352,6 +395,35 @@ function bindEvents() {
   elements.torchButton.addEventListener("click", toggleTorch);
   elements.nextHuntButton.addEventListener("click", closePrizeOverlay);
   elements.wrongActionButton.addEventListener("click", closeWrongOverlay);
+  elements.openFinalScannerButton.addEventListener("click", openFinalScanner);
+  elements.closeFinalScannerButton.addEventListener(
+    "click",
+    closeFinalScanner
+  );
+  elements.closeFinalSuccessButton.addEventListener(
+    "click",
+    closeFinalScanner
+  );
+  elements.simulateFinalScanButton.addEventListener(
+    "click",
+    simulateFinalScanSuccess
+  );
+  elements.tabletPreviewPrevious.addEventListener(
+    "click",
+    previewPreviousTabletFragment
+  );
+  elements.tabletPreviewNext.addEventListener(
+    "click",
+    previewNextTabletFragment
+  );
+  elements.tabletPreviewComplete.addEventListener(
+    "click",
+    previewCompleteTablet
+  );
+  elements.tabletPreviewReset.addEventListener(
+    "click",
+    resetTabletPreview
+  );
   elements.groceryForm.addEventListener("submit", addGroceryItem);
   elements.groceryList.addEventListener("change", handleGroceryListChange);
   elements.groceryList.addEventListener("click", handleGroceryListClick);
@@ -707,11 +779,11 @@ function render() {
   elements.dailyArtifactMessage.textContent =
     state.player.dailyArtifactClaimed
       ? puzzleComplete
-        ? "Daily artifact unlocked. Your full puzzle now reveals a prize chance."
-        : "Daily artifact unlocked. Return tomorrow to reveal another piece."
+        ? "Daily fragment recovered. The complete tablet reveals the final scanner."
+        : "Daily fragment recovered. Return tomorrow to reveal another route section."
       : `${scansRemaining} more correct ${
           scansRemaining === 1 ? "scan" : "scans"
-        } to unlock today's artifact.`;
+        } to recover today's tablet fragment.`;
   elements.scannerLaunchButton.disabled =
     state.player.guesses <= 0 || state.scannerRunning;
   elements.betterClueButton.disabled =
@@ -1098,18 +1170,18 @@ function unlockDailyArtifact(showOverlay = true) {
   if (showOverlay) {
     queueReward({
       openActionLabel: "Reveal Daily Artifact",
-      label: "Daily artifact unlocked!",
+      label: "Stone fragment recovered!",
       title: artifact.label,
       context: `${DAILY_GOAL} correct scans completed`,
       reward: artifact,
       finePrint: remainingArtifacts === 0
-        ? "Puzzle complete. Your simulated prize chance is now unlocked."
+        ? "Tablet complete. The special final scanner is now unlocked."
         : `${remainingArtifacts} ${
-            remainingArtifacts === 1 ? "artifact remains" : "artifacts remain"
-          } in the larger prize puzzle.`,
+            remainingArtifacts === 1 ? "fragment remains" : "fragments remain"
+          } in the stone tablet.`,
       actionLabel: remainingArtifacts === 0
-        ? "View Completed Puzzle"
-        : "Add to Collection"
+        ? "View Completed Tablet"
+        : "Add to Tablet"
     });
   }
 }
@@ -1365,13 +1437,16 @@ function renderCollection() {
   const unlockedArtifacts = artifactCatalog.filter(
     artifact => state.player.collection[artifact.id]
   );
-  const unlockedCount = unlockedArtifacts.length;
+  const actualUnlockedCount = unlockedArtifacts.length;
+  const unlockedCount = state.tabletPreviewEnabled
+    ? state.tabletPreviewCount
+    : actualUnlockedCount;
   const puzzleComplete = unlockedCount === artifactCatalog.length;
 
   elements.collectionCount.textContent =
-    `${unlockedCount} of ${artifactCatalog.length} found`;
+    `${unlockedCount} of ${artifactCatalog.length} fragments`;
   elements.artifactPuzzleText.textContent =
-    `${unlockedCount} of ${artifactCatalog.length} puzzle pieces found`;
+    `${unlockedCount} of ${artifactCatalog.length} tablet fragments recovered`;
   elements.artifactPuzzleBar.style.width =
     `${Math.min(100, (unlockedCount / artifactCatalog.length) * 100)}%`;
   elements.artifactPuzzleBar.parentElement.setAttribute(
@@ -1379,45 +1454,149 @@ function renderCollection() {
     String(unlockedCount)
   );
   elements.artifactPuzzleMessage.textContent = puzzleComplete
-    ? "Puzzle complete. Your simulated prize chance is unlocked."
-    : "Each daily artifact reveals another piece of the larger prize puzzle.";
-  elements.collectionGrid.classList.remove("hidden");
-  elements.collectionGrid.innerHTML = artifactCatalog.map(artifact => {
-    const savedArtifact = state.player.collection[artifact.id];
-    const unlocked = Boolean(savedArtifact);
+    ? "The glowing route is complete. The final scanner is active."
+    : "Every recovered fragment restores another glowing section of the route.";
 
-    if (!unlocked) {
-      return `
-        <article
-          class="reward-card artifact-card locked"
-          aria-label="Locked artifact"
-        >
-          <span class="artifact-lock-preview" aria-hidden="true">
-            <svg><use href="#icon-lock"></use></svg>
-          </span>
-        </article>
-      `;
-    }
+  elements.tabletPieces.forEach((piece, index) => {
+    const unlocked = index < unlockedCount;
+    piece.classList.toggle("unlocked", unlocked);
+    piece.classList.toggle("locked", !unlocked);
+    piece.setAttribute(
+      "aria-label",
+      unlocked
+        ? `${artifactCatalog[index].label} recovered`
+        : `Tablet fragment ${index + 1} locked`
+    );
+  });
+  elements.tabletStage.classList.toggle("complete", puzzleComplete);
+  elements.finalHuntPanel.classList.toggle("unlocked", puzzleComplete);
+  elements.finalHuntPanel.classList.toggle("locked", !puzzleComplete);
+  elements.finalHuntLocked.classList.toggle("hidden", puzzleComplete);
+  elements.finalHuntUnlocked.classList.toggle("hidden", !puzzleComplete);
+  elements.finalHuntSealUse.setAttribute(
+    "href",
+    puzzleComplete ? "#icon-scan" : "#icon-lock"
+  );
 
-    return `
-      <article
-        class="reward-card artifact-card rarity-${artifact.rarity} unlocked"
-        aria-label="${escapeHtml(artifact.label)}: unlocked"
-      >
-        <span class="reward-rarity">${escapeHtml(artifact.rarity)}</span>
-        <span class="artifact-symbol" aria-hidden="true">
-          <svg><use href="#${escapeHtml(artifact.icon)}"></use></svg>
-        </span>
-        <strong>${escapeHtml(artifact.label)}</strong>
-        <small>${escapeHtml(artifact.subtitle)}</small>
-        ${savedArtifact.count > 1
-          ? `<span class="reward-count">x${savedArtifact.count}</span>`
-          : ""}
-      </article>
-    `;
-  }).join("");
+  elements.tabletAdminPanel.classList.toggle(
+    "hidden",
+    !state.tabletPreviewEnabled
+  );
+  if (state.tabletPreviewEnabled) {
+    elements.tabletPreviewStatus.textContent =
+      `${unlockedCount} of ${artifactCatalog.length} fragments visible`;
+    elements.tabletPreviewPrevious.disabled = unlockedCount === 0;
+    elements.tabletPreviewNext.disabled =
+      unlockedCount === artifactCatalog.length;
+    elements.tabletPreviewComplete.disabled = puzzleComplete;
+    elements.tabletPreviewReset.disabled =
+      unlockedCount === 0 && !state.tabletPreviewFinalSuccess;
+  }
 
   renderRewardHistory();
+}
+
+function initializeTabletPreview() {
+  if (!state.tabletPreviewEnabled) {
+    return;
+  }
+
+  state.tabletPreviewCount = 0;
+  state.tabletPreviewFinalSuccess = false;
+  state.activeView = "collection";
+  elements.views.forEach(view => {
+    view.classList.toggle("active", view.dataset.view === "collection");
+  });
+  elements.navButtons.forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.viewButton === "collection"
+    );
+  });
+  renderCollection();
+}
+
+function previewPreviousTabletFragment() {
+  if (!state.tabletPreviewEnabled) {
+    return;
+  }
+
+  state.tabletPreviewCount = Math.max(0, state.tabletPreviewCount - 1);
+  state.tabletPreviewFinalSuccess = false;
+  closeFinalScanner();
+  renderCollection();
+}
+
+function previewNextTabletFragment() {
+  if (!state.tabletPreviewEnabled) {
+    return;
+  }
+
+  state.tabletPreviewCount = Math.min(
+    artifactCatalog.length,
+    state.tabletPreviewCount + 1
+  );
+  state.tabletPreviewFinalSuccess = false;
+  renderCollection();
+}
+
+function previewCompleteTablet() {
+  if (!state.tabletPreviewEnabled) {
+    return;
+  }
+
+  state.tabletPreviewCount = artifactCatalog.length;
+  state.tabletPreviewFinalSuccess = false;
+  renderCollection();
+}
+
+function resetTabletPreview() {
+  if (!state.tabletPreviewEnabled) {
+    return;
+  }
+
+  state.tabletPreviewCount = 0;
+  state.tabletPreviewFinalSuccess = false;
+  closeFinalScanner();
+  renderCollection();
+}
+
+function openFinalScanner() {
+  const unlockedCount = state.tabletPreviewEnabled
+    ? state.tabletPreviewCount
+    : artifactCatalog.filter(
+        artifact => state.player.collection[artifact.id]
+      ).length;
+
+  if (unlockedCount < artifactCatalog.length) {
+    return;
+  }
+
+  elements.finalScannerReady.classList.remove("hidden");
+  elements.finalScannerSuccess.classList.add("hidden");
+  elements.simulateFinalScanButton.classList.toggle(
+    "hidden",
+    !state.tabletPreviewEnabled
+  );
+  elements.finalScannerOverlay.classList.remove("hidden");
+}
+
+function closeFinalScanner() {
+  elements.finalScannerOverlay.classList.add("hidden");
+  elements.finalScannerReady.classList.remove("hidden");
+  elements.finalScannerSuccess.classList.add("hidden");
+}
+
+function simulateFinalScanSuccess() {
+  if (!state.tabletPreviewEnabled) {
+    return;
+  }
+
+  state.tabletPreviewFinalSuccess = true;
+  elements.finalScannerReady.classList.add("hidden");
+  elements.finalScannerSuccess.classList.remove("hidden");
+  playSuccessFeedback();
+  renderCollection();
 }
 
 function renderRewardHistory() {
@@ -1624,6 +1803,7 @@ function saveNickname() {
 
 function maybeOpenTutorial() {
   if (
+    state.tabletPreviewEnabled ||
     !state.player ||
     Number(state.player.tutorialVersion || 0) >= TUTORIAL_VERSION
   ) {
