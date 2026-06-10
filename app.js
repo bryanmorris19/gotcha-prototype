@@ -135,6 +135,57 @@ const dailyChestRewards = [
 ];
 
 const rewardCatalog = [...prizes, ...cacheRewards, ...dailyChestRewards];
+const artifactCatalog = [
+  {
+    id: "lucky-key",
+    label: "Hidden Key",
+    subtitle: "A key to something still undiscovered",
+    rarity: "common",
+    icon: "icon-key",
+    available: true
+  },
+  {
+    id: "signal-compass",
+    label: "Signal Compass",
+    subtitle: "Future artifact",
+    rarity: "rare",
+    icon: "icon-compass",
+    available: false
+  },
+  {
+    id: "emerald-lantern",
+    label: "Emerald Lantern",
+    subtitle: "Future artifact",
+    rarity: "rare",
+    icon: "icon-lantern",
+    available: false
+  },
+  {
+    id: "secret-map",
+    label: "Secret Map",
+    subtitle: "Future artifact",
+    rarity: "epic",
+    icon: "icon-map",
+    available: false
+  },
+  {
+    id: "vault-crown",
+    label: "Vault Crown",
+    subtitle: "Future artifact",
+    rarity: "legendary",
+    icon: "icon-crown",
+    available: false
+  },
+  {
+    id: "star-relic",
+    label: "Star Relic",
+    subtitle: "Future artifact",
+    rarity: "legendary",
+    icon: "icon-relic",
+    available: false
+  }
+];
+const artifactIds = new Set(artifactCatalog.map(artifact => artifact.id));
 
 const state = {
   hunts: [],
@@ -370,15 +421,20 @@ function loadPlayer() {
       Number(saved.analytics?.counters?.scan_wrong || 0) > 0 ||
       Number(saved.analytics?.counters?.better_clue_used || 0) > 0 ||
       Number(saved.analytics?.counters?.extra_guess_purchased || 0) > 0;
-    const savedCollection =
+    const rawSavedCollection =
       saved.collection && typeof saved.collection === "object"
-        ? { ...saved.collection }
+        ? saved.collection
         : {};
+    const savedCollection = Object.fromEntries(
+      Object.entries(rawSavedCollection).filter(([id]) =>
+        artifactIds.has(id)
+      )
+    );
     const savedRewardHistory = Array.isArray(saved.rewardHistory)
       ? saved.rewardHistory
       : [];
     const hasTrainingReward =
-      Boolean(savedCollection["training-bonus-20"]) ||
+      Boolean(rawSavedCollection["training-bonus-20"]) ||
       savedRewardHistory.some(entry => entry.id === "training-bonus-20");
     const needsCoinMigration =
       Number(saved.coinModelVersion) !== COIN_MODEL_VERSION;
@@ -928,9 +984,17 @@ function grantReward(reward, source) {
 
   addPrizeToCollection(reward);
   recordRewardHistory(reward, source);
+  trackEvent("reward_earned", {
+    rewardId: reward.id,
+    rarity: reward.rarity
+  });
 }
 
 function addPrizeToCollection(prize) {
+  if (!artifactIds.has(prize.id)) {
+    return;
+  }
+
   const existing = state.player.collection[prize.id] || {
     id: prize.id,
     label: prize.label,
@@ -944,10 +1008,6 @@ function addPrizeToCollection(prize) {
   existing.count += 1;
   existing.lastEarnedAt = new Date().toISOString();
   state.player.collection[prize.id] = existing;
-  trackEvent("reward_earned", {
-    rewardId: prize.id,
-    rarity: prize.rarity
-  });
 }
 
 function recordRewardHistory(reward, source) {
@@ -1194,34 +1254,48 @@ function closePrizeOverlay() {
 }
 
 function renderCollection() {
-  const rewards = Object.values(state.player.collection)
-    .sort((a, b) => new Date(b.lastEarnedAt) - new Date(a.lastEarnedAt));
-  const totalItems = rewards.reduce((sum, reward) => sum + reward.count, 0);
+  const unlockedArtifacts = artifactCatalog.filter(
+    artifact => state.player.collection[artifact.id]
+  );
+  const unlockedCount = unlockedArtifacts.length;
 
   elements.collectionCount.textContent =
-    `${totalItems} ${totalItems === 1 ? "item" : "items"}`;
-  elements.collectionGrid.innerHTML = "";
-  elements.emptyCollection.classList.toggle("hidden", rewards.length > 0);
-  elements.collectionGrid.classList.toggle("hidden", rewards.length === 0);
+    `${unlockedCount} of ${artifactCatalog.length} found`;
+  elements.emptyCollection.classList.toggle("hidden", unlockedCount > 0);
+  elements.collectionGrid.classList.remove("hidden");
+  elements.collectionGrid.innerHTML = artifactCatalog.map(artifact => {
+    const savedArtifact = state.player.collection[artifact.id];
+    const unlocked = Boolean(savedArtifact);
+    const status = unlocked
+      ? artifact.rarity
+      : artifact.available
+        ? "Hidden"
+        : "Coming Soon";
 
-  rewards.forEach(reward => {
-    const currentPrize = rewardCatalog.find(prize => prize.id === reward.id);
-    const displayReward = currentPrize || reward;
-    const card = document.createElement("article");
-    card.className = `reward-card rarity-${reward.rarity}`;
-    card.innerHTML = `
-      <span class="reward-rarity">${reward.rarity}</span>
-      ${displayReward.coins
-        ? '<img class="reward-coin-image" src="assets/gotcha-coin.png" alt="">'
-        : displayReward.simulatedGiftCard
-          ? '<span class="reward-gift-badge" aria-hidden="true">$5</span>'
-        : `<span class="reward-symbol" aria-hidden="true">${displayReward.symbol}</span>`}
-      <strong>${escapeHtml(displayReward.label)}</strong>
-      <small>${escapeHtml(displayReward.subtitle)}</small>
-      <span class="reward-count">x${reward.count}</span>
+    return `
+      <article
+        class="reward-card artifact-card rarity-${artifact.rarity} ${unlocked ? "unlocked" : "locked"}"
+        aria-label="${escapeHtml(artifact.label)}: ${unlocked ? "unlocked" : "locked"}"
+      >
+        <span class="reward-rarity">${escapeHtml(status)}</span>
+        <span class="artifact-symbol" aria-hidden="true">
+          <svg><use href="#${escapeHtml(artifact.icon)}"></use></svg>
+          ${unlocked
+            ? ""
+            : '<span class="artifact-lock"><svg><use href="#icon-lock"></use></svg></span>'}
+        </span>
+        <strong>${escapeHtml(artifact.label)}</strong>
+        <small>${escapeHtml(unlocked
+          ? artifact.subtitle
+          : artifact.available
+            ? "Keep hunting to reveal it"
+            : "A future artifact awaits")}</small>
+        ${unlocked && savedArtifact.count > 1
+          ? `<span class="reward-count">x${savedArtifact.count}</span>`
+          : ""}
+      </article>
     `;
-    elements.collectionGrid.appendChild(card);
-  });
+  }).join("");
 
   renderRewardHistory();
 }
@@ -1389,8 +1463,9 @@ function createGroceryItemId() {
 }
 
 function renderProfile() {
-  const totalCollectibles = Object.values(state.player.collection)
-    .reduce((sum, reward) => sum + reward.count, 0);
+  const totalCollectibles = artifactCatalog.filter(
+    artifact => state.player.collection[artifact.id]
+  ).length;
   const level = Math.max(
     1,
     Math.floor(state.player.lifetimeCoins / 250) + 1

@@ -1328,6 +1328,123 @@ button:disabled {
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.6), 0 10px 22px rgba(16, 32, 43, 0.14);
 }
 
+.artifact-symbol {
+  position: relative;
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border-radius: 24px;
+  color: inherit;
+  background: currentColor;
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.56),
+    0 10px 22px rgba(16, 32, 43, 0.14);
+}
+
+.artifact-symbol > svg {
+  width: 38px;
+  height: 38px;
+  color: #fff;
+}
+
+.artifact-lock {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 3px solid #f5f4f0;
+  border-radius: 50%;
+  color: #777d7a;
+  background: #dedfdd;
+}
+
+.artifact-lock svg {
+  width: 14px;
+  height: 14px;
+}
+
+.artifact-card.locked {
+  color: #929793;
+  border-color: rgba(74, 82, 78, 0.1);
+  background:
+    linear-gradient(rgba(246, 246, 243, 0.88), rgba(236, 237, 234, 0.92)),
+    var(--card);
+  box-shadow: 0 8px 22px rgba(33, 42, 35, 0.05);
+}
+
+.artifact-card.locked::before {
+  opacity: 0.04;
+}
+
+.artifact-card.locked .artifact-symbol {
+  color: #aeb2af;
+  background: #d7d9d7;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.7);
+}
+
+.artifact-card.locked .artifact-symbol > svg {
+  opacity: 0.58;
+}
+
+.artifact-card.locked strong,
+.artifact-card.locked small {
+  color: #858b87;
+}
+
+.artifact-card.locked small {
+  max-width: 150px;
+}
+
+.artifact-card.unlocked {
+  border-color: rgba(16, 122, 62, 0.16);
+}
+
+.artifact-card.unlocked .artifact-symbol {
+  background: currentColor;
+}
+
+.artifact-empty-state {
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-items: start;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 17px;
+  text-align: left;
+}
+
+.artifact-empty-state > span {
+  width: 48px;
+  height: 48px;
+  grid-row: 1 / span 2;
+  border-radius: 17px;
+}
+
+.artifact-empty-state > span svg {
+  width: 24px;
+  height: 24px;
+}
+
+.artifact-empty-state h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.artifact-empty-state p {
+  font-size: 12px;
+}
+
+.artifact-empty-state .view-link {
+  min-height: 42px;
+  grid-column: 1 / -1;
+  margin-top: 11px;
+  padding-block: 10px;
+  font-size: 13px;
+}
+
 .reward-coin-image {
   width: 72px;
   height: 72px;
