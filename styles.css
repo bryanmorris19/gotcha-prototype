@@ -550,12 +550,17 @@ button.scan-launch-button {
 }
 
 button.scan-launch-button:not(:disabled) {
-  animation: scan-button-glow 3.8s ease-in-out infinite;
+  animation: scan-button-glow 3.2s ease-in-out infinite;
 }
 
 button.scan-launch-button svg {
   width: 24px;
   height: 24px;
+  filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+}
+
+button.scan-launch-button:not(:disabled) svg {
+  animation: scan-icon-glow 3.2s ease-in-out infinite;
 }
 
 .button-icon {
@@ -1840,14 +1845,25 @@ button:disabled {
 @keyframes scan-button-glow {
   0%, 100% {
     filter: brightness(1);
-    box-shadow: 0 9px 20px rgba(13, 132, 87, 0.24);
+    box-shadow:
+      0 9px 20px rgba(13, 132, 87, 0.3),
+      0 0 0 1px rgba(52, 199, 89, 0.08);
   }
   50% {
-    filter: brightness(1.05);
+    filter: brightness(1.14) saturate(1.08);
     box-shadow:
-      0 9px 20px rgba(13, 132, 87, 0.28),
-      0 0 0 5px rgba(52, 199, 89, 0.08),
-      0 0 20px rgba(52, 199, 89, 0.2);
+      0 11px 24px rgba(13, 132, 87, 0.38),
+      0 0 0 7px rgba(52, 199, 89, 0.2),
+      0 0 30px 7px rgba(52, 199, 89, 0.38);
+  }
+}
+
+@keyframes scan-icon-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.86));
   }
 }
 
@@ -1888,7 +1904,8 @@ button:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  button.scan-launch-button {
+  button.scan-launch-button,
+  button.scan-launch-button svg {
     animation: none;
   }
 }
