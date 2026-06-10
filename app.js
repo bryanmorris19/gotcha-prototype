@@ -183,7 +183,13 @@ const state = {
   tabletPreviewEnabled:
     new URLSearchParams(window.location.search).get("tablet-preview") === "1",
   tabletPreviewCount: 0,
-  tabletPreviewFinalSuccess: false
+  tabletPreviewFinalSuccess: false,
+  scanPreviewProgress: 0,
+  scanPreviewGuesses: STARTING_GUESSES,
+  scanPreviewSignalFragments: 0,
+  scanPreviewRewardActive: false,
+  scanPreviewRewardQueue: [],
+  scanPreviewReturnToTablet: false
 };
 
 const elements = {};
@@ -197,8 +203,9 @@ async function initializeApp() {
   try {
     state.hunts = await loadHunts();
     state.player = loadPlayer();
-    applyDailyReset();
+    applyDailyReset(!state.tabletPreviewEnabled);
     if (
+      !state.tabletPreviewEnabled &&
       state.player.dailyProgress >= DAILY_GOAL &&
       !state.player.dailyArtifactClaimed
     ) {
@@ -210,8 +217,16 @@ async function initializeApp() {
     scheduleMidnightReset();
     startCountdown();
     registerServiceWorker();
-    trackEvent("app_opened");
-    initializeAccount().finally(maybeOpenTutorial);
+    if (state.tabletPreviewEnabled) {
+      state.accountReady = true;
+      state.accountStatusMessage =
+        "Admin walkthrough mode does not connect or sync account progress.";
+      renderAccount();
+      maybeOpenTutorial();
+    } else {
+      trackEvent("app_opened");
+      initializeAccount().finally(maybeOpenTutorial);
+    }
   } catch (error) {
     console.error("App initialization error:", error);
     showStatus(
@@ -300,6 +315,27 @@ function cacheElements() {
     "openFinalScannerButton"
   );
   elements.tabletAdminPanel = document.getElementById("tabletAdminPanel");
+  elements.scanAdminPanel = document.getElementById("scanAdminPanel");
+  elements.scanPreviewStatus = document.getElementById("scanPreviewStatus");
+  elements.scanPreviewComplete = document.getElementById(
+    "scanPreviewComplete"
+  );
+  elements.scanPreviewReset = document.getElementById("scanPreviewReset");
+  elements.scanPreviewViewTablet = document.getElementById(
+    "scanPreviewViewTablet"
+  );
+  elements.previewScannerControls = document.getElementById(
+    "previewScannerControls"
+  );
+  elements.previewCorrectScanButton = document.getElementById(
+    "previewCorrectScanButton"
+  );
+  elements.previewWrongScanButton = document.getElementById(
+    "previewWrongScanButton"
+  );
+  elements.tabletPreviewViewHunt = document.getElementById(
+    "tabletPreviewViewHunt"
+  );
   elements.tabletPreviewStatus = document.getElementById(
     "tabletPreviewStatus"
   );
@@ -407,6 +443,30 @@ function bindEvents() {
   elements.simulateFinalScanButton.addEventListener(
     "click",
     simulateFinalScanSuccess
+  );
+  elements.previewCorrectScanButton.addEventListener(
+    "click",
+    simulatePreviewCorrectScan
+  );
+  elements.previewWrongScanButton.addEventListener(
+    "click",
+    simulatePreviewWrongScan
+  );
+  elements.scanPreviewComplete.addEventListener(
+    "click",
+    completePreviewDailyHunt
+  );
+  elements.scanPreviewReset.addEventListener(
+    "click",
+    resetPreviewScans
+  );
+  elements.scanPreviewViewTablet.addEventListener(
+    "click",
+    () => switchView("collection")
+  );
+  elements.tabletPreviewViewHunt.addEventListener(
+    "click",
+    () => switchView("home")
   );
   elements.tabletPreviewPrevious.addEventListener(
     "click",
@@ -648,6 +708,10 @@ function loadPlayer() {
 }
 
 function savePlayer() {
+  if (state.tabletPreviewEnabled) {
+    return;
+  }
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.player));
     scheduleCloudSync();
@@ -656,7 +720,7 @@ function savePlayer() {
   }
 }
 
-function applyDailyReset() {
+function applyDailyReset(persist = true) {
   const today = getDateKey();
 
   if (state.player.dailyDate === today) {
@@ -671,7 +735,9 @@ function applyDailyReset() {
   state.player.dailyCachesOpened = 0;
   state.player.dailyScannedBarcodes = [];
   state.player.dailyArtifactClaimed = false;
-  savePlayer();
+  if (persist) {
+    savePlayer();
+  }
 }
 
 function scheduleMidnightReset() {
@@ -792,6 +858,9 @@ function render() {
   renderCollection();
   renderGroceryList();
   renderProfile();
+  if (state.tabletPreviewEnabled) {
+    renderScanPreview();
+  }
 }
 
 function renderRewardProgress() {
@@ -893,6 +962,11 @@ function closeRewardOdds() {
 }
 
 function startBarcodeScanner() {
+  if (state.tabletPreviewEnabled) {
+    openPreviewScanner();
+    return Promise.resolve();
+  }
+
   if (state.player.guesses <= 0) {
     showHuntNotice("No guesses left for this hunt.", "fail");
     return Promise.resolve();
@@ -982,6 +1056,16 @@ function startBarcodeScanner() {
 }
 
 function stopBarcodeScanner() {
+  if (state.tabletPreviewEnabled) {
+    elements.scannerOverlay.classList.add("hidden");
+    elements.scannerState.textContent = "Starting";
+    elements.scannerShell.classList.remove("is-live");
+    elements.scannerShell.classList.remove("is-preview");
+    elements.previewScannerControls.classList.add("hidden");
+    state.scanLocked = false;
+    return Promise.resolve();
+  }
+
   state.scannerSessionId += 1;
   elements.scannerOverlay.classList.add("hidden");
   elements.scannerState.textContent = "Starting";
@@ -1342,6 +1426,25 @@ function showWrongOverlay(scanned, fragmentResult) {
 function closeWrongOverlay() {
   elements.wrongOverlay.classList.add("hidden");
 
+  if (state.tabletPreviewEnabled) {
+    if (state.scanPreviewGuesses <= 0) {
+      stopBarcodeScanner();
+      showHuntNotice(
+        "Preview guesses reached zero. Reset the scan preview to continue.",
+        "fail"
+      );
+    } else {
+      state.scanLocked = false;
+      elements.scannerState.textContent = "Preview";
+      showStatus(
+        "Preview scanner ready. Choose another simulated barcode result.",
+        "neutral"
+      );
+    }
+    renderScanPreview();
+    return;
+  }
+
   if (state.pendingRewards.length > 0) {
     state.resumeScannerAfterRewards = true;
     showNextQueuedReward();
@@ -1417,6 +1520,27 @@ function showNextQueuedReward() {
 }
 
 function closePrizeOverlay() {
+  if (
+    state.tabletPreviewEnabled &&
+    state.scanPreviewRewardActive
+  ) {
+    const nextPreviewReward = state.scanPreviewRewardQueue.shift();
+    if (nextPreviewReward) {
+      showRewardOverlay(nextPreviewReward);
+      return;
+    }
+
+    elements.prizeOverlay.classList.add("hidden");
+    state.scanPreviewRewardActive = false;
+    state.scanLocked = false;
+    render();
+    if (state.scanPreviewReturnToTablet) {
+      state.scanPreviewReturnToTablet = false;
+      switchView("collection");
+    }
+    return;
+  }
+
   if (state.pendingRewards.length > 0) {
     showNextQueuedReward();
     return;
@@ -1431,6 +1555,228 @@ function closePrizeOverlay() {
     state.resumeScannerAfterRewards = false;
     resumeScannerAfterOverlay();
   }
+}
+
+function getPreviewHunt() {
+  const huntOffset = Math.min(
+    state.scanPreviewProgress,
+    DAILY_GOAL - 1
+  );
+  const index =
+    (getDailyStartIndex() + huntOffset) % state.hunts.length;
+  return state.hunts[index];
+}
+
+function renderScanPreview() {
+  if (!state.tabletPreviewEnabled || state.hunts.length === 0) {
+    return;
+  }
+
+  const hunt = getPreviewHunt();
+  const completed = Math.min(state.scanPreviewProgress, DAILY_GOAL);
+  const scansRemaining = Math.max(0, DAILY_GOAL - completed);
+  elements.scanAdminPanel.classList.remove("hidden");
+  elements.guessesValue.textContent = state.scanPreviewGuesses;
+  elements.clueText.textContent = hunt.clue;
+  elements.huntMeta.textContent =
+    `Admin preview - Hunt ${Math.min(completed + 1, DAILY_GOAL)} of ${DAILY_GOAL}`;
+  elements.dailyProgressText.textContent =
+    `${completed} of ${DAILY_GOAL} correct scans`;
+  elements.dailyProgressBar.style.width =
+    `${Math.min(100, (completed / DAILY_GOAL) * 100)}%`;
+  elements.dailyProgressBar.parentElement.setAttribute(
+    "aria-valuenow",
+    String(completed)
+  );
+  elements.dailyArtifactMessage.textContent = completed >= DAILY_GOAL
+    ? "Daily hunt complete. A tablet fragment has been recovered."
+    : `${scansRemaining} more correct ${
+        scansRemaining === 1 ? "scan" : "scans"
+      } to recover a tablet fragment.`;
+  elements.scanPreviewStatus.textContent = completed >= DAILY_GOAL
+    ? "Daily hunt complete - tablet fragment recovered"
+    : `${completed} of ${DAILY_GOAL} correct scans completed`;
+  elements.resetButton.textContent = "Reset walkthrough";
+  elements.resetButton.disabled = false;
+  elements.scannerLaunchButton.disabled =
+    state.scanPreviewGuesses <= 0 || completed >= DAILY_GOAL;
+  elements.scanPreviewComplete.disabled = completed >= DAILY_GOAL;
+  elements.scanPreviewReset.disabled =
+    completed === 0 &&
+    state.scanPreviewGuesses === STARTING_GUESSES &&
+    state.scanPreviewSignalFragments === 0;
+  elements.previewCorrectScanButton.disabled =
+    state.scanPreviewGuesses <= 0 || completed >= DAILY_GOAL;
+  elements.previewWrongScanButton.disabled =
+    state.scanPreviewGuesses <= 0 || completed >= DAILY_GOAL;
+
+  const fragmentCount = Math.min(
+    state.scanPreviewSignalFragments,
+    FRAGMENTS_PER_CACHE
+  );
+  elements.fragmentText.textContent =
+    `${fragmentCount} of ${FRAGMENTS_PER_CACHE} Preview Signal Fragments`;
+  document.getElementById("fragmentPips").setAttribute(
+    "aria-valuenow",
+    String(fragmentCount)
+  );
+  elements.fragmentPips.forEach((pip, index) => {
+    pip.classList.toggle("earned", index < fragmentCount);
+  });
+  elements.cacheLimitText.textContent =
+    "Wrong scan rewards are simulated in walkthrough mode";
+}
+
+function openPreviewScanner() {
+  if (
+    state.scanPreviewGuesses <= 0 ||
+    state.scanPreviewProgress >= DAILY_GOAL
+  ) {
+    return;
+  }
+
+  clearHuntNotice();
+  enableFeedback();
+  state.scanLocked = false;
+  elements.scannerOverlay.classList.remove("hidden");
+  elements.scannerShell.classList.add("is-live");
+  elements.scannerShell.classList.add("is-preview");
+  elements.scannerState.textContent = "Preview";
+  elements.previewScannerControls.classList.remove("hidden");
+  elements.torchButton.classList.add("hidden");
+  showStatus(
+    "Admin scanner preview. Choose a correct or wrong barcode result below.",
+    "neutral"
+  );
+  renderScanPreview();
+}
+
+function simulatePreviewCorrectScan() {
+  if (
+    !state.tabletPreviewEnabled ||
+    state.scanPreviewGuesses <= 0 ||
+    state.scanPreviewProgress >= DAILY_GOAL
+  ) {
+    return;
+  }
+
+  const hunt = getPreviewHunt();
+  state.scanPreviewProgress += 1;
+  state.scanPreviewGuesses = STARTING_GUESSES;
+  state.scanLocked = true;
+  state.scanPreviewRewardActive = true;
+  state.scanPreviewRewardQueue = [];
+  state.scanPreviewReturnToTablet = false;
+  stopBarcodeScanner();
+
+  const reward = prizes[
+    (state.scanPreviewProgress - 1) % prizes.length
+  ];
+  const completedDailyHunt = state.scanPreviewProgress >= DAILY_GOAL;
+
+  if (completedDailyHunt) {
+    const previousTabletCount = state.tabletPreviewCount;
+    state.tabletPreviewCount = Math.min(
+      artifactCatalog.length,
+      previousTabletCount + 1
+    );
+    const fragment =
+      artifactCatalog[Math.min(previousTabletCount, artifactCatalog.length - 1)];
+    state.scanPreviewRewardQueue.push({
+      label: "Stone fragment recovered!",
+      title: fragment.label,
+      context: `${DAILY_GOAL} correct scans completed`,
+      reward: fragment,
+      finePrint: state.tabletPreviewCount >= artifactCatalog.length
+        ? "Tablet complete. The special final scanner is now unlocked."
+        : `${artifactCatalog.length - state.tabletPreviewCount} fragments remain in the stone tablet.`,
+      actionLabel: "View Stone Tablet"
+    });
+    state.scanPreviewReturnToTablet = true;
+  }
+
+  render();
+  playSuccessFeedback();
+  showRewardOverlay({
+    label: "Treasure found!",
+    title: "Gotcha!",
+    context: `${hunt.name} found`,
+    reward,
+    finePrint:
+      "Preview reward only. Your walkthrough guesses have been refreshed.",
+    actionLabel: completedDailyHunt
+      ? "Reveal Tablet Fragment"
+      : "Start Next Preview Hunt"
+  });
+}
+
+function simulatePreviewWrongScan() {
+  if (
+    !state.tabletPreviewEnabled ||
+    state.scanPreviewGuesses <= 0 ||
+    state.scanPreviewProgress >= DAILY_GOAL
+  ) {
+    return;
+  }
+
+  state.scanPreviewGuesses = Math.max(
+    0,
+    state.scanPreviewGuesses - 1
+  );
+  state.scanLocked = true;
+  state.scanPreviewSignalFragments += 1;
+  const cacheReady =
+    state.scanPreviewSignalFragments >= FRAGMENTS_PER_CACHE;
+  if (cacheReady) {
+    state.scanPreviewSignalFragments = 0;
+  }
+
+  elements.wrongScanText.textContent =
+    "The simulated barcode is not the correct item.";
+  elements.wrongRewardText.textContent = cacheReady
+    ? "Third preview signal found. A Discovery Cache would now open."
+    : `Preview Signal Fragment earned: ${state.scanPreviewSignalFragments} of ${FRAGMENTS_PER_CACHE}.`;
+  elements.wrongRewardText.className =
+    `wrong-reward-text reward-${cacheReady ? "cache" : "earned"}`;
+  elements.wrongActionButton.textContent =
+    state.scanPreviewGuesses > 0
+      ? "Scan Another Preview Item"
+      : "No Preview Guesses Left";
+  elements.wrongOverlay.classList.remove("hidden");
+  playWrongFeedback();
+  renderScanPreview();
+}
+
+function completePreviewDailyHunt() {
+  if (
+    !state.tabletPreviewEnabled ||
+    state.scanPreviewProgress >= DAILY_GOAL
+  ) {
+    return;
+  }
+
+  state.scanPreviewProgress = DAILY_GOAL - 1;
+  state.scanPreviewGuesses = STARTING_GUESSES;
+  simulatePreviewCorrectScan();
+}
+
+function resetPreviewScans() {
+  if (!state.tabletPreviewEnabled) {
+    return;
+  }
+
+  state.scanPreviewProgress = 0;
+  state.scanPreviewGuesses = STARTING_GUESSES;
+  state.scanPreviewSignalFragments = 0;
+  state.scanPreviewRewardActive = false;
+  state.scanPreviewRewardQueue = [];
+  state.scanPreviewReturnToTablet = false;
+  state.scanLocked = false;
+  elements.prizeOverlay.classList.add("hidden");
+  elements.wrongOverlay.classList.add("hidden");
+  stopBarcodeScanner();
+  clearHuntNotice();
+  render();
 }
 
 function renderCollection() {
@@ -1503,16 +1849,20 @@ function initializeTabletPreview() {
 
   state.tabletPreviewCount = 0;
   state.tabletPreviewFinalSuccess = false;
-  state.activeView = "collection";
+  state.scanPreviewProgress = 0;
+  state.scanPreviewGuesses = STARTING_GUESSES;
+  state.scanPreviewSignalFragments = 0;
+  state.activeView = "home";
   elements.views.forEach(view => {
-    view.classList.toggle("active", view.dataset.view === "collection");
+    view.classList.toggle("active", view.dataset.view === "home");
   });
   elements.navButtons.forEach(button => {
     button.classList.toggle(
       "active",
-      button.dataset.viewButton === "collection"
+      button.dataset.viewButton === "home"
     );
   });
+  renderScanPreview();
   renderCollection();
 }
 
@@ -2154,6 +2504,7 @@ function getAuthRedirectUrl() {
 
 function scheduleCloudSync(delay = CLOUD_SYNC_DELAY) {
   if (
+    state.tabletPreviewEnabled ||
     !state.supabase ||
     !state.accountUser ||
     state.cloudSyncBlocked ||
@@ -2175,6 +2526,7 @@ function scheduleCloudSync(delay = CLOUD_SYNC_DELAY) {
 
 async function uploadPlayerProgress() {
   if (
+    state.tabletPreviewEnabled ||
     !state.supabase ||
     !state.accountUser ||
     state.cloudHydrating
@@ -2360,12 +2712,14 @@ function switchView(viewName) {
   elements.navButtons.forEach(button => {
     button.classList.toggle("active", button.dataset.viewButton === viewName);
   });
-  trackEvent("view_opened", { view: viewName });
+  if (!state.tabletPreviewEnabled) {
+    trackEvent("view_opened", { view: viewName });
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function trackEvent(name, details = {}) {
-  if (!state.player) {
+  if (!state.player || state.tabletPreviewEnabled) {
     return;
   }
 
@@ -2655,6 +3009,14 @@ function clearHuntNotice() {
 }
 
 function resetDemo() {
+  if (state.tabletPreviewEnabled) {
+    state.tabletPreviewCount = 0;
+    state.tabletPreviewFinalSuccess = false;
+    resetPreviewScans();
+    renderCollection();
+    return;
+  }
+
   stopBarcodeScanner();
   const groceryItems = state.player?.groceryItems || [];
   const musicMuted = Boolean(state.player?.musicMuted);

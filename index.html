@@ -10,14 +10,14 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=21" />
+  <link rel="stylesheet" href="styles.css?v=22" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.js"
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=21" defer></script>
+  <script src="app.js?v=22" defer></script>
 </head>
 
 <body>
@@ -217,6 +217,32 @@
       </div>
 
       <button id="resetButton" class="text-button" type="button">Reset progress</button>
+    </section>
+
+    <section id="scanAdminPanel" class="card scan-admin-panel hidden">
+      <div class="tablet-admin-heading">
+        <div>
+          <div class="eyebrow">Admin Walkthrough</div>
+          <h2>Preview daily scans</h2>
+        </div>
+        <span>Preview only</span>
+      </div>
+      <p>
+        Open the scanner above, then simulate correct or wrong barcodes. No
+        player data, rewards, or account progress will be saved.
+      </p>
+      <strong id="scanPreviewStatus">0 of 3 correct scans completed</strong>
+      <div class="tablet-admin-controls scan-admin-controls">
+        <button id="scanPreviewComplete" class="secondary" type="button">
+          Complete Daily Hunt
+        </button>
+        <button id="scanPreviewReset" class="text-button" type="button">
+          Reset Scan Preview
+        </button>
+        <button id="scanPreviewViewTablet" type="button">
+          View Stone Tablet
+        </button>
+      </div>
     </section>
 
     <section class="card reward-loop-card">
@@ -503,6 +529,9 @@
         </p>
         <strong id="tabletPreviewStatus">0 of 6 fragments visible</strong>
         <div class="tablet-admin-controls">
+          <button id="tabletPreviewViewHunt" class="secondary" type="button">
+            Preview Daily Hunt
+          </button>
           <button id="tabletPreviewPrevious" class="text-button" type="button">
             Previous
           </button>
@@ -864,6 +893,16 @@
         <button id="torchButton" class="torch-button hidden" type="button">
           <svg class="button-icon"><use href="#icon-light"></use></svg>
           Light
+        </button>
+      </div>
+
+      <div id="previewScannerControls" class="preview-scanner-controls hidden">
+        <button id="previewCorrectScanButton" type="button">
+          <svg class="button-icon"><use href="#icon-scan"></use></svg>
+          Simulate Correct Scan
+        </button>
+        <button id="previewWrongScanButton" class="danger" type="button">
+          Simulate Wrong Scan
         </button>
       </div>
 
