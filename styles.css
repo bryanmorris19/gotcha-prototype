@@ -1384,25 +1384,6 @@ button:disabled {
   color: #fff;
 }
 
-.artifact-lock {
-  position: absolute;
-  right: -6px;
-  bottom: -5px;
-  display: grid;
-  width: 28px;
-  height: 28px;
-  place-items: center;
-  border: 3px solid #f5f4f0;
-  border-radius: 50%;
-  color: #777d7a;
-  background: #dedfdd;
-}
-
-.artifact-lock svg {
-  width: 14px;
-  height: 14px;
-}
-
 .artifact-card.locked {
   color: #929793;
   border-color: rgba(74, 82, 78, 0.1);
@@ -1416,23 +1397,21 @@ button:disabled {
   opacity: 0.04;
 }
 
-.artifact-card.locked .artifact-symbol {
-  color: #aeb2af;
-  background: #d7d9d7;
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.7);
+.artifact-lock-preview {
+  display: grid;
+  width: 78px;
+  height: 78px;
+  place-items: center;
+  border: 1px solid rgba(92, 100, 95, 0.12);
+  border-radius: 26px;
+  color: #929793;
+  background: #dfe1df;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.78);
 }
 
-.artifact-card.locked .artifact-symbol > svg {
-  opacity: 0.58;
-}
-
-.artifact-card.locked strong,
-.artifact-card.locked small {
-  color: #858b87;
-}
-
-.artifact-card.locked small {
-  max-width: 150px;
+.artifact-lock-preview svg {
+  width: 34px;
+  height: 34px;
 }
 
 .artifact-card.unlocked {
@@ -1443,42 +1422,58 @@ button:disabled {
   background: currentColor;
 }
 
-.artifact-empty-state {
+.artifact-puzzle-card {
+  display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  justify-items: start;
   align-items: center;
-  gap: 4px 14px;
-  padding: 17px;
+  gap: 7px 14px;
+  padding: 18px;
   text-align: left;
 }
 
-.artifact-empty-state > span {
-  width: 48px;
-  height: 48px;
-  grid-row: 1 / span 2;
-  border-radius: 17px;
+.artifact-puzzle-lock {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  grid-row: 1;
+  place-items: center;
+  border-radius: 18px;
+  color: #7f8681;
+  background: #e1e3e1;
 }
 
-.artifact-empty-state > span svg {
-  width: 24px;
-  height: 24px;
+.artifact-puzzle-lock svg {
+  width: 27px;
+  height: 27px;
 }
 
-.artifact-empty-state h2 {
-  margin: 0;
+.artifact-puzzle-copy h2 {
+  margin: 2px 0 4px;
   font-size: 17px;
+  line-height: 1.25;
 }
 
-.artifact-empty-state p {
+.artifact-puzzle-copy p,
+.artifact-puzzle-progress small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.artifact-puzzle-progress {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  margin-top: 9px;
+}
+
+.artifact-puzzle-progress strong {
   font-size: 12px;
 }
 
-.artifact-empty-state .view-link {
-  min-height: 42px;
-  grid-column: 1 / -1;
-  margin-top: 11px;
-  padding-block: 10px;
-  font-size: 13px;
+.artifact-puzzle-progress .progress-track {
+  height: 9px;
 }
 
 .reward-coin-image {
@@ -1486,6 +1481,25 @@ button:disabled {
   height: 72px;
   object-fit: contain;
   filter: drop-shadow(0 8px 8px rgba(111, 65, 0, 0.2));
+}
+
+.prize-artifact-icon {
+  display: grid;
+  width: 82px;
+  height: 82px;
+  margin: 7px auto 4px;
+  place-items: center;
+  border-radius: 27px;
+  color: #fff;
+  background: var(--emerald);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.5),
+    0 12px 24px rgba(16, 122, 62, 0.2);
+}
+
+.prize-artifact-icon svg {
+  width: 43px;
+  height: 43px;
 }
 
 .reward-gift-badge {
@@ -1727,6 +1741,11 @@ button:disabled {
   width: 34px;
   height: 34px;
   object-fit: contain;
+}
+
+.history-icon svg {
+  width: 19px;
+  height: 19px;
 }
 
 .history-icon.history-gift {

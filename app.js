@@ -11,7 +11,7 @@ const FRAGMENTS_PER_CACHE = 3;
 const MAX_DAILY_CACHES = 3;
 const MAX_COMPLETION_HISTORY = 100;
 const MAX_REWARD_HISTORY = 50;
-const DAILY_GOAL = 4;
+const DAILY_GOAL = 3;
 const MAX_ANALYTICS_EVENTS = 250;
 const MUSIC_VOLUME = 0.16;
 const MUSIC_PREFERENCE_VERSION = 1;
@@ -36,8 +36,8 @@ const prizes = [
     weight: 24
   },
   {
-    id: "lucky-key",
-    label: "Lucky Key",
+    id: "bonus-guess",
+    label: "Bonus Guess",
     subtitle: "Extra Guess",
     symbol: "+",
     rarity: "common",
@@ -100,91 +100,49 @@ const cacheRewards = [
   }
 ];
 
-const dailyChestRewards = [
-  {
-    id: "daily-coins-25",
-    label: "25 Gotcha Coins",
-    subtitle: "Daily Chest",
-    rarity: "common",
-    coins: 25,
-    weight: 50
-  },
-  {
-    id: "daily-coins-50",
-    label: "50 Gotcha Coins",
-    subtitle: "Daily Chest",
-    rarity: "rare",
-    coins: 50,
-    weight: 30
-  },
-  {
-    id: "daily-coins-75",
-    label: "75 Gotcha Coins",
-    subtitle: "Daily Chest",
-    rarity: "epic",
-    coins: 75,
-    weight: 15
-  },
-  {
-    id: "daily-gift-card-5",
-    label: "$5 Gift Card",
-    subtitle: "Simulated MVP Reward",
-    symbol: "$",
-    rarity: "legendary",
-    simulatedGiftCard: true,
-    weight: 5
-  }
-];
-
-const rewardCatalog = [...prizes, ...cacheRewards, ...dailyChestRewards];
+const rewardCatalog = [...prizes, ...cacheRewards];
 const artifactCatalog = [
   {
     id: "lucky-key",
     label: "Hidden Key",
-    subtitle: "A key to something still undiscovered",
+    subtitle: "One piece of the larger prize puzzle",
     rarity: "common",
-    icon: "icon-key",
-    available: true
+    icon: "icon-key"
   },
   {
     id: "signal-compass",
     label: "Signal Compass",
-    subtitle: "Future artifact",
+    subtitle: "One piece of the larger prize puzzle",
     rarity: "rare",
-    icon: "icon-compass",
-    available: false
+    icon: "icon-compass"
   },
   {
     id: "emerald-lantern",
     label: "Emerald Lantern",
-    subtitle: "Future artifact",
+    subtitle: "One piece of the larger prize puzzle",
     rarity: "rare",
-    icon: "icon-lantern",
-    available: false
+    icon: "icon-lantern"
   },
   {
     id: "secret-map",
     label: "Secret Map",
-    subtitle: "Future artifact",
+    subtitle: "One piece of the larger prize puzzle",
     rarity: "epic",
-    icon: "icon-map",
-    available: false
+    icon: "icon-map"
   },
   {
     id: "vault-crown",
     label: "Vault Crown",
-    subtitle: "Future artifact",
+    subtitle: "One piece of the larger prize puzzle",
     rarity: "legendary",
-    icon: "icon-crown",
-    available: false
+    icon: "icon-crown"
   },
   {
     id: "star-relic",
     label: "Star Relic",
-    subtitle: "Future artifact",
+    subtitle: "The final piece of the larger prize puzzle",
     rarity: "legendary",
-    icon: "icon-relic",
-    available: false
+    icon: "icon-relic"
   }
 ];
 const artifactIds = new Set(artifactCatalog.map(artifact => artifact.id));
@@ -217,6 +175,13 @@ async function initializeApp() {
     state.hunts = await loadHunts();
     state.player = loadPlayer();
     applyDailyReset();
+    if (
+      state.player.dailyProgress >= DAILY_GOAL &&
+      !state.player.dailyArtifactClaimed
+    ) {
+      unlockDailyArtifact(false);
+      savePlayer();
+    }
     render();
     scheduleMidnightReset();
     startCountdown();
@@ -242,7 +207,9 @@ function cacheElements() {
   elements.huntMeta = document.getElementById("huntMeta");
   elements.dailyProgressText = document.getElementById("dailyProgressText");
   elements.dailyProgressBar = document.getElementById("dailyProgressBar");
-  elements.dailyChestMessage = document.getElementById("dailyChestMessage");
+  elements.dailyArtifactMessage = document.getElementById(
+    "dailyArtifactMessage"
+  );
   elements.resetCountdown = document.getElementById("resetCountdown");
   elements.fragmentText = document.getElementById("fragmentText");
   elements.fragmentPips = Array.from(
@@ -273,6 +240,10 @@ function cacheElements() {
   elements.prizeItemText = document.getElementById("prizeItemText");
   elements.prizeOverlayText = document.getElementById("prizeOverlayText");
   elements.prizeCoinImage = document.getElementById("prizeCoinImage");
+  elements.prizeArtifactIcon = document.getElementById("prizeArtifactIcon");
+  elements.prizeArtifactIconUse = document.getElementById(
+    "prizeArtifactIconUse"
+  );
   elements.rewardOverlayLabel = document.getElementById("rewardOverlayLabel");
   elements.rewardTreasureImage = document.getElementById("rewardTreasureImage");
   elements.simulatedGiftCard = document.getElementById("simulatedGiftCard");
@@ -286,7 +257,13 @@ function cacheElements() {
   elements.wrongActionButton = document.getElementById("wrongActionButton");
   elements.collectionGrid = document.getElementById("collectionGrid");
   elements.collectionCount = document.getElementById("collectionCount");
-  elements.emptyCollection = document.getElementById("emptyCollection");
+  elements.artifactPuzzleText = document.getElementById(
+    "artifactPuzzleText"
+  );
+  elements.artifactPuzzleBar = document.getElementById("artifactPuzzleBar");
+  elements.artifactPuzzleMessage = document.getElementById(
+    "artifactPuzzleMessage"
+  );
   elements.rewardHistoryList = document.getElementById("rewardHistoryList");
   elements.groceryListCount = document.getElementById("groceryListCount");
   elements.groceryForm = document.getElementById("groceryForm");
@@ -384,7 +361,7 @@ function createDefaultPlayer() {
     signalFragments: 0,
     dailyCachesOpened: 0,
     dailyScannedBarcodes: [],
-    dailyChestClaimed: false,
+    dailyArtifactClaimed: false,
     lastCompletionDate: "",
     completedHunts: [],
     nickname: "Treasure Hunter",
@@ -485,6 +462,9 @@ function loadPlayer() {
         ? saved.completedHunts
         : [],
       collection,
+      dailyArtifactClaimed: Boolean(
+        saved.dailyArtifactClaimed ?? saved.dailyChestClaimed
+      ),
       dailyScannedBarcodes: Array.isArray(saved.dailyScannedBarcodes)
         ? saved.dailyScannedBarcodes
         : [],
@@ -540,7 +520,7 @@ function applyDailyReset() {
   state.player.signalFragments = 0;
   state.player.dailyCachesOpened = 0;
   state.player.dailyScannedBarcodes = [];
-  state.player.dailyChestClaimed = false;
+  state.player.dailyArtifactClaimed = false;
   savePlayer();
 }
 
@@ -635,21 +615,25 @@ function render() {
     `Hunt ${state.player.dailyProgress + 1} for ${formatDate(state.player.dailyDate)}`;
   const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
   elements.dailyProgressText.textContent =
-    `${dailyCompleted} of ${DAILY_GOAL} treasures found`;
+    `${dailyCompleted} of ${DAILY_GOAL} correct scans`;
   elements.dailyProgressBar.style.width =
     `${Math.min(100, (dailyCompleted / DAILY_GOAL) * 100)}%`;
   elements.dailyProgressBar.parentElement.setAttribute(
     "aria-valuenow",
     String(dailyCompleted)
   );
-  const treasuresRemaining = DAILY_GOAL - dailyCompleted;
-  elements.dailyChestMessage.textContent = state.player.dailyChestClaimed
-    ? "Daily Chest opened. A new challenge begins at midnight."
-    : treasuresRemaining === 0
-      ? "Daily Chest ready. Your next verified treasure will reveal it."
-      : `${treasuresRemaining} more ${
-          treasuresRemaining === 1 ? "treasure" : "treasures"
-        } to open your Daily Chest.`;
+  const scansRemaining = DAILY_GOAL - dailyCompleted;
+  const puzzleComplete = artifactCatalog.every(
+    artifact => state.player.collection[artifact.id]
+  );
+  elements.dailyArtifactMessage.textContent =
+    state.player.dailyArtifactClaimed
+      ? puzzleComplete
+        ? "Daily artifact unlocked. Your full puzzle now reveals a prize chance."
+        : "Daily artifact unlocked. Return tomorrow to reveal another piece."
+      : `${scansRemaining} more correct ${
+          scansRemaining === 1 ? "scan" : "scans"
+        } to unlock today's artifact.`;
   elements.scannerLaunchButton.disabled =
     state.player.guesses <= 0 || state.scannerRunning;
   elements.betterClueButton.disabled =
@@ -910,23 +894,9 @@ function completeHunt(hunt, scanned) {
 
   if (
     state.player.dailyProgress >= DAILY_GOAL &&
-    !state.player.dailyChestClaimed
+    !state.player.dailyArtifactClaimed
   ) {
-    state.player.dailyChestClaimed = true;
-    const dailyReward = weightedRewardPick(dailyChestRewards);
-    grantReward(dailyReward, "Daily Chest");
-    queueReward({
-      openActionLabel: "Open Daily Chest",
-      label: "Daily Chest opened!",
-      title: "Daily reward",
-      context: `${DAILY_GOAL} hunts completed today`,
-      reward: dailyReward,
-      showChest: true,
-      finePrint: dailyReward.simulatedGiftCard
-        ? "This gift card is a simulated MVP reward with no cash value."
-        : "Daily Chest rewards are limited to one per day.",
-      actionLabel: "Continue"
-    });
+    unlockDailyArtifact();
   }
 
   showStatus(
@@ -1000,7 +970,6 @@ function grantReward(reward, source) {
     );
   }
 
-  addPrizeToCollection(reward);
   recordRewardHistory(reward, source);
   trackEvent("reward_earned", {
     rewardId: reward.id,
@@ -1026,6 +995,45 @@ function addPrizeToCollection(prize) {
   existing.count += 1;
   existing.lastEarnedAt = new Date().toISOString();
   state.player.collection[prize.id] = existing;
+}
+
+function unlockDailyArtifact(showOverlay = true) {
+  state.player.dailyArtifactClaimed = true;
+  const artifact = artifactCatalog.find(
+    item => !state.player.collection[item.id]
+  );
+
+  if (!artifact) {
+    trackEvent("daily_artifact_completed");
+    return;
+  }
+
+  addPrizeToCollection(artifact);
+  recordRewardHistory(artifact, "Daily Artifact");
+  trackEvent("daily_artifact_unlocked", {
+    artifactId: artifact.id
+  });
+
+  const remainingArtifacts = artifactCatalog.filter(
+    item => !state.player.collection[item.id]
+  ).length;
+  if (showOverlay) {
+    queueReward({
+      openActionLabel: "Reveal Daily Artifact",
+      label: "Daily artifact unlocked!",
+      title: artifact.label,
+      context: `${DAILY_GOAL} correct scans completed`,
+      reward: artifact,
+      finePrint: remainingArtifacts === 0
+        ? "Puzzle complete. Your simulated prize chance is now unlocked."
+        : `${remainingArtifacts} ${
+            remainingArtifacts === 1 ? "artifact remains" : "artifacts remain"
+          } in the larger prize puzzle.`,
+      actionLabel: remainingArtifacts === 0
+        ? "View Completed Puzzle"
+        : "Add to Collection"
+    });
+  }
 }
 
 function recordRewardHistory(reward, source) {
@@ -1229,6 +1237,10 @@ function showRewardOverlay(details) {
   elements.prizeOverlayText.textContent =
     `${reward.label} - ${reward.subtitle}`;
   elements.prizeCoinImage.classList.toggle("hidden", !reward.coins);
+  elements.prizeArtifactIcon.classList.toggle("hidden", !reward.icon);
+  if (reward.icon) {
+    elements.prizeArtifactIconUse.setAttribute("href", `#${reward.icon}`);
+  }
   elements.simulatedGiftCard.classList.toggle(
     "hidden",
     !reward.simulatedGiftCard
@@ -1276,42 +1288,51 @@ function renderCollection() {
     artifact => state.player.collection[artifact.id]
   );
   const unlockedCount = unlockedArtifacts.length;
+  const puzzleComplete = unlockedCount === artifactCatalog.length;
 
   elements.collectionCount.textContent =
     `${unlockedCount} of ${artifactCatalog.length} found`;
-  elements.emptyCollection.classList.toggle("hidden", unlockedCount > 0);
+  elements.artifactPuzzleText.textContent =
+    `${unlockedCount} of ${artifactCatalog.length} puzzle pieces found`;
+  elements.artifactPuzzleBar.style.width =
+    `${Math.min(100, (unlockedCount / artifactCatalog.length) * 100)}%`;
+  elements.artifactPuzzleBar.parentElement.setAttribute(
+    "aria-valuenow",
+    String(unlockedCount)
+  );
+  elements.artifactPuzzleMessage.textContent = puzzleComplete
+    ? "Puzzle complete. Your simulated prize chance is unlocked."
+    : "Each daily artifact reveals another piece of the larger prize puzzle.";
   elements.collectionGrid.classList.remove("hidden");
   elements.collectionGrid.innerHTML = artifactCatalog.map(artifact => {
     const savedArtifact = state.player.collection[artifact.id];
     const unlocked = Boolean(savedArtifact);
-    const status = unlocked
-      ? artifact.rarity
-      : artifact.available
-        ? "Locked"
-        : "Coming Soon";
-    const displayLabel = unlocked ? artifact.label : "Mystery Artifact";
-    const displayIcon = unlocked ? artifact.icon : "icon-mystery";
-    const displaySubtitle = unlocked
-      ? artifact.subtitle
-      : artifact.available
-        ? "Keep hunting to reveal it"
-        : "A future surprise awaits";
+
+    if (!unlocked) {
+      return `
+        <article
+          class="reward-card artifact-card locked"
+          aria-label="Locked artifact"
+        >
+          <span class="artifact-lock-preview" aria-hidden="true">
+            <svg><use href="#icon-lock"></use></svg>
+          </span>
+        </article>
+      `;
+    }
 
     return `
       <article
-        class="reward-card artifact-card rarity-${artifact.rarity} ${unlocked ? "unlocked" : "locked"}"
-        aria-label="${escapeHtml(displayLabel)}: ${unlocked ? "unlocked" : "locked"}"
+        class="reward-card artifact-card rarity-${artifact.rarity} unlocked"
+        aria-label="${escapeHtml(artifact.label)}: unlocked"
       >
-        <span class="reward-rarity">${escapeHtml(status)}</span>
+        <span class="reward-rarity">${escapeHtml(artifact.rarity)}</span>
         <span class="artifact-symbol" aria-hidden="true">
-          <svg><use href="#${escapeHtml(displayIcon)}"></use></svg>
-          ${unlocked
-            ? ""
-            : '<span class="artifact-lock"><svg><use href="#icon-lock"></use></svg></span>'}
+          <svg><use href="#${escapeHtml(artifact.icon)}"></use></svg>
         </span>
-        <strong>${escapeHtml(displayLabel)}</strong>
-        <small>${escapeHtml(displaySubtitle)}</small>
-        ${unlocked && savedArtifact.count > 1
+        <strong>${escapeHtml(artifact.label)}</strong>
+        <small>${escapeHtml(artifact.subtitle)}</small>
+        ${savedArtifact.count > 1
           ? `<span class="reward-count">x${savedArtifact.count}</span>`
           : ""}
       </article>
@@ -1332,12 +1353,15 @@ function renderRewardHistory() {
 
   elements.rewardHistoryList.innerHTML = history.map(entry => {
     const reward = rewardCatalog.find(item => item.id === entry.id);
-    const label = reward?.label || entry.label;
+    const artifact = artifactCatalog.find(item => item.id === entry.id);
+    const label = reward?.label || artifact?.label || entry.label;
     const historyVisual = entry.simulated
       ? "$"
       : reward?.coins
         ? '<img src="assets/gotcha-coin.png" alt="">'
-        : escapeHtml(reward?.symbol || "+");
+        : artifact
+          ? `<svg aria-hidden="true"><use href="#${escapeHtml(artifact.icon)}"></use></svg>`
+          : escapeHtml(reward?.symbol || "+");
     return `
       <article class="history-row">
         <span class="history-icon ${entry.simulated ? "history-gift" : ""}">

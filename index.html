@@ -10,9 +10,9 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=16" />
+  <link rel="stylesheet" href="styles.css?v=17" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
-  <script src="app.js?v=17" defer></script>
+  <script src="app.js?v=18" defer></script>
 </head>
 
 <body>
@@ -190,7 +190,7 @@
 
       <div class="hunt-progress">
         <div class="daily-progress-copy">
-          <strong id="dailyProgressText">0 of 4 treasures found</strong>
+          <strong id="dailyProgressText">0 of 3 correct scans</strong>
           <span class="countdown">
             <svg><use href="#icon-clock"></use></svg>
             <span id="resetCountdown">--:--:--</span>
@@ -201,13 +201,13 @@
           role="progressbar"
           aria-label="Daily treasure progress"
           aria-valuemin="0"
-          aria-valuemax="4"
+          aria-valuemax="3"
           aria-valuenow="0"
         >
           <span id="dailyProgressBar"></span>
         </div>
-        <div id="dailyChestMessage" class="daily-reward-message">
-          Complete 4 hunts to open the Daily Chest.
+        <div id="dailyArtifactMessage" class="daily-reward-message">
+          Complete 3 correct scans to unlock today's artifact.
         </div>
       </div>
 
@@ -286,11 +286,31 @@
         </div>
         <span class="collection-count" id="collectionCount">0 of 6 found</span>
       </section>
-      <section id="emptyCollection" class="card empty-state artifact-empty-state">
-        <span><svg><use href="#icon-key"></use></svg></span>
-        <h2>Your artifacts are still hidden</h2>
-        <p>Complete hunts to uncover objects for your collection. Coins remain in your Gotcha Coin balance.</p>
-        <button class="view-link" data-target-view="home" type="button">Start Hunting</button>
+      <section class="card artifact-puzzle-card">
+        <span class="artifact-puzzle-lock" aria-hidden="true">
+          <svg><use href="#icon-lock"></use></svg>
+        </span>
+        <div class="artifact-puzzle-copy">
+          <div class="eyebrow">The Larger Puzzle</div>
+          <h2>Correctly scan all 3 daily items to unlock an artifact</h2>
+          <p id="artifactPuzzleMessage">
+            Each daily artifact reveals another piece of the larger prize puzzle.
+          </p>
+        </div>
+        <div class="artifact-puzzle-progress">
+          <strong id="artifactPuzzleText">0 of 6 puzzle pieces found</strong>
+          <div
+            class="progress-track"
+            role="progressbar"
+            aria-label="Artifact puzzle progress"
+            aria-valuemin="0"
+            aria-valuemax="6"
+            aria-valuenow="0"
+          >
+            <span id="artifactPuzzleBar"></span>
+          </div>
+          <small>Complete the full set for a chance to win a simulated prize.</small>
+        </div>
       </section>
       <section id="collectionGrid" class="collection-grid"></section>
       <section class="card reward-history-card">
@@ -481,6 +501,11 @@
         src="assets/gotcha-coin.png"
         alt="Gotcha Coin"
       />
+      <span id="prizeArtifactIcon" class="prize-artifact-icon hidden">
+        <svg aria-hidden="true">
+          <use id="prizeArtifactIconUse" href="#icon-key"></use>
+        </svg>
+      </span>
       <div id="simulatedGiftCard" class="simulated-gift-card hidden">
         <span>SIMULATED REWARD</span>
         <strong>$5 Gift Card</strong>
@@ -552,19 +577,17 @@
       </div>
 
       <div class="odds-section">
-        <h3>Daily Chest</h3>
+        <h3>Daily Artifact</h3>
         <dl class="odds-list">
-          <div><dt>25 coins</dt><dd>50%</dd></div>
-          <div><dt>50 coins</dt><dd>30%</dd></div>
-          <div><dt>75 coins</dt><dd>15%</dd></div>
-          <div><dt>Simulated $5 gift card</dt><dd>5%</dd></div>
+          <div><dt>Complete 3 correct scans</dt><dd>Guaranteed</dd></div>
+          <div><dt>Daily limit</dt><dd>1 artifact</dd></div>
         </dl>
       </div>
 
       <p class="odds-note">
         Only unique wrong barcodes earn fragments. Discovery Caches are capped
-        at three per day. All gift cards are simulated MVP rewards with no cash
-        value. Gotcha! is not designed for children under 13; family
+        at three per day. Completing the artifact puzzle unlocks a simulated
+        prize chance with no cash value. Gotcha! is not designed for children under 13; family
         participation should be supervised by a parent or guardian.
       </p>
       <button id="closeRewardOddsButton" type="button">Close</button>
