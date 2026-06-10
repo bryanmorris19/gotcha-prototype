@@ -16,6 +16,7 @@ const MAX_ANALYTICS_EVENTS = 250;
 const MUSIC_VOLUME = 0.16;
 const MUSIC_PREFERENCE_VERSION = 1;
 const CLOUD_SYNC_DELAY = 900;
+const TUTORIAL_VERSION = 1;
 
 const prizes = [
   {
@@ -174,7 +175,11 @@ const state = {
   cloudSyncPending: false,
   cloudSyncBlocked: false,
   cloudHydrating: false,
-  lastCloudSyncAt: null
+  lastCloudSyncAt: null,
+  tutorialIndex: 0,
+  tutorialTouchStartX: null,
+  tutorialTouchStartY: null,
+  tutorialPreviousFocus: null
 };
 
 const elements = {};
@@ -201,7 +206,7 @@ async function initializeApp() {
     startCountdown();
     registerServiceWorker();
     trackEvent("app_opened");
-    initializeAccount();
+    initializeAccount().finally(maybeOpenTutorial);
   } catch (error) {
     console.error("App initialization error:", error);
     showStatus(
@@ -308,6 +313,28 @@ function cacheElements() {
   elements.bestStreakValue = document.getElementById("bestStreakValue");
   elements.installButton = document.getElementById("installButton");
   elements.installHelp = document.getElementById("installHelp");
+  elements.replayTutorialButton = document.getElementById(
+    "replayTutorialButton"
+  );
+  elements.tutorialOverlay = document.getElementById("tutorialOverlay");
+  elements.tutorialViewport = document.getElementById("tutorialViewport");
+  elements.tutorialTrack = document.getElementById("tutorialTrack");
+  elements.tutorialSlides = Array.from(
+    document.querySelectorAll("[data-tutorial-slide]")
+  );
+  elements.tutorialDots = Array.from(
+    document.querySelectorAll("[data-tutorial-dot]")
+  );
+  elements.skipTutorialButton = document.getElementById(
+    "skipTutorialButton"
+  );
+  elements.tutorialBackButton = document.getElementById(
+    "tutorialBackButton"
+  );
+  elements.tutorialNextButton = document.getElementById(
+    "tutorialNextButton"
+  );
+  elements.tutorialNextLabel = document.getElementById("tutorialNextLabel");
   elements.views = Array.from(document.querySelectorAll(".app-view"));
   elements.navButtons = Array.from(document.querySelectorAll("[data-view-button]"));
   elements.viewLinks = Array.from(document.querySelectorAll("[data-target-view]"));
@@ -337,6 +364,25 @@ function bindEvents() {
   elements.syncAccountButton.addEventListener("click", syncAccountNow);
   elements.signOutButton.addEventListener("click", signOutAccount);
   elements.installButton.addEventListener("click", installApp);
+  elements.replayTutorialButton.addEventListener("click", openTutorial);
+  elements.skipTutorialButton.addEventListener("click", skipTutorial);
+  elements.tutorialBackButton.addEventListener("click", showPreviousTutorialSlide);
+  elements.tutorialNextButton.addEventListener("click", advanceTutorial);
+  elements.tutorialDots.forEach(button => {
+    button.addEventListener("click", () => {
+      setTutorialSlide(Number(button.dataset.tutorialDot));
+    });
+  });
+  elements.tutorialViewport.addEventListener(
+    "touchstart",
+    handleTutorialTouchStart,
+    { passive: true }
+  );
+  elements.tutorialViewport.addEventListener(
+    "touchend",
+    handleTutorialTouchEnd,
+    { passive: true }
+  );
   elements.navButtons.forEach(button => {
     button.addEventListener("click", () => switchView(button.dataset.viewButton));
   });
@@ -347,6 +393,7 @@ function bindEvents() {
     passive: true
   });
   document.addEventListener("keydown", unlockBackgroundMusic);
+  document.addEventListener("keydown", handleTutorialKeydown);
   window.addEventListener("beforeinstallprompt", handleInstallPrompt);
   window.addEventListener("appinstalled", handleAppInstalled);
 }
@@ -398,6 +445,7 @@ function createDefaultPlayer() {
     collection: {},
     rewardHistory: [],
     groceryItems: [],
+    tutorialVersion: 0,
     musicMuted: true,
     musicPreferenceVersion: MUSIC_PREFERENCE_VERSION,
     analytics: {
@@ -1574,6 +1622,197 @@ function saveNickname() {
   }, 1200);
 }
 
+function maybeOpenTutorial() {
+  if (
+    !state.player ||
+    Number(state.player.tutorialVersion || 0) >= TUTORIAL_VERSION
+  ) {
+    return;
+  }
+
+  openTutorial();
+}
+
+function openTutorial() {
+  if (state.scannerRunning) {
+    stopBarcodeScanner();
+  }
+
+  state.tutorialPreviousFocus =
+    document.activeElement instanceof HTMLElement &&
+    document.activeElement !== document.body
+      ? document.activeElement
+      : null;
+  elements.tutorialOverlay.classList.remove("hidden");
+  document.body.classList.add("tutorial-open");
+  setTutorialSlide(0);
+  window.setTimeout(() => {
+    elements.skipTutorialButton.focus();
+  }, 0);
+  trackEvent("tutorial_started", {
+    version: TUTORIAL_VERSION,
+    replay: Number(state.player.tutorialVersion || 0) >= TUTORIAL_VERSION
+  });
+}
+
+function setTutorialSlide(index) {
+  const lastIndex = elements.tutorialSlides.length - 1;
+  state.tutorialIndex = Math.max(0, Math.min(lastIndex, index));
+  elements.tutorialTrack.style.transform =
+    `translateX(-${state.tutorialIndex * 100}%)`;
+
+  elements.tutorialSlides.forEach((slide, slideIndex) => {
+    slide.setAttribute(
+      "aria-hidden",
+      String(slideIndex !== state.tutorialIndex)
+    );
+  });
+  elements.tutorialDots.forEach((dot, dotIndex) => {
+    const active = dotIndex === state.tutorialIndex;
+    dot.classList.toggle("active", active);
+    dot.setAttribute("aria-current", active ? "step" : "false");
+  });
+
+  elements.tutorialBackButton.classList.toggle(
+    "hidden",
+    state.tutorialIndex === 0
+  );
+  elements.tutorialNextLabel.textContent =
+    state.tutorialIndex === lastIndex ? "Start Hunting" : "Next";
+}
+
+function showPreviousTutorialSlide() {
+  setTutorialSlide(state.tutorialIndex - 1);
+}
+
+function advanceTutorial() {
+  if (state.tutorialIndex < elements.tutorialSlides.length - 1) {
+    setTutorialSlide(state.tutorialIndex + 1);
+    return;
+  }
+
+  closeTutorial("completed");
+}
+
+function skipTutorial() {
+  closeTutorial("skipped");
+}
+
+function closeTutorial(reason) {
+  if (elements.tutorialOverlay.classList.contains("hidden")) {
+    return;
+  }
+
+  state.player.tutorialVersion = TUTORIAL_VERSION;
+  elements.tutorialOverlay.classList.add("hidden");
+  document.body.classList.remove("tutorial-open");
+  savePlayer();
+  trackEvent(`tutorial_${reason}`, {
+    version: TUTORIAL_VERSION,
+    lastStep: state.tutorialIndex + 1
+  });
+
+  const previousFocus = state.tutorialPreviousFocus;
+  state.tutorialPreviousFocus = null;
+  if (previousFocus?.isConnected) {
+    previousFocus.focus();
+  } else {
+    elements.scannerLaunchButton.focus();
+  }
+}
+
+function handleTutorialTouchStart(event) {
+  state.tutorialTouchStartX = event.changedTouches[0]?.clientX ?? null;
+  state.tutorialTouchStartY = event.changedTouches[0]?.clientY ?? null;
+}
+
+function handleTutorialTouchEnd(event) {
+  if (
+    state.tutorialTouchStartX === null ||
+    state.tutorialTouchStartY === null
+  ) {
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  const endX = touch?.clientX;
+  const endY = touch?.clientY;
+  if (!Number.isFinite(endX) || !Number.isFinite(endY)) {
+    state.tutorialTouchStartX = null;
+    state.tutorialTouchStartY = null;
+    return;
+  }
+
+  const distanceX = endX - state.tutorialTouchStartX;
+  const distanceY = endY - state.tutorialTouchStartY;
+  state.tutorialTouchStartX = null;
+  state.tutorialTouchStartY = null;
+
+  if (
+    Math.abs(distanceX) < 45 ||
+    Math.abs(distanceX) <= Math.abs(distanceY)
+  ) {
+    return;
+  }
+
+  if (distanceX < 0) {
+    if (state.tutorialIndex < elements.tutorialSlides.length - 1) {
+      setTutorialSlide(state.tutorialIndex + 1);
+    }
+  } else {
+    setTutorialSlide(state.tutorialIndex - 1);
+  }
+}
+
+function handleTutorialKeydown(event) {
+  if (elements.tutorialOverlay?.classList.contains("hidden")) {
+    return;
+  }
+
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    advanceTutorial();
+    return;
+  }
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    showPreviousTutorialSlide();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    skipTutorial();
+    return;
+  }
+
+  if (event.key !== "Tab") {
+    return;
+  }
+
+  const focusable = Array.from(
+    elements.tutorialOverlay.querySelectorAll(
+      'button:not([disabled]):not(.hidden), [href], input:not([disabled])'
+    )
+  ).filter(element => element.offsetParent !== null);
+
+  if (focusable.length === 0) {
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 async function initializeAccount() {
   state.supabase = window.gotchaSupabase || null;
   state.accountReady = true;
@@ -2254,5 +2493,6 @@ function resetDemo() {
   clearStatus();
   clearHuntNotice();
   render();
+  maybeOpenTutorial();
   trackEvent("progress_reset");
 }

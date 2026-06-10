@@ -10,14 +10,14 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=20" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.js"
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=19" defer></script>
+  <script src="app.js?v=20" defer></script>
 </head>
 
 <body>
@@ -468,6 +468,18 @@
         </div>
       </section>
 
+      <section class="card tutorial-replay-card">
+        <span><svg><use href="#icon-bulb"></use></svg></span>
+        <div>
+          <div class="eyebrow">Need a Refresher?</div>
+          <h2>Replay the tutorial</h2>
+          <p>Review clues, scanning, coins, and daily artifact progress.</p>
+        </div>
+        <button id="replayTutorialButton" type="button">
+          How to Play
+        </button>
+      </section>
+
       <section class="card install-card">
         <span><svg><use href="#icon-sparkle"></use></svg></span>
         <div>
@@ -503,6 +515,120 @@
       </button>
     </nav>
   </main>
+
+  <section
+    id="tutorialOverlay"
+    class="overlay tutorial-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tutorialHeading"
+  >
+    <div class="tutorial-card">
+      <div class="tutorial-topbar">
+        <div>
+          <div class="eyebrow">Welcome to Gotcha!</div>
+          <h2 id="tutorialHeading">How to Play</h2>
+        </div>
+        <button id="skipTutorialButton" class="tutorial-skip" type="button">
+          Skip
+        </button>
+      </div>
+
+      <div id="tutorialViewport" class="tutorial-viewport">
+        <div id="tutorialTrack" class="tutorial-track">
+          <article class="tutorial-slide" data-tutorial-slide>
+            <div class="tutorial-visual tutorial-visual-clue">
+              <span class="tutorial-orbit"></span>
+              <span class="tutorial-main-icon">
+                <svg><use href="#icon-bulb"></use></svg>
+              </span>
+            </div>
+            <div class="tutorial-step-label">Step 1 of 4</div>
+            <h3>Follow today's clue</h3>
+            <p>
+              Search the store for the everyday product described by the clue.
+              Every correct find begins a new hunt.
+            </p>
+          </article>
+
+          <article class="tutorial-slide" data-tutorial-slide>
+            <div class="tutorial-visual tutorial-visual-coins">
+              <img src="assets/gotcha-coin.png" alt="" />
+              <span class="tutorial-coin-small">G</span>
+              <span class="tutorial-coin-spark">
+                <svg><use href="#icon-sparkle"></use></svg>
+              </span>
+            </div>
+            <div class="tutorial-step-label">Step 2 of 4</div>
+            <h3>Use Gotcha Coins wisely</h3>
+            <p>
+              Earn coins as you play. Spend them on an easier clue or another
+              guess when a hunt gets tricky.
+            </p>
+          </article>
+
+          <article class="tutorial-slide" data-tutorial-slide>
+            <div class="tutorial-visual tutorial-visual-scan">
+              <span class="tutorial-scan-frame">
+                <svg><use href="#icon-scan"></use></svg>
+              </span>
+              <span class="tutorial-barcode" aria-hidden="true"></span>
+            </div>
+            <div class="tutorial-step-label">Step 3 of 4</div>
+            <h3>Scan to verify your find</h3>
+            <p>
+              Tap the glowing scan button and line up the product barcode.
+              Correct scans earn rewards and refresh your guesses.
+            </p>
+          </article>
+
+          <article class="tutorial-slide" data-tutorial-slide>
+            <div class="tutorial-visual tutorial-visual-artifact">
+              <span class="tutorial-fragment fragment-one"></span>
+              <span class="tutorial-fragment fragment-two"></span>
+              <span class="tutorial-fragment fragment-three"></span>
+              <span class="tutorial-artifact-lock">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tutorial-step-label">Step 4 of 4</div>
+            <h3>Complete the daily hunt</h3>
+            <p>
+              Correctly scan all three daily items to unlock an artifact.
+              Collect the full set to reveal the larger prize puzzle.
+            </p>
+          </article>
+        </div>
+      </div>
+
+      <div
+        id="tutorialDots"
+        class="tutorial-dots"
+        aria-label="Tutorial progress"
+      >
+        <button type="button" data-tutorial-dot="0" aria-label="Step 1"></button>
+        <button type="button" data-tutorial-dot="1" aria-label="Step 2"></button>
+        <button type="button" data-tutorial-dot="2" aria-label="Step 3"></button>
+        <button type="button" data-tutorial-dot="3" aria-label="Step 4"></button>
+      </div>
+
+      <div class="tutorial-actions">
+        <button
+          id="tutorialBackButton"
+          class="tutorial-back text-button hidden"
+          type="button"
+        >
+          Back
+        </button>
+        <button id="tutorialNextButton" type="button">
+          <span id="tutorialNextLabel">Next</span>
+          <svg class="button-icon button-icon-end">
+            <use href="#icon-arrow"></use>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </section>
 
   <section
     id="scannerOverlay"
