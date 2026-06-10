@@ -17,7 +17,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=22" defer></script>
+  <script src="app.js?v=23" defer></script>
 </head>
 
 <body>
@@ -143,7 +143,7 @@
         <span class="stat-icon stat-icon-coin">
           <img src="assets/gotcha-coin.png" alt="" />
         </span>
-        <div class="stat-label">Gotcha Coins</div>
+        <div class="stat-label">Gotcha! Gold</div>
         <div class="stat-value" id="coinsValue">10</div>
       </div>
       <div class="stat">
@@ -183,12 +183,12 @@
         <button id="betterClueButton" class="secondary hunt-action-button" type="button">
           <svg class="button-icon"><use href="#icon-bulb"></use></svg>
           <span>Better Clue</span>
-          <span class="button-cost">10 coins</span>
+          <span class="button-cost">10 Gold</span>
         </button>
         <button id="buyGuessButton" class="coin-purchase-button hunt-action-button" type="button">
           <svg class="button-icon"><use href="#icon-scan"></use></svg>
           <span id="buyGuessLabel">+1 Guess</span>
-          <span class="button-cost">15 coins</span>
+          <span class="button-cost">15 Gold</span>
         </button>
       </div>
       <div id="huntNotice" class="hunt-notice" role="status" aria-live="polite"></div>
@@ -700,7 +700,7 @@
         <div>
           <div class="eyebrow">Need a Refresher?</div>
           <h2>Replay the tutorial</h2>
-          <p>Review clues, scanning, coins, and daily artifact progress.</p>
+          <p>Review clues, scanning, Gotcha! Gold, and daily tablet progress.</p>
         </div>
         <button id="replayTutorialButton" type="button">
           How to Play
@@ -787,9 +787,9 @@
               </span>
             </div>
             <div class="tutorial-step-label">Step 2 of 4</div>
-            <h3>Use Gotcha Coins wisely</h3>
+            <h3>Use Gotcha! Gold wisely</h3>
             <p>
-              Earn coins as you play. Spend them on an easier clue or another
+              Earn Gold as you play. Spend it on an easier clue or another
               guess when a hunt gets tricky.
             </p>
           </article>
@@ -991,13 +991,13 @@
         id="rewardTreasureImage"
         class="treasure-image"
         src="assets/treasure-chest.png"
-        alt="Open emerald treasure chest overflowing with gold coins"
+        alt="Open emerald treasure chest overflowing with Gotcha! Gold"
       />
       <img
         id="prizeCoinImage"
         class="prize-coin-image hidden"
         src="assets/gotcha-coin.png"
-        alt="Gotcha Coin"
+        alt="Gotcha! Gold"
       />
       <span id="prizeArtifactIcon" class="prize-artifact-icon hidden">
         <svg aria-hidden="true">
@@ -1049,27 +1049,27 @@
       <div class="found-label">Transparent Rewards</div>
       <h2 id="rewardOddsHeading">Reward Odds</h2>
       <p class="odds-intro">
-        Rewards use Gotcha Coins and test-only prizes. Coins cannot be purchased
+        Rewards use Gotcha! Gold and test-only prizes. Gold cannot be purchased
         or wagered.
       </p>
 
       <div class="odds-section">
         <h3>Correct Hunt</h3>
         <dl class="odds-list">
-          <div><dt>10 coins</dt><dd>60%</dd></div>
-          <div><dt>25 coins</dt><dd>24%</dd></div>
+          <div><dt>10 Gold</dt><dd>60%</dd></div>
+          <div><dt>25 Gold</dt><dd>24%</dd></div>
           <div><dt>Extra guess</dt><dd>10%</dd></div>
-          <div><dt>50 coins</dt><dd>5%</dd></div>
-          <div><dt>100 coins</dt><dd>1%</dd></div>
+          <div><dt>50 Gold</dt><dd>5%</dd></div>
+          <div><dt>100 Gold</dt><dd>1%</dd></div>
         </dl>
       </div>
 
       <div class="odds-section">
         <h3>Discovery Cache</h3>
         <dl class="odds-list">
-          <div><dt>2 coins</dt><dd>55%</dd></div>
-          <div><dt>3 coins</dt><dd>30%</dd></div>
-          <div><dt>5 coins</dt><dd>12%</dd></div>
+          <div><dt>2 Gold</dt><dd>55%</dd></div>
+          <div><dt>3 Gold</dt><dd>30%</dd></div>
+          <div><dt>5 Gold</dt><dd>12%</dd></div>
           <div><dt>Extra guess</dt><dd>3%</dd></div>
         </dl>
       </div>

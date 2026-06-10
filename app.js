@@ -21,8 +21,8 @@ const TUTORIAL_VERSION = 1;
 const prizes = [
   {
     id: "bronze-star",
-    label: "10 Gotcha Coins",
-    subtitle: "Coin Reward",
+    label: "10 Gotcha! Gold",
+    subtitle: "Gold Reward",
     symbol: "*",
     rarity: "common",
     coins: 10,
@@ -30,8 +30,8 @@ const prizes = [
   },
   {
     id: "gold-coin",
-    label: "25 Gotcha Coins",
-    subtitle: "Coin Reward",
+    label: "25 Gotcha! Gold",
+    subtitle: "Gold Reward",
     symbol: "O",
     rarity: "rare",
     coins: 25,
@@ -48,8 +48,8 @@ const prizes = [
   },
   {
     id: "store-trophy",
-    label: "50 Gotcha Coins",
-    subtitle: "Coin Reward",
+    label: "50 Gotcha! Gold",
+    subtitle: "Gold Reward",
     symbol: "<>",
     rarity: "epic",
     coins: 50,
@@ -57,8 +57,8 @@ const prizes = [
   },
   {
     id: "royal-crown",
-    label: "100 Gotcha Coins",
-    subtitle: "Coin Reward",
+    label: "100 Gotcha! Gold",
+    subtitle: "Gold Reward",
     symbol: "#",
     rarity: "legendary",
     coins: 100,
@@ -69,7 +69,7 @@ const prizes = [
 const cacheRewards = [
   {
     id: "cache-coins-2",
-    label: "2 Gotcha Coins",
+    label: "2 Gotcha! Gold",
     subtitle: "Discovery Cache",
     rarity: "common",
     coins: 2,
@@ -77,7 +77,7 @@ const cacheRewards = [
   },
   {
     id: "cache-coins-3",
-    label: "3 Gotcha Coins",
+    label: "3 Gotcha! Gold",
     subtitle: "Discovery Cache",
     rarity: "common",
     coins: 3,
@@ -85,7 +85,7 @@ const cacheRewards = [
   },
   {
     id: "cache-coins-5",
-    label: "5 Gotcha Coins",
+    label: "5 Gotcha! Gold",
     subtitle: "Discovery Cache",
     rarity: "rare",
     coins: 5,
@@ -908,7 +908,7 @@ function upgradeClue() {
 
   if (state.player.coins < BETTER_CLUE_COST) {
     showHuntNotice(
-      `You need ${BETTER_CLUE_COST} Gotcha Coins for the easier clue.`,
+      `You need ${BETTER_CLUE_COST} Gotcha! Gold for the easier clue.`,
       "fail"
     );
     return;
@@ -919,7 +919,7 @@ function upgradeClue() {
   savePlayer();
   render();
   showHuntNotice(
-    `Easier clue unlocked for ${BETTER_CLUE_COST} Gotcha Coins.`,
+    `Easier clue unlocked for ${BETTER_CLUE_COST} Gotcha! Gold.`,
     "neutral"
   );
   trackEvent("better_clue_used");
@@ -936,7 +936,7 @@ function buyExtraGuess() {
 
   if (state.player.coins < EXTRA_GUESS_COST) {
     showHuntNotice(
-      `You need ${EXTRA_GUESS_COST} Gotcha Coins for an extra guess.`,
+      `You need ${EXTRA_GUESS_COST} Gotcha! Gold for an extra guess.`,
       "fail"
     );
     return;
@@ -947,7 +947,7 @@ function buyExtraGuess() {
   savePlayer();
   render();
   showHuntNotice(
-    `Extra guess purchased for ${EXTRA_GUESS_COST} Gotcha Coins.`,
+    `Extra guess purchased for ${EXTRA_GUESS_COST} Gotcha! Gold.`,
     "neutral"
   );
   trackEvent("extra_guess_purchased");
