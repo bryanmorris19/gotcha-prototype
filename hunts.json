@@ -28,5 +28,15 @@
       "030100100553"
     ],
     "availableFrom": "2026-06-09"
+  },
+  {
+    "id": "kirkland-coconut-water",
+    "name": "Kirkland Coconut Water",
+    "clue": "This tropical drink comes straight from a fruit that’s famous for surviving long ocean voyages. Look for a naturally sweet hydrator with nothing added.",
+    "betterClue": "Find the organic beverage made from young tropical fruit, sold in a shelf-stable carton rather than a bottle.",
+    "barcodes": [
+      "096619053988"
+    ],
+    "availableFrom": "2026-06-09"
   }
 ]
