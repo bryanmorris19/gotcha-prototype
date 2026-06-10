@@ -61,12 +61,48 @@ svg {
 }
 
 .header {
+  position: relative;
   display: grid;
   align-items: center;
   justify-content: center;
   justify-items: center;
   gap: 0;
   padding: 4px 0 22px;
+}
+
+.music-toggle-button {
+  position: absolute;
+  z-index: 3;
+  right: 0;
+  bottom: 8px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(16, 122, 62, 0.15);
+  border-radius: 14px;
+  color: var(--emerald);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 7px 18px rgba(33, 42, 35, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.music-toggle-button svg {
+  width: 21px;
+  height: 21px;
+}
+
+.music-toggle-button.muted {
+  color: var(--muted);
+  background: rgba(241, 241, 237, 0.9);
+}
+
+.music-toggle-button:focus-visible {
+  outline: 3px solid rgba(52, 199, 89, 0.2);
+  outline-offset: 2px;
 }
 
 .brand-wordmark {

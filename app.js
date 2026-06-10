@@ -13,6 +13,7 @@ const MAX_COMPLETION_HISTORY = 100;
 const MAX_REWARD_HISTORY = 50;
 const DAILY_GOAL = 4;
 const MAX_ANALYTICS_EVENTS = 250;
+const MUSIC_VOLUME = 0.16;
 
 const prizes = [
   {
@@ -231,6 +232,9 @@ async function initializeApp() {
 
 function cacheElements() {
   elements.guessesValue = document.getElementById("guessesValue");
+  elements.musicToggleButton = document.getElementById("musicToggleButton");
+  elements.musicToggleIcon = document.getElementById("musicToggleIcon");
+  elements.backgroundMusic = document.getElementById("backgroundMusic");
   elements.coinsValue = document.getElementById("coinsValue");
   elements.streakValue = document.getElementById("streakValue");
   elements.clueText = document.getElementById("clueText");
@@ -306,6 +310,7 @@ function cacheElements() {
 }
 
 function bindEvents() {
+  elements.musicToggleButton.addEventListener("click", toggleBackgroundMusic);
   elements.betterClueButton.addEventListener("click", upgradeClue);
   elements.buyGuessButton.addEventListener("click", buyExtraGuess);
   elements.rewardOddsButton.addEventListener("click", openRewardOdds);
@@ -331,6 +336,10 @@ function bindEvents() {
   elements.viewLinks.forEach(button => {
     button.addEventListener("click", () => switchView(button.dataset.targetView));
   });
+  document.addEventListener("click", unlockBackgroundMusic, {
+    passive: true
+  });
+  document.addEventListener("keydown", unlockBackgroundMusic);
   window.addEventListener("beforeinstallprompt", handleInstallPrompt);
   window.addEventListener("appinstalled", handleAppInstalled);
 }
@@ -382,6 +391,7 @@ function createDefaultPlayer() {
     collection: {},
     rewardHistory: [],
     groceryItems: [],
+    musicMuted: false,
     analytics: {
       counters: {},
       events: []
@@ -488,6 +498,7 @@ function loadPlayer() {
             }))
             .filter(item => item.text)
         : [],
+      musicMuted: Boolean(saved.musicMuted),
       analytics: {
         counters: saved.analytics?.counters || {},
         events: Array.isArray(saved.analytics?.events)
@@ -608,6 +619,7 @@ function render() {
 
   const hunt = getActiveHunt();
   elements.guessesValue.textContent = state.player.guesses;
+  renderMusicToggle();
   elements.coinsValue.textContent = state.player.coins;
   elements.streakValue.textContent = state.player.streak;
   elements.clueText.textContent = state.player.betterClueUsed
@@ -1614,7 +1626,7 @@ function registerServiceWorker() {
   });
 }
 
-function enableFeedback() {
+function ensureAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
   if (AudioContextClass && !state.audioContext) {
@@ -1625,6 +1637,78 @@ function enableFeedback() {
     state.audioContext.resume().catch(error => {
       console.error("Audio resume error:", error);
     });
+  }
+
+  return state.audioContext;
+}
+
+function unlockBackgroundMusic(event) {
+  if (!state.player || event?.target?.closest?.("#musicToggleButton")) {
+    return;
+  }
+
+  if (!state.player.musicMuted) {
+    startBackgroundMusic();
+  }
+  document.removeEventListener("click", unlockBackgroundMusic);
+  document.removeEventListener("keydown", unlockBackgroundMusic);
+}
+
+function toggleBackgroundMusic() {
+  if (!state.player) {
+    return;
+  }
+
+  state.player.musicMuted = !state.player.musicMuted;
+  if (state.player.musicMuted) {
+    stopBackgroundMusic();
+  } else {
+    startBackgroundMusic();
+  }
+  savePlayer();
+  renderMusicToggle();
+  trackEvent("music_toggled", {
+    muted: state.player.musicMuted
+  });
+}
+
+function renderMusicToggle() {
+  const muted = Boolean(state.player?.musicMuted);
+  const label = muted ? "Turn on background music" : "Mute background music";
+
+  elements.musicToggleButton.classList.toggle("muted", muted);
+  elements.musicToggleButton.setAttribute("aria-label", "Background music");
+  elements.musicToggleButton.setAttribute("aria-pressed", String(!muted));
+  elements.musicToggleButton.title = label;
+  elements.musicToggleIcon.setAttribute(
+    "href",
+    muted ? "#icon-music-off" : "#icon-music"
+  );
+}
+
+function startBackgroundMusic() {
+  if (
+    state.player?.musicMuted ||
+    !elements.backgroundMusic ||
+    !elements.backgroundMusic.paused
+  ) {
+    return;
+  }
+
+  elements.backgroundMusic.volume = MUSIC_VOLUME;
+  elements.backgroundMusic.play().catch(error => {
+    console.error("Background music playback error:", error);
+  });
+}
+
+function stopBackgroundMusic() {
+  elements.backgroundMusic?.pause();
+}
+
+function enableFeedback() {
+  ensureAudioContext();
+  if (!state.player.musicMuted) {
+    startBackgroundMusic();
   }
 
   if (state.audioContext) {
@@ -1734,9 +1818,11 @@ function clearHuntNotice() {
 function resetDemo() {
   stopBarcodeScanner();
   const groceryItems = state.player?.groceryItems || [];
+  const musicMuted = Boolean(state.player?.musicMuted);
   localStorage.removeItem(STORAGE_KEY);
   state.player = createDefaultPlayer();
   state.player.groceryItems = groceryItems;
+  state.player.musicMuted = musicMuted;
   applyDailyReset();
   state.scanLocked = false;
   state.pendingRewards = [];
