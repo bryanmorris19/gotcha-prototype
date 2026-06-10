@@ -1656,6 +1656,123 @@ button:disabled {
   margin: 0;
 }
 
+.account-card {
+  display: grid;
+  gap: 16px;
+}
+
+.account-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-heading h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.account-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 16px;
+  color: var(--emerald);
+  background: #e4f7ed;
+}
+
+.account-icon svg {
+  width: 23px;
+  height: 23px;
+}
+
+.account-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.account-form {
+  margin-top: 13px;
+}
+
+.account-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.account-identity {
+  display: grid;
+  gap: 3px;
+  padding: 13px 14px;
+  border: 1px solid rgba(16, 122, 62, 0.14);
+  border-radius: 15px;
+  background: rgba(228, 247, 237, 0.62);
+}
+
+.account-identity span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.account-identity strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.account-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.account-actions button {
+  width: auto;
+  min-height: 45px;
+  margin: 0;
+}
+
+.account-actions .text-button {
+  padding-inline: 14px;
+}
+
+.account-status {
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.account-status.success {
+  color: var(--emerald);
+}
+
+.account-status.fail {
+  color: var(--danger);
+}
+
+.account-status.pending {
+  color: #936c00;
+}
+
+.account-card .account-privacy {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+}
+
 .profile-metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

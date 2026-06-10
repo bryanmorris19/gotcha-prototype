@@ -15,6 +15,7 @@ const DAILY_GOAL = 3;
 const MAX_ANALYTICS_EVENTS = 250;
 const MUSIC_VOLUME = 0.16;
 const MUSIC_PREFERENCE_VERSION = 1;
+const CLOUD_SYNC_DELAY = 900;
 
 const prizes = [
   {
@@ -160,7 +161,20 @@ const state = {
   activeView: "home",
   pendingRewards: [],
   resumeScannerAfterRewards: false,
-  scannerSessionId: 0
+  scannerSessionId: 0,
+  supabase: null,
+  accountUser: null,
+  accountReady: false,
+  accountBusy: false,
+  accountSyncedUserId: "",
+  accountStatusMessage: "Connecting account services...",
+  accountStatusType: "",
+  accountSyncTimer: null,
+  cloudSyncing: false,
+  cloudSyncPending: false,
+  cloudSyncBlocked: false,
+  cloudHydrating: false,
+  lastCloudSyncAt: null
 };
 
 const elements = {};
@@ -187,6 +201,7 @@ async function initializeApp() {
     startCountdown();
     registerServiceWorker();
     trackEvent("app_opened");
+    initializeAccount();
   } catch (error) {
     console.error("App initialization error:", error);
     showStatus(
@@ -277,6 +292,17 @@ function cacheElements() {
   elements.profileLevel = document.getElementById("profileLevel");
   elements.nicknameInput = document.getElementById("nicknameInput");
   elements.saveNicknameButton = document.getElementById("saveNicknameButton");
+  elements.accountSignedOut = document.getElementById("accountSignedOut");
+  elements.accountSignedIn = document.getElementById("accountSignedIn");
+  elements.accountForm = document.getElementById("accountForm");
+  elements.accountEmailInput = document.getElementById("accountEmailInput");
+  elements.accountSubmitButton = document.getElementById(
+    "accountSubmitButton"
+  );
+  elements.accountEmail = document.getElementById("accountEmail");
+  elements.accountStatus = document.getElementById("accountStatus");
+  elements.syncAccountButton = document.getElementById("syncAccountButton");
+  elements.signOutButton = document.getElementById("signOutButton");
   elements.totalHuntsValue = document.getElementById("totalHuntsValue");
   elements.collectionMetricValue = document.getElementById("collectionMetricValue");
   elements.bestStreakValue = document.getElementById("bestStreakValue");
@@ -307,6 +333,9 @@ function bindEvents() {
     clearCompletedGroceryItems
   );
   elements.saveNicknameButton.addEventListener("click", saveNickname);
+  elements.accountForm.addEventListener("submit", requestMagicLink);
+  elements.syncAccountButton.addEventListener("click", syncAccountNow);
+  elements.signOutButton.addEventListener("click", signOutAccount);
   elements.installButton.addEventListener("click", installApp);
   elements.navButtons.forEach(button => {
     button.addEventListener("click", () => switchView(button.dataset.viewButton));
@@ -501,6 +530,7 @@ function loadPlayer() {
 function savePlayer() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.player));
+    scheduleCloudSync();
   } catch (error) {
     console.error("Local progress could not be saved:", error);
   }
@@ -1523,6 +1553,7 @@ function renderProfile() {
   elements.collectionMetricValue.textContent = totalCollectibles;
   elements.bestStreakValue.textContent =
     Math.max(state.player.bestStreak || 0, state.player.streak);
+  renderAccount();
 }
 
 function saveNickname() {
@@ -1541,6 +1572,361 @@ function saveNickname() {
   window.setTimeout(() => {
     elements.saveNicknameButton.textContent = "Save";
   }, 1200);
+}
+
+async function initializeAccount() {
+  state.supabase = window.gotchaSupabase || null;
+  state.accountReady = true;
+
+  if (!state.supabase) {
+    setAccountStatus(
+      "Cloud accounts are unavailable right now. Progress is still saved on this device.",
+      "fail"
+    );
+    return;
+  }
+
+  try {
+    const { data, error } = await state.supabase.auth.getSession();
+    if (error) {
+      throw error;
+    }
+
+    if (data.session?.user) {
+      await connectAccount(data.session.user);
+    } else {
+      setAccountStatus(
+        "Playing as a guest. Sign in to back up this device's progress."
+      );
+    }
+
+    const { data: authListener } =
+      state.supabase.auth.onAuthStateChange((event, session) => {
+        window.setTimeout(() => {
+          handleAuthStateChange(event, session);
+        }, 0);
+      });
+    state.accountSubscription = authListener.subscription;
+  } catch (error) {
+    handleCloudError(error, "Account connection failed");
+  }
+}
+
+async function handleAuthStateChange(event, session) {
+  if (session?.user) {
+    await connectAccount(session.user);
+    return;
+  }
+
+  if (event === "SIGNED_OUT") {
+    applySignedOutAccount();
+  }
+}
+
+async function connectAccount(user) {
+  state.accountUser = user;
+  state.accountBusy = false;
+  state.cloudSyncBlocked = false;
+  renderAccount();
+
+  if (state.accountSyncedUserId === user.id) {
+    return;
+  }
+
+  await synchronizePlayerAccount(user);
+}
+
+async function synchronizePlayerAccount(user) {
+  setAccountStatus("Checking for saved cloud progress...", "pending");
+
+  try {
+    const { data, error } = await state.supabase
+      .from("player_progress")
+      .select("progress, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (data?.progress) {
+      state.cloudHydrating = true;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.progress));
+        state.player = loadPlayer();
+        applyDailyReset();
+        savePlayer();
+      } finally {
+        state.cloudHydrating = false;
+      }
+
+      state.accountSyncedUserId = user.id;
+      state.lastCloudSyncAt = data.updated_at
+        ? new Date(data.updated_at)
+        : new Date();
+      render();
+      setAccountStatus("Cloud progress restored on this device.", "success");
+      scheduleCloudSync(250);
+      return;
+    }
+
+    setAccountStatus(
+      "Creating your cloud save from this device...",
+      "pending"
+    );
+    await uploadPlayerProgress();
+  } catch (error) {
+    handleCloudError(error, "Cloud progress could not be loaded");
+  }
+}
+
+async function requestMagicLink(event) {
+  event.preventDefault();
+
+  if (!state.supabase || state.accountBusy) {
+    return;
+  }
+
+  if (!elements.accountEmailInput.reportValidity()) {
+    return;
+  }
+
+  const email = elements.accountEmailInput.value.trim();
+  state.accountBusy = true;
+  setAccountStatus("Sending your secure sign-in link...", "pending");
+
+  try {
+    const { error } = await state.supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: getAuthRedirectUrl(),
+        data: {
+          nickname: state.player.nickname
+        }
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    setAccountStatus(
+      `Check ${email} and open the Gotcha sign-in link on this device.`,
+      "success"
+    );
+    trackEvent("magic_link_requested");
+  } catch (error) {
+    handleCloudError(error, "The sign-in email could not be sent");
+  } finally {
+    state.accountBusy = false;
+    renderAccount();
+  }
+}
+
+function getAuthRedirectUrl() {
+  let pathname = window.location.pathname.replace(/index\.html$/i, "");
+  if (!pathname.endsWith("/")) {
+    pathname += "/";
+  }
+  return `${window.location.origin}${pathname}`;
+}
+
+function scheduleCloudSync(delay = CLOUD_SYNC_DELAY) {
+  if (
+    !state.supabase ||
+    !state.accountUser ||
+    state.cloudSyncBlocked ||
+    state.cloudHydrating
+  ) {
+    return;
+  }
+
+  if (state.cloudSyncing) {
+    state.cloudSyncPending = true;
+    return;
+  }
+
+  window.clearTimeout(state.accountSyncTimer);
+  state.accountSyncTimer = window.setTimeout(() => {
+    uploadPlayerProgress();
+  }, delay);
+}
+
+async function uploadPlayerProgress() {
+  if (
+    !state.supabase ||
+    !state.accountUser ||
+    state.cloudHydrating
+  ) {
+    return false;
+  }
+
+  if (state.cloudSyncing) {
+    state.cloudSyncPending = true;
+    return false;
+  }
+
+  const user = state.accountUser;
+  const progress = JSON.parse(JSON.stringify(state.player));
+  state.cloudSyncing = true;
+  state.cloudSyncPending = false;
+  window.clearTimeout(state.accountSyncTimer);
+  setAccountStatus("Syncing progress...", "pending");
+
+  try {
+    const now = new Date().toISOString();
+    const { error: profileError } = await state.supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: user.id,
+          nickname: state.player.nickname,
+          updated_at: now
+        },
+        { onConflict: "id" }
+      );
+
+    if (profileError) {
+      throw profileError;
+    }
+
+    const { error: progressError } = await state.supabase
+      .from("player_progress")
+      .upsert(
+        {
+          user_id: user.id,
+          progress,
+          updated_at: now
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (progressError) {
+      throw progressError;
+    }
+
+    state.accountSyncedUserId = user.id;
+    state.lastCloudSyncAt = new Date();
+    setAccountStatus(
+      `Progress synced at ${formatSyncTime(state.lastCloudSyncAt)}.`,
+      "success"
+    );
+    return true;
+  } catch (error) {
+    handleCloudError(error, "Progress could not be synced");
+    return false;
+  } finally {
+    state.cloudSyncing = false;
+    renderAccount();
+    if (state.cloudSyncPending && state.accountUser) {
+      state.cloudSyncPending = false;
+      scheduleCloudSync(250);
+    }
+  }
+}
+
+async function syncAccountNow() {
+  if (!state.accountUser || state.cloudSyncing) {
+    return;
+  }
+
+  state.cloudSyncBlocked = false;
+  window.clearTimeout(state.accountSyncTimer);
+  await uploadPlayerProgress();
+}
+
+async function signOutAccount() {
+  if (!state.supabase || !state.accountUser || state.accountBusy) {
+    return;
+  }
+
+  state.accountBusy = true;
+  renderAccount();
+  window.clearTimeout(state.accountSyncTimer);
+  await uploadPlayerProgress();
+
+  try {
+    const { error } = await state.supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
+    applySignedOutAccount();
+  } catch (error) {
+    state.accountBusy = false;
+    handleCloudError(error, "Could not sign out");
+  }
+}
+
+function applySignedOutAccount() {
+  window.clearTimeout(state.accountSyncTimer);
+  state.accountUser = null;
+  state.accountBusy = false;
+  state.accountSyncedUserId = "";
+  state.cloudSyncBlocked = false;
+  state.lastCloudSyncAt = null;
+  setAccountStatus(
+    "Signed out. Progress remains available on this device."
+  );
+}
+
+function renderAccount() {
+  if (!elements.accountSignedOut) {
+    return;
+  }
+
+  const signedIn = Boolean(state.accountUser);
+  const accountAvailable = state.accountReady && Boolean(state.supabase);
+
+  elements.accountSignedOut.classList.toggle("hidden", signedIn);
+  elements.accountSignedIn.classList.toggle("hidden", !signedIn);
+  elements.accountEmail.textContent = state.accountUser?.email || "";
+  elements.accountEmailInput.disabled =
+    !accountAvailable || state.accountBusy;
+  elements.accountSubmitButton.disabled =
+    !accountAvailable || state.accountBusy;
+  elements.accountSubmitButton.textContent =
+    state.accountBusy && !signedIn ? "Sending..." : "Email Link";
+  elements.syncAccountButton.disabled =
+    !signedIn || state.cloudSyncing || state.accountBusy;
+  elements.syncAccountButton.textContent =
+    state.cloudSyncing ? "Syncing..." : "Sync Now";
+  elements.signOutButton.disabled = !signedIn || state.accountBusy;
+  elements.accountStatus.textContent = state.accountStatusMessage;
+  elements.accountStatus.className =
+    `account-status ${state.accountStatusType}`.trim();
+}
+
+function setAccountStatus(message, type = "") {
+  state.accountStatusMessage = message;
+  state.accountStatusType = type;
+  renderAccount();
+}
+
+function handleCloudError(error, fallbackMessage) {
+  const message = String(error?.message || "");
+  const setupRequired =
+    error?.code === "42P01" ||
+    error?.code === "PGRST205" ||
+    message.includes("player_progress") ||
+    message.includes("profiles");
+
+  state.cloudSyncBlocked = setupRequired;
+  setAccountStatus(
+    setupRequired
+      ? "Account connected. Run the Supabase database migration to enable cloud saves."
+      : `${fallbackMessage}. Progress is still safe on this device.`,
+    "fail"
+  );
+  console.error(fallbackMessage, error);
+}
+
+function formatSyncTime(date) {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
 }
 
 function switchView(viewName) {

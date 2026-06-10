@@ -10,9 +10,14 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=18" />
+  <link rel="stylesheet" href="styles.css?v=19" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
-  <script src="app.js?v=18" defer></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.js"
+    defer
+  ></script>
+  <script src="supabase-config.js?v=1" defer></script>
+  <script src="app.js?v=19" defer></script>
 </head>
 
 <body>
@@ -383,6 +388,69 @@
           <input id="nicknameInput" maxlength="24" autocomplete="nickname" />
           <button id="saveNicknameButton" type="button">Save</button>
         </div>
+      </section>
+
+      <section class="card account-card">
+        <div class="account-heading">
+          <span class="account-icon">
+            <svg><use href="#icon-user"></use></svg>
+          </span>
+          <div>
+            <div class="eyebrow">Gotcha Account</div>
+            <h2>Save progress across devices</h2>
+          </div>
+        </div>
+
+        <div id="accountSignedOut">
+          <p>
+            Enter your email and we will send a secure sign-in link. No
+            password is required.
+          </p>
+          <form id="accountForm" class="account-form">
+            <label for="accountEmailInput">Email address</label>
+            <div class="profile-form">
+              <input
+                id="accountEmailInput"
+                type="email"
+                inputmode="email"
+                autocomplete="email"
+                required
+                placeholder="you@example.com"
+              />
+              <button id="accountSubmitButton" type="submit">
+                Email Link
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="accountSignedIn" class="hidden">
+          <div class="account-identity">
+            <span>Signed in as</span>
+            <strong id="accountEmail"></strong>
+          </div>
+          <div class="account-actions">
+            <button id="syncAccountButton" class="secondary" type="button">
+              Sync Now
+            </button>
+            <button id="signOutButton" class="text-button" type="button">
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="accountStatus"
+          class="account-status"
+          role="status"
+          aria-live="polite"
+        >
+          Connecting account services...
+        </div>
+        <p class="account-privacy">
+          Signed-out progress stays on this device. Signing in securely backs
+          it up to your private account.
+        </p>
       </section>
 
       <section class="profile-metrics">
