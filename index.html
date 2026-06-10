@@ -10,9 +10,9 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=12" />
+  <link rel="stylesheet" href="styles.css?v=13" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
-  <script src="app.js?v=13" defer></script>
+  <script src="app.js?v=14" defer></script>
 </head>
 
 <body>
@@ -45,6 +45,9 @@
     <symbol id="icon-user" viewBox="0 0 24 24">
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21a8 8 0 0 1 16 0" />
+    </symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24">
+      <path d="M10 6h10M10 12h10M10 18h10M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17" />
     </symbol>
     <symbol id="icon-clock" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="9" />
@@ -82,7 +85,7 @@
           <img src="assets/gotcha-coin.png" alt="" />
         </span>
         <div class="stat-label">Gotcha Coins</div>
-        <div class="stat-value" id="coinsValue">20</div>
+        <div class="stat-value" id="coinsValue">10</div>
       </div>
       <div class="stat">
         <span class="stat-icon stat-icon-flame">
@@ -249,6 +252,47 @@
       </section>
     </section>
 
+    <section id="listView" class="app-view" data-view="list">
+      <section class="view-header">
+        <div>
+          <div class="eyebrow">Shopping Companion</div>
+          <h1>Grocery List</h1>
+        </div>
+        <span class="collection-count" id="groceryListCount">0 remaining</span>
+      </section>
+
+      <section class="card grocery-list-card">
+        <form id="groceryForm" class="grocery-form">
+          <label for="groceryInput">Add an item</label>
+          <div class="grocery-input-row">
+            <input
+              id="groceryInput"
+              maxlength="80"
+              autocomplete="off"
+              placeholder="Milk, apples, cereal..."
+            />
+            <button id="addGroceryButton" type="submit">Add</button>
+          </div>
+        </form>
+
+        <div id="groceryList" class="grocery-list"></div>
+
+        <div id="emptyGroceryList" class="grocery-empty-state">
+          <span><svg><use href="#icon-list"></use></svg></span>
+          <strong>Your grocery list is empty</strong>
+          <p>Add the things you need, then check them off as you shop and hunt.</p>
+        </div>
+
+        <button
+          id="clearCompletedButton"
+          class="text-button grocery-clear-button hidden"
+          type="button"
+        >
+          Clear completed
+        </button>
+      </section>
+    </section>
+
     <section id="profileView" class="app-view" data-view="profile">
       <section class="profile-hero card">
         <div class="profile-avatar"><svg><use href="#icon-user"></use></svg></div>
@@ -306,6 +350,10 @@
       <button class="nav-button" data-view-button="collection" type="button">
         <svg><use href="#icon-box"></use></svg>
         <span>Collection</span>
+      </button>
+      <button class="nav-button" data-view-button="list" type="button">
+        <svg><use href="#icon-list"></use></svg>
+        <span>List</span>
       </button>
       <button class="nav-button" data-view-button="profile" type="button">
         <svg><use href="#icon-user"></use></svg>
@@ -427,13 +475,6 @@
         Rewards use Gotcha Coins and test-only prizes. Coins cannot be purchased
         or wagered.
       </p>
-
-      <div class="odds-section">
-        <h3>Training Module</h3>
-        <dl class="odds-list">
-          <div><dt>20 coins after first barcode scan</dt><dd>100%</dd></div>
-        </dl>
-      </div>
 
       <div class="odds-section">
         <h3>Correct Hunt</h3>

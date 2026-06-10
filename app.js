@@ -3,8 +3,8 @@
 const STORAGE_KEY = "gotcha-player-v1";
 const STARTING_GUESSES = 3;
 const MAX_GUESSES = 5;
-const STARTING_COINS = 0;
-const TRAINING_BONUS_COINS = 20;
+const STARTING_COINS = 10;
+const COIN_MODEL_VERSION = 2;
 const BETTER_CLUE_COST = 10;
 const EXTRA_GUESS_COST = 15;
 const FRAGMENTS_PER_CACHE = 3;
@@ -134,20 +134,7 @@ const dailyChestRewards = [
   }
 ];
 
-const trainingReward = {
-  id: "training-bonus-20",
-  label: `${TRAINING_BONUS_COINS} Gotcha Coins`,
-  subtitle: "Training Bonus",
-  rarity: "common",
-  coins: TRAINING_BONUS_COINS
-};
-
-const rewardCatalog = [
-  ...prizes,
-  ...cacheRewards,
-  ...dailyChestRewards,
-  trainingReward
-];
+const rewardCatalog = [...prizes, ...cacheRewards, ...dailyChestRewards];
 
 const state = {
   hunts: [],
@@ -245,6 +232,14 @@ function cacheElements() {
   elements.collectionCount = document.getElementById("collectionCount");
   elements.emptyCollection = document.getElementById("emptyCollection");
   elements.rewardHistoryList = document.getElementById("rewardHistoryList");
+  elements.groceryListCount = document.getElementById("groceryListCount");
+  elements.groceryForm = document.getElementById("groceryForm");
+  elements.groceryInput = document.getElementById("groceryInput");
+  elements.groceryList = document.getElementById("groceryList");
+  elements.emptyGroceryList = document.getElementById("emptyGroceryList");
+  elements.clearCompletedButton = document.getElementById(
+    "clearCompletedButton"
+  );
   elements.profileName = document.getElementById("profileName");
   elements.profileLevel = document.getElementById("profileLevel");
   elements.nicknameInput = document.getElementById("nicknameInput");
@@ -270,6 +265,13 @@ function bindEvents() {
   elements.torchButton.addEventListener("click", toggleTorch);
   elements.nextHuntButton.addEventListener("click", closePrizeOverlay);
   elements.wrongActionButton.addEventListener("click", closeWrongOverlay);
+  elements.groceryForm.addEventListener("submit", addGroceryItem);
+  elements.groceryList.addEventListener("change", handleGroceryListChange);
+  elements.groceryList.addEventListener("click", handleGroceryListClick);
+  elements.clearCompletedButton.addEventListener(
+    "click",
+    clearCompletedGroceryItems
+  );
   elements.saveNicknameButton.addEventListener("click", saveNickname);
   elements.installButton.addEventListener("click", installApp);
   elements.navButtons.forEach(button => {
@@ -312,7 +314,7 @@ function createDefaultPlayer() {
     coins: STARTING_COINS,
     lifetimeCoins: 0,
     coinEconomyInitialized: true,
-    trainingBonusClaimed: false,
+    coinModelVersion: COIN_MODEL_VERSION,
     streak: 0,
     guesses: STARTING_GUESSES,
     dailyDate: "",
@@ -328,6 +330,7 @@ function createDefaultPlayer() {
     bestStreak: 0,
     collection: {},
     rewardHistory: [],
+    groceryItems: [],
     analytics: {
       counters: {},
       events: []
@@ -358,40 +361,76 @@ function loadPlayer() {
       : Number.isFinite(Number(saved.points))
         ? Number(saved.points)
         : 0;
-    const hasRecordedScan =
+    const hasRecordedActivity =
       (Array.isArray(saved.completedHunts) && saved.completedHunts.length > 0) ||
       (Array.isArray(saved.dailyScannedBarcodes) &&
         saved.dailyScannedBarcodes.length > 0) ||
+      (Array.isArray(saved.rewardHistory) && saved.rewardHistory.length > 0) ||
       Number(saved.analytics?.counters?.scan_correct || 0) > 0 ||
-      Number(saved.analytics?.counters?.scan_wrong || 0) > 0;
-    const isPristineLegacyPlayer =
-      saved.trainingBonusClaimed === undefined &&
-      saved.coinEconomyInitialized === true &&
-      existingBalance === 20 &&
-      migratedLifetimeCoins === 0 &&
-      !hasRecordedScan;
+      Number(saved.analytics?.counters?.scan_wrong || 0) > 0 ||
+      Number(saved.analytics?.counters?.better_clue_used || 0) > 0 ||
+      Number(saved.analytics?.counters?.extra_guess_purchased || 0) > 0;
+    const savedCollection =
+      saved.collection && typeof saved.collection === "object"
+        ? { ...saved.collection }
+        : {};
+    const savedRewardHistory = Array.isArray(saved.rewardHistory)
+      ? saved.rewardHistory
+      : [];
+    const hasTrainingReward =
+      Boolean(savedCollection["training-bonus-20"]) ||
+      savedRewardHistory.some(entry => entry.id === "training-bonus-20");
+    const needsCoinMigration =
+      Number(saved.coinModelVersion) !== COIN_MODEL_VERSION;
+    let currentCoins = migratedCoins;
+    let lifetimeCoins = migratedLifetimeCoins;
+    let collection = savedCollection;
+    let rewardHistory = savedRewardHistory;
+
+    if (needsCoinMigration && hasTrainingReward) {
+      currentCoins =
+        Math.max(0, migratedCoins - 20) + STARTING_COINS;
+      lifetimeCoins = Math.max(0, migratedLifetimeCoins - 20);
+      delete collection["training-bonus-20"];
+      rewardHistory = rewardHistory.filter(
+        entry => entry.id !== "training-bonus-20"
+      );
+    } else if (
+      needsCoinMigration &&
+      !hasRecordedActivity &&
+      migratedLifetimeCoins === 0
+    ) {
+      currentCoins = STARTING_COINS;
+    }
+
+    const savedPlayer = { ...saved };
+    delete savedPlayer.trainingBonusClaimed;
 
     return {
       ...fallback,
-      ...saved,
-      coins: isPristineLegacyPlayer ? STARTING_COINS : migratedCoins,
-      lifetimeCoins: migratedLifetimeCoins,
+      ...savedPlayer,
+      coins: currentCoins,
+      lifetimeCoins,
       coinEconomyInitialized: true,
-      trainingBonusClaimed:
-        typeof saved.trainingBonusClaimed === "boolean"
-          ? saved.trainingBonusClaimed
-          : !isPristineLegacyPlayer,
+      coinModelVersion: COIN_MODEL_VERSION,
       completedHunts: Array.isArray(saved.completedHunts)
         ? saved.completedHunts
         : [],
-      collection: saved.collection && typeof saved.collection === "object"
-        ? saved.collection
-        : {},
+      collection,
       dailyScannedBarcodes: Array.isArray(saved.dailyScannedBarcodes)
         ? saved.dailyScannedBarcodes
         : [],
-      rewardHistory: Array.isArray(saved.rewardHistory)
-        ? saved.rewardHistory
+      rewardHistory,
+      groceryItems: Array.isArray(saved.groceryItems)
+        ? saved.groceryItems
+            .filter(item => item && typeof item.text === "string")
+            .map(item => ({
+              id: String(item.id || createGroceryItemId()),
+              text: item.text.trim().slice(0, 80),
+              checked: Boolean(item.checked),
+              createdAt: item.createdAt || new Date().toISOString()
+            }))
+            .filter(item => item.text)
         : [],
       analytics: {
         counters: saved.analytics?.counters || {},
@@ -543,6 +582,7 @@ function render() {
     state.player.coins < BETTER_CLUE_COST || state.player.betterClueUsed;
   renderRewardProgress();
   renderCollection();
+  renderGroceryList();
   renderProfile();
 }
 
@@ -770,7 +810,6 @@ function onBarcodeScanned(decodedText) {
   const hunt = findActiveHuntByBarcode(scanned);
 
   state.player.guesses = Math.max(0, state.player.guesses - 1);
-  awardTrainingBonus();
 
   if (hunt) {
     trackEvent("scan_correct", { huntId: hunt.id });
@@ -782,28 +821,6 @@ function onBarcodeScanned(decodedText) {
 
   savePlayer();
   render();
-}
-
-function awardTrainingBonus() {
-  if (state.player.trainingBonusClaimed) {
-    return;
-  }
-
-  state.player.trainingBonusClaimed = true;
-  grantReward(trainingReward, "Training Module");
-  queueReward({
-    openActionLabel: "Claim Training Bonus",
-    label: "Training complete!",
-    title: "First scan bonus",
-    context: "Your first barcode scan",
-    reward: trainingReward,
-    finePrint:
-      "Use Gotcha Coins for an easier clue, another guess, or future rewards.",
-    actionLabel: "Continue"
-  });
-  trackEvent("training_bonus_earned", {
-    coins: TRAINING_BONUS_COINS
-  });
 }
 
 function completeHunt(hunt, scanned) {
@@ -1255,6 +1272,122 @@ function formatRewardTime(value) {
   }).format(date);
 }
 
+function renderGroceryList() {
+  const items = [...state.player.groceryItems].sort(
+    (left, right) => Number(left.checked) - Number(right.checked)
+  );
+  const remaining = items.filter(item => !item.checked).length;
+  const completed = items.length - remaining;
+
+  elements.groceryListCount.textContent =
+    `${remaining} ${remaining === 1 ? "item" : "items"} remaining`;
+  elements.groceryList.innerHTML = items.map(item => `
+    <article class="grocery-item ${item.checked ? "completed" : ""}">
+      <label>
+        <input
+          type="checkbox"
+          data-grocery-check="${escapeHtml(item.id)}"
+          ${item.checked ? "checked" : ""}
+        />
+        <span>${escapeHtml(item.text)}</span>
+      </label>
+      <button
+        class="grocery-remove-button"
+        type="button"
+        data-remove-grocery="${escapeHtml(item.id)}"
+        aria-label="Remove ${escapeHtml(item.text)}"
+      >
+        <svg><use href="#icon-close"></use></svg>
+      </button>
+    </article>
+  `).join("");
+  elements.groceryList.classList.toggle("hidden", items.length === 0);
+  elements.emptyGroceryList.classList.toggle("hidden", items.length > 0);
+  elements.clearCompletedButton.classList.toggle("hidden", completed === 0);
+}
+
+function addGroceryItem(event) {
+  event.preventDefault();
+  const text = elements.groceryInput.value.trim().slice(0, 80);
+
+  if (!text) {
+    elements.groceryInput.focus();
+    return;
+  }
+
+  state.player.groceryItems.push({
+    id: createGroceryItemId(),
+    text,
+    checked: false,
+    createdAt: new Date().toISOString()
+  });
+  elements.groceryInput.value = "";
+  savePlayer();
+  renderGroceryList();
+  trackEvent("grocery_item_added");
+  elements.groceryInput.focus();
+}
+
+function handleGroceryListChange(event) {
+  const checkbox = event.target.closest("[data-grocery-check]");
+
+  if (!checkbox) {
+    return;
+  }
+
+  const item = state.player.groceryItems.find(
+    candidate => candidate.id === checkbox.dataset.groceryCheck
+  );
+  if (!item) {
+    return;
+  }
+
+  item.checked = checkbox.checked;
+  savePlayer();
+  renderGroceryList();
+  trackEvent(item.checked
+    ? "grocery_item_completed"
+    : "grocery_item_reopened");
+}
+
+function handleGroceryListClick(event) {
+  const removeButton = event.target.closest("[data-remove-grocery]");
+
+  if (!removeButton) {
+    return;
+  }
+
+  state.player.groceryItems = state.player.groceryItems.filter(
+    item => item.id !== removeButton.dataset.removeGrocery
+  );
+  savePlayer();
+  renderGroceryList();
+  trackEvent("grocery_item_removed");
+}
+
+function clearCompletedGroceryItems() {
+  const completedCount = state.player.groceryItems.filter(
+    item => item.checked
+  ).length;
+
+  if (completedCount === 0) {
+    return;
+  }
+
+  state.player.groceryItems = state.player.groceryItems.filter(
+    item => !item.checked
+  );
+  savePlayer();
+  renderGroceryList();
+  trackEvent("grocery_completed_cleared", {
+    count: completedCount
+  });
+}
+
+function createGroceryItemId() {
+  return `grocery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function renderProfile() {
   const totalCollectibles = Object.values(state.player.collection)
     .reduce((sum, reward) => sum + reward.count, 0);
@@ -1525,8 +1658,10 @@ function clearHuntNotice() {
 
 function resetDemo() {
   stopBarcodeScanner();
+  const groceryItems = state.player?.groceryItems || [];
   localStorage.removeItem(STORAGE_KEY);
   state.player = createDefaultPlayer();
+  state.player.groceryItems = groceryItems;
   applyDailyReset();
   state.scanLocked = false;
   state.pendingRewards = [];
