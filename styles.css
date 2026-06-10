@@ -513,6 +513,10 @@ button.scan-launch-button {
   box-shadow: 0 9px 20px rgba(13, 132, 87, 0.24);
 }
 
+button.scan-launch-button:not(:disabled) {
+  animation: scan-button-glow 3.8s ease-in-out infinite;
+}
+
 button.scan-launch-button svg {
   width: 24px;
   height: 24px;
@@ -1661,6 +1665,20 @@ button:disabled {
   }
 }
 
+@keyframes scan-button-glow {
+  0%, 100% {
+    filter: brightness(1);
+    box-shadow: 0 9px 20px rgba(13, 132, 87, 0.24);
+  }
+  50% {
+    filter: brightness(1.05);
+    box-shadow:
+      0 9px 20px rgba(13, 132, 87, 0.28),
+      0 0 0 5px rgba(52, 199, 89, 0.08),
+      0 0 20px rgba(52, 199, 89, 0.2);
+  }
+}
+
 @keyframes overlay-pop {
   from {
     opacity: 0;
@@ -1694,6 +1712,12 @@ button:disabled {
   from {
     opacity: 0;
     transform: translateY(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.scan-launch-button {
+    animation: none;
   }
 }
 
