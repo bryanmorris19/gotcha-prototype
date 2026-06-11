@@ -10,14 +10,14 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=24" />
+  <link rel="stylesheet" href="styles.css?v=25" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.js"
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=26" defer></script>
+  <script src="app.js?v=27" defer></script>
 </head>
 
 <body>
@@ -345,7 +345,7 @@
     <section id="collectionView" class="app-view" data-view="collection">
       <section class="view-header">
         <div>
-          <div class="eyebrow">Ancient Route</div>
+          <div class="eyebrow">Ancient Map</div>
           <h1>Stone Tablet</h1>
         </div>
         <span class="collection-count" id="collectionCount">0 of 6 fragments</span>
@@ -355,10 +355,10 @@
           <svg><use href="#icon-lock"></use></svg>
         </span>
         <div class="artifact-puzzle-copy">
-          <div class="eyebrow">The Tablet Route</div>
+          <div class="eyebrow">The Stone Map</div>
           <h2>Correctly scan all 3 daily items to recover a fragment</h2>
           <p id="artifactPuzzleMessage">
-            Every fragment restores another glowing section of the route.
+            Each recovered stone locks into its matching place on the map.
           </p>
         </div>
         <div class="artifact-puzzle-progress">
@@ -373,7 +373,9 @@
           >
             <span id="artifactPuzzleBar"></span>
           </div>
-          <small>Complete the route to unlock the special final scanner.</small>
+          <small id="artifactPuzzleHint">
+            Complete the map to unlock the special final scanner.
+          </small>
         </div>
       </section>
 
@@ -381,7 +383,7 @@
         <div class="tablet-card-heading">
           <div>
             <div class="eyebrow">Recovered Map</div>
-            <h2>The Path of Six Stones</h2>
+            <h2>The Six-Stone Map</h2>
           </div>
           <span class="tablet-signal">
             <svg><use href="#icon-sparkle"></use></svg>
@@ -389,138 +391,56 @@
         </div>
 
         <div id="tabletStage" class="tablet-stage" aria-live="polite">
-          <svg
-            class="stone-tablet"
-            viewBox="0 0 360 440"
+          <div
+            class="stone-tablet-map"
             role="img"
             aria-labelledby="tabletTitle tabletDescription"
           >
-            <title id="tabletTitle">Six-piece stone treasure map</title>
-            <desc id="tabletDescription">
-              Locked stone fragments form a tablet. Recovered fragments reveal
-              a glowing route leading to the final scanner seal.
-            </desc>
-            <defs>
-              <filter id="tabletGlow" x="-60%" y="-60%" width="220%" height="220%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <linearGradient id="stoneRecovered" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#dec28d" />
-                <stop offset="0.5" stop-color="#b98d52" />
-                <stop offset="1" stop-color="#8a6236" />
-              </linearGradient>
-              <linearGradient id="stoneLocked" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#d8dbd8" />
-                <stop offset="1" stop-color="#969d98" />
-              </linearGradient>
-              <path
-                id="tabletRoutePath"
-                d="M78 72 C120 84 111 129 160 148 S278 108 290 150 S232 205 151 220 S104 274 160 292 S286 286 260 340 S194 378 278 384"
-              />
-              <clipPath id="tabletClip1">
-                <path d="M62 28 Q47 29 42 47 L38 170 L174 166 L178 32 Z" />
-              </clipPath>
-              <clipPath id="tabletClip2">
-                <path d="M184 32 L300 38 Q317 42 320 59 L316 164 L184 168 Z" />
-              </clipPath>
-              <clipPath id="tabletClip3">
-                <path d="M38 176 L174 172 L170 288 L44 292 Q35 286 36 273 Z" />
-              </clipPath>
-              <clipPath id="tabletClip4">
-                <path d="M182 174 L316 170 L315 286 L178 290 Z" />
-              </clipPath>
-              <clipPath id="tabletClip5">
-                <path d="M46 300 L170 296 L174 410 L69 406 Q49 402 44 383 Z" />
-              </clipPath>
-              <clipPath id="tabletClip6">
-                <path d="M178 296 L314 292 L310 382 Q307 403 288 410 L182 412 Z" />
-              </clipPath>
-            </defs>
-
-            <path
-              class="tablet-backplate"
-              d="M61 19 Q38 21 31 47 L27 379 Q28 411 62 420 L289 422 Q319 414 323 383 L330 59 Q328 30 301 27 Z"
-            />
-
-            <g class="tablet-piece locked" data-tablet-piece="0">
-              <path class="tablet-stone" d="M62 28 Q47 29 42 47 L38 170 L174 166 L178 32 Z" />
-              <use class="tablet-route-shadow" href="#tabletRoutePath" clip-path="url(#tabletClip1)" />
-              <use class="tablet-route" href="#tabletRoutePath" clip-path="url(#tabletClip1)" />
-              <path class="tablet-glyph" d="M79 61 92 48l13 13-13 13-13-13Zm42 42 10-17 10 17m-25 0h30" />
-              <g class="tablet-piece-lock" transform="translate(91 105)">
-                <circle r="24" />
-                <use href="#icon-lock" x="-12" y="-12" width="24" height="24" />
-              </g>
-            </g>
-
-            <g class="tablet-piece locked" data-tablet-piece="1">
-              <path class="tablet-stone" d="M184 32 L300 38 Q317 42 320 59 L316 164 L184 168 Z" />
-              <use class="tablet-route-shadow" href="#tabletRoutePath" clip-path="url(#tabletClip2)" />
-              <use class="tablet-route" href="#tabletRoutePath" clip-path="url(#tabletClip2)" />
-              <path class="tablet-glyph" d="M264 66a16 16 0 1 1-22 22 16 16 0 0 1 22-22Zm-18 18 15-8-8 15-15 8 8-15Z" />
-              <g class="tablet-piece-lock" transform="translate(250 105)">
-                <circle r="24" />
-                <use href="#icon-lock" x="-12" y="-12" width="24" height="24" />
-              </g>
-            </g>
-
-            <g class="tablet-piece locked" data-tablet-piece="2">
-              <path class="tablet-stone" d="M38 176 L174 172 L170 288 L44 292 Q35 286 36 273 Z" />
-              <use class="tablet-route-shadow" href="#tabletRoutePath" clip-path="url(#tabletClip3)" />
-              <use class="tablet-route" href="#tabletRoutePath" clip-path="url(#tabletClip3)" />
-              <path class="tablet-glyph" d="M67 249q15-14 30 0t30 0m-55 14q15-14 30 0t30 0" />
-              <g class="tablet-piece-lock" transform="translate(105 231)">
-                <circle r="24" />
-                <use href="#icon-lock" x="-12" y="-12" width="24" height="24" />
-              </g>
-            </g>
-
-            <g class="tablet-piece locked" data-tablet-piece="3">
-              <path class="tablet-stone" d="M182 174 L316 170 L315 286 L178 290 Z" />
-              <use class="tablet-route-shadow" href="#tabletRoutePath" clip-path="url(#tabletClip4)" />
-              <use class="tablet-route" href="#tabletRoutePath" clip-path="url(#tabletClip4)" />
-              <path class="tablet-glyph" d="m244 210 14-18 14 18m-37 18 17-22 18 22m-43 12h54" />
-              <g class="tablet-piece-lock" transform="translate(250 231)">
-                <circle r="24" />
-                <use href="#icon-lock" x="-12" y="-12" width="24" height="24" />
-              </g>
-            </g>
-
-            <g class="tablet-piece locked" data-tablet-piece="4">
-              <path class="tablet-stone" d="M46 300 L170 296 L174 410 L69 406 Q49 402 44 383 Z" />
-              <use class="tablet-route-shadow" href="#tabletRoutePath" clip-path="url(#tabletClip5)" />
-              <use class="tablet-route" href="#tabletRoutePath" clip-path="url(#tabletClip5)" />
-              <path class="tablet-glyph" d="M72 334h55m-47 15h38m-30 15h22M133 321l11 11-11 11" />
-              <g class="tablet-piece-lock" transform="translate(108 352)">
-                <circle r="24" />
-                <use href="#icon-lock" x="-12" y="-12" width="24" height="24" />
-              </g>
-            </g>
-
-            <g class="tablet-piece locked" data-tablet-piece="5">
-              <path class="tablet-stone" d="M178 296 L314 292 L310 382 Q307 403 288 410 L182 412 Z" />
-              <use class="tablet-route-shadow" href="#tabletRoutePath" clip-path="url(#tabletClip6)" />
-              <use class="tablet-route" href="#tabletRoutePath" clip-path="url(#tabletClip6)" />
-              <path class="tablet-glyph" d="M211 326h28v23h-28zM206 326l19-14 19 14M225 312v37" />
-              <g class="tablet-destination" transform="translate(278 384)">
-                <circle r="22" />
-                <svg x="-12" y="-12" width="24" height="24">
-                  <use href="#icon-scan"></use>
-                </svg>
-              </g>
-              <g class="tablet-piece-lock" transform="translate(250 352)">
-                <circle r="24" />
-                <use href="#icon-lock" x="-12" y="-12" width="24" height="24" />
-              </g>
-            </g>
-          </svg>
+            <span id="tabletTitle" class="sr-only">Six-piece stone treasure map</span>
+            <span id="tabletDescription" class="sr-only">
+              A greyed-out map holds six locked positions. Each recovered stone
+              returns in full color and fits into its matching place.
+            </span>
+            <div class="tablet-piece locked" data-tablet-piece="0">
+              <img src="assets/tablet-fragment-1.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="1">
+              <img src="assets/tablet-fragment-2.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="2">
+              <img src="assets/tablet-fragment-3.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="3">
+              <img src="assets/tablet-fragment-4.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="4">
+              <img src="assets/tablet-fragment-5.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="5">
+              <img src="assets/tablet-fragment-6.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+          </div>
           <div class="tablet-stage-caption">
-            <span class="tablet-route-key"></span>
-            The illuminated route grows with each recovered fragment.
+            <span class="tablet-map-key"></span>
+            Recovered stones return to their exact place on the map.
           </div>
         </div>
       </section>
@@ -531,7 +451,7 @@
         </span>
         <div id="finalHuntLocked">
           <div class="eyebrow">Final Signal Sealed</div>
-          <h2>Complete the tablet route</h2>
+          <h2>Complete the stone map</h2>
           <p>The sixth fragment reveals the final clue and activates a special scanner.</p>
         </div>
         <div id="finalHuntUnlocked" class="hidden">
@@ -955,7 +875,7 @@
       <div id="finalScannerReady">
         <div class="final-scanner-header">
           <div>
-            <div class="found-label">Tablet Route Complete</div>
+            <div class="found-label">Stone Map Complete</div>
             <h2 id="finalScannerHeading">Final Scanner</h2>
           </div>
           <span class="final-live-dot">Special Signal</span>
@@ -997,7 +917,7 @@
         <div class="found-label">Final Product Verified</div>
         <h2>Grand Prize Entry Unlocked!</h2>
         <p>
-          Pirate's Booty Aged White Cheddar completed the tablet route.
+          Pirate's Booty Aged White Cheddar completed the stone map.
         </p>
         <div class="simulated-entry-badge">
           <span>SIMULATED BETA REWARD</span>
@@ -1046,6 +966,7 @@
         alt="Gotcha! Gold"
       />
       <span id="prizeArtifactIcon" class="prize-artifact-icon hidden">
+        <img id="prizeArtifactImage" class="hidden" alt="" />
         <svg aria-hidden="true">
           <use id="prizeArtifactIconUse" href="#icon-key"></use>
         </svg>

@@ -128,44 +128,50 @@ const artifactCatalog = [
   {
     id: "lucky-key",
     label: "Tablet Fragment I",
-    subtitle: "The first section of the glowing route",
+    subtitle: "The first recovered section of the ancient map",
     rarity: "common",
-    icon: "icon-map"
+    icon: "icon-map",
+    image: "assets/tablet-fragment-1.webp"
   },
   {
     id: "signal-compass",
     label: "Tablet Fragment II",
-    subtitle: "The route turns toward a distant marker",
+    subtitle: "The second recovered section of the ancient map",
     rarity: "rare",
-    icon: "icon-map"
+    icon: "icon-map",
+    image: "assets/tablet-fragment-2.webp"
   },
   {
     id: "emerald-lantern",
     label: "Tablet Fragment III",
-    subtitle: "Ancient lines continue across the stone",
+    subtitle: "The third recovered section of the ancient map",
     rarity: "rare",
-    icon: "icon-map"
+    icon: "icon-map",
+    image: "assets/tablet-fragment-3.webp"
   },
   {
     id: "secret-map",
     label: "Tablet Fragment IV",
-    subtitle: "A hidden landmark appears on the route",
+    subtitle: "The fourth recovered section of the ancient map",
     rarity: "epic",
-    icon: "icon-map"
+    icon: "icon-map",
+    image: "assets/tablet-fragment-4.webp"
   },
   {
     id: "vault-crown",
     label: "Tablet Fragment V",
-    subtitle: "The path approaches its final destination",
+    subtitle: "The fifth recovered section of the ancient map",
     rarity: "legendary",
-    icon: "icon-map"
+    icon: "icon-map",
+    image: "assets/tablet-fragment-5.webp"
   },
   {
     id: "star-relic",
     label: "Tablet Fragment VI",
-    subtitle: "The final route and scanner seal",
+    subtitle: "The final recovered section of the ancient map",
     rarity: "legendary",
-    icon: "icon-map"
+    icon: "icon-map",
+    image: "assets/tablet-fragment-6.webp"
   }
 ];
 const artifactIds = new Set(artifactCatalog.map(artifact => artifact.id));
@@ -211,6 +217,7 @@ const state = {
   scanPreviewRewardActive: false,
   scanPreviewRewardQueue: [],
   scanPreviewReturnToTablet: false,
+  pendingTabletRevealIndex: -1,
   brandPuzzleHuntId: "",
   brandPuzzleMode: "missing-letter",
   brandPuzzleSolved: false,
@@ -334,6 +341,9 @@ function cacheElements() {
   elements.prizeOverlayText = document.getElementById("prizeOverlayText");
   elements.prizeCoinImage = document.getElementById("prizeCoinImage");
   elements.prizeArtifactIcon = document.getElementById("prizeArtifactIcon");
+  elements.prizeArtifactImage = document.getElementById(
+    "prizeArtifactImage"
+  );
   elements.prizeArtifactIconUse = document.getElementById(
     "prizeArtifactIconUse"
   );
@@ -351,6 +361,9 @@ function cacheElements() {
   elements.collectionCount = document.getElementById("collectionCount");
   elements.artifactPuzzleText = document.getElementById(
     "artifactPuzzleText"
+  );
+  elements.artifactPuzzleHint = document.getElementById(
+    "artifactPuzzleHint"
   );
   elements.artifactPuzzleBar = document.getElementById("artifactPuzzleBar");
   elements.artifactPuzzleMessage = document.getElementById(
@@ -908,7 +921,7 @@ function render() {
     state.player.dailyArtifactClaimed
       ? puzzleComplete
         ? "Daily fragment recovered. The complete tablet reveals the final scanner."
-        : "Daily fragment recovered. Return tomorrow to reveal another route section."
+        : "Daily fragment recovered. Return tomorrow to recover another map section."
       : `${scansRemaining} more correct ${
           scansRemaining === 1 ? "scan" : "scans"
         } to recover today's tablet fragment.`;
@@ -1711,6 +1724,7 @@ function unlockDailyArtifact(showOverlay = true) {
   }
 
   addPrizeToCollection(artifact);
+  state.pendingTabletRevealIndex = artifactCatalog.indexOf(artifact);
   recordRewardHistory(artifact, "Daily Artifact");
   trackEvent("daily_artifact_unlocked", {
     artifactId: artifact.id
@@ -1732,8 +1746,8 @@ function unlockDailyArtifact(showOverlay = true) {
             remainingArtifacts === 1 ? "fragment remains" : "fragments remain"
           } in the stone tablet.`,
       actionLabel: remainingArtifacts === 0
-        ? "View Completed Tablet"
-        : "Add to Tablet"
+        ? "Complete Stone Map"
+        : "Lock into Map"
     });
   }
 }
@@ -1975,9 +1989,24 @@ function showRewardOverlay(details) {
     "hidden",
     !reward.coins || showProduct
   );
-  elements.prizeArtifactIcon.classList.toggle("hidden", !reward.icon);
+  elements.prizeArtifactIcon.classList.toggle(
+    "hidden",
+    !reward.icon && !reward.image
+  );
   if (reward.icon) {
     elements.prizeArtifactIconUse.setAttribute("href", `#${reward.icon}`);
+  }
+  elements.prizeArtifactImage.classList.toggle("hidden", !reward.image);
+  elements.prizeArtifactIconUse.parentElement.classList.toggle(
+    "hidden",
+    Boolean(reward.image)
+  );
+  if (reward.image) {
+    elements.prizeArtifactImage.src = reward.image;
+    elements.prizeArtifactImage.alt = `${reward.label} stone map piece`;
+  } else {
+    elements.prizeArtifactImage.removeAttribute("src");
+    elements.prizeArtifactImage.alt = "";
   }
   elements.simulatedGiftCard.classList.toggle(
     "hidden",
@@ -2022,6 +2051,7 @@ function closePrizeOverlay() {
     if (state.scanPreviewReturnToTablet) {
       state.scanPreviewReturnToTablet = false;
       switchView("collection");
+      animatePendingTabletFragment();
     }
     return;
   }
@@ -2035,6 +2065,12 @@ function closePrizeOverlay() {
   state.scanLocked = false;
   clearStatus();
   render();
+
+  if (state.pendingTabletRevealIndex >= 0) {
+    switchView("collection");
+    animatePendingTabletFragment();
+    return;
+  }
 
   if (state.resumeScannerAfterRewards) {
     state.resumeScannerAfterRewards = false;
@@ -2182,6 +2218,10 @@ function simulatePreviewCorrectScan() {
     );
     const fragment =
       artifactCatalog[Math.min(previousTabletCount, artifactCatalog.length - 1)];
+    state.pendingTabletRevealIndex = Math.min(
+      previousTabletCount,
+      artifactCatalog.length - 1
+    );
     state.scanPreviewRewardQueue.push({
       label: "Stone fragment recovered!",
       title: fragment.label,
@@ -2190,7 +2230,7 @@ function simulatePreviewCorrectScan() {
       finePrint: state.tabletPreviewCount >= artifactCatalog.length
         ? "Tablet complete. The special final scanner is now unlocked."
         : `${artifactCatalog.length - state.tabletPreviewCount} fragments remain in the stone tablet.`,
-      actionLabel: "View Stone Tablet"
+      actionLabel: "Lock into Map"
     });
     state.scanPreviewReturnToTablet = true;
   }
@@ -2273,6 +2313,7 @@ function resetPreviewScans() {
   state.scanPreviewRewardActive = false;
   state.scanPreviewRewardQueue = [];
   state.scanPreviewReturnToTablet = false;
+  state.pendingTabletRevealIndex = -1;
   state.scanLocked = false;
   const previewHunt = getPreviewHunt();
   const puzzleConfig = getBrandPuzzleConfig(previewHunt);
@@ -2307,8 +2348,11 @@ function renderCollection() {
     String(unlockedCount)
   );
   elements.artifactPuzzleMessage.textContent = puzzleComplete
-    ? "The glowing route is complete. The final scanner is active."
-    : "Every recovered fragment restores another glowing section of the route.";
+    ? "The six-stone map is complete. The final scanner is active."
+    : "Each recovered stone locks into its matching place on the map.";
+  elements.artifactPuzzleHint.textContent = puzzleComplete
+    ? "All six stones are in place. The final scanner is unlocked."
+    : "Complete the map to unlock the special final scanner.";
 
   elements.tabletPieces.forEach((piece, index) => {
     const unlocked = index < unlockedCount;
@@ -2347,6 +2391,19 @@ function renderCollection() {
   }
 
   renderRewardHistory();
+}
+
+function animatePendingTabletFragment() {
+  const index = state.pendingTabletRevealIndex;
+  const piece = elements.tabletPieces[index];
+  state.pendingTabletRevealIndex = -1;
+  if (!piece) {
+    return;
+  }
+
+  piece.classList.remove("unlocked");
+  void piece.offsetWidth;
+  piece.classList.add("unlocked");
 }
 
 function initializeTabletPreview() {
@@ -3535,6 +3592,7 @@ function resetDemo() {
   state.scanLocked = false;
   state.pendingRewards = [];
   state.resumeScannerAfterRewards = false;
+  state.pendingTabletRevealIndex = -1;
   elements.prizeOverlay.classList.add("hidden");
   elements.wrongOverlay.classList.add("hidden");
   elements.rewardOddsOverlay.classList.add("hidden");
