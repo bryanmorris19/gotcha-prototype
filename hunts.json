@@ -1,5 +1,20 @@
 [
   {
+    "id": "pringles-original-5-2oz",
+    "name": "Pringles Original",
+    "clue": "Find the classic flavor in the brand's signature red can. This is the stack that started it all.",
+    "betterClue": "Look for the tall red can labeled Original, filled with plain salted potato crisps.",
+    "barcodes": [
+      "038000138416"
+    ],
+    "availableFrom": "2026-06-10",
+    "productImage": "assets/pringles-original-celebration.webp",
+    "brandPuzzle": {
+      "type": "missing-letter",
+      "answer": "PRINGLES"
+    }
+  },
+  {
     "id": "zbar-cookies-n-cream",
     "name": "ZBar Cookies ‘N Cream",
     "clue": "A skateboarder on the wrapper might help you find this fiber-packed treat.",

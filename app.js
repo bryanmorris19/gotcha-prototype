@@ -17,6 +17,22 @@ const MUSIC_VOLUME = 0.16;
 const MUSIC_PREFERENCE_VERSION = 1;
 const CLOUD_SYNC_DELAY = 900;
 const TUTORIAL_VERSION = 1;
+const PUZZLE_MODE_LABELS = {
+  "missing-letter": "Missing-Letter Vault",
+  glyph: "Ancient Glyph Substitution",
+  route: "Glowing Route Cipher",
+  scramble: "Brand Scramble Lock"
+};
+const GLYPH_ALPHABET = [
+  ["P", "sun"],
+  ["R", "diamond"],
+  ["I", "waves"],
+  ["N", "arch"],
+  ["G", "star"],
+  ["L", "square"],
+  ["E", "moon"],
+  ["S", "trident"]
+];
 
 const prizes = [
   {
@@ -189,7 +205,15 @@ const state = {
   scanPreviewSignalFragments: 0,
   scanPreviewRewardActive: false,
   scanPreviewRewardQueue: [],
-  scanPreviewReturnToTablet: false
+  scanPreviewReturnToTablet: false,
+  brandPuzzleHuntId: "",
+  brandPuzzleMode: "missing-letter",
+  brandPuzzleSolved: false,
+  brandPuzzleInput: "",
+  brandPuzzleRouteIndex: 0,
+  brandPuzzleScrambleLetters: [],
+  brandPuzzleScrambleSelected: null,
+  brandPuzzleMessage: ""
 };
 
 const elements = {};
@@ -245,6 +269,22 @@ function cacheElements() {
   elements.streakValue = document.getElementById("streakValue");
   elements.clueText = document.getElementById("clueText");
   elements.huntMeta = document.getElementById("huntMeta");
+  elements.brandPuzzlePanel = document.getElementById("brandPuzzlePanel");
+  elements.brandPuzzleEyebrow = document.getElementById(
+    "brandPuzzleEyebrow"
+  );
+  elements.brandPuzzleTitle = document.getElementById("brandPuzzleTitle");
+  elements.brandPuzzleBadge = document.getElementById("brandPuzzleBadge");
+  elements.brandPuzzleModePicker = document.getElementById(
+    "brandPuzzleModePicker"
+  );
+  elements.brandPuzzleInstructions = document.getElementById(
+    "brandPuzzleInstructions"
+  );
+  elements.brandPuzzleBody = document.getElementById("brandPuzzleBody");
+  elements.brandPuzzleStatus = document.getElementById(
+    "brandPuzzleStatus"
+  );
   elements.dailyProgressText = document.getElementById("dailyProgressText");
   elements.dailyProgressBar = document.getElementById("dailyProgressBar");
   elements.dailyArtifactMessage = document.getElementById(
@@ -277,6 +317,13 @@ function cacheElements() {
   elements.barcodeStatus = document.getElementById("barcodeStatus");
   elements.feedbackStatus = document.getElementById("feedbackStatus");
   elements.prizeOverlay = document.getElementById("prizeOverlay");
+  elements.prizeOverlayCard = document.getElementById("prizeOverlayCard");
+  elements.productCelebration = document.getElementById(
+    "productCelebration"
+  );
+  elements.productCelebrationImage = document.getElementById(
+    "productCelebrationImage"
+  );
   elements.prizeItemText = document.getElementById("prizeItemText");
   elements.prizeOverlayText = document.getElementById("prizeOverlayText");
   elements.prizeCoinImage = document.getElementById("prizeCoinImage");
@@ -422,6 +469,14 @@ function cacheElements() {
 function bindEvents() {
   elements.musicToggleButton.addEventListener("click", toggleBackgroundMusic);
   elements.betterClueButton.addEventListener("click", upgradeClue);
+  elements.brandPuzzleModePicker.addEventListener(
+    "click",
+    handlePuzzleModeSelection
+  );
+  elements.brandPuzzleBody.addEventListener(
+    "click",
+    handleBrandPuzzleInteraction
+  );
   elements.buyGuessButton.addEventListener("click", buyExtraGuess);
   elements.rewardOddsButton.addEventListener("click", openRewardOdds);
   elements.closeRewardOddsButton.addEventListener("click", closeRewardOdds);
@@ -827,6 +882,7 @@ function render() {
   elements.clueText.textContent = state.player.betterClueUsed
     ? hunt.betterClue
     : hunt.clue;
+  renderBrandPuzzle(hunt);
   elements.huntMeta.textContent =
     `Hunt ${state.player.dailyProgress + 1} for ${formatDate(state.player.dailyDate)}`;
   const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
@@ -898,6 +954,404 @@ function formatDate(dateKey) {
     day: "numeric",
     year: "numeric"
   }).format(new Date(year, month - 1, day));
+}
+
+function getBrandPuzzleConfig(hunt) {
+  if (!hunt?.brandPuzzle?.answer) {
+    return null;
+  }
+
+  const answer = String(hunt.brandPuzzle.answer)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+  if (!answer) {
+    return null;
+  }
+
+  return {
+    answer,
+    type: PUZZLE_MODE_LABELS[hunt.brandPuzzle.type]
+      ? hunt.brandPuzzle.type
+      : "missing-letter"
+  };
+}
+
+function resetBrandPuzzle(hunt, mode) {
+  const config = getBrandPuzzleConfig(hunt);
+  if (!config) {
+    return;
+  }
+
+  state.brandPuzzleHuntId = hunt.id;
+  state.brandPuzzleMode = PUZZLE_MODE_LABELS[mode]
+    ? mode
+    : config.type;
+  state.brandPuzzleSolved = false;
+  state.brandPuzzleInput = "";
+  state.brandPuzzleRouteIndex = 0;
+  state.brandPuzzleScrambleLetters = getScrambledLetters(config.answer);
+  state.brandPuzzleScrambleSelected = null;
+  state.brandPuzzleMessage = "";
+}
+
+function getScrambledLetters(answer) {
+  if (answer === "PRINGLES") {
+    return Array.from("GSPIRLNE");
+  }
+
+  const letters = Array.from(answer);
+  return letters.slice(2).concat(letters.slice(0, 2));
+}
+
+function renderBrandPuzzle(hunt) {
+  const config = getBrandPuzzleConfig(hunt);
+  if (!config) {
+    elements.brandPuzzlePanel.classList.add("hidden");
+    return;
+  }
+
+  if (state.brandPuzzleHuntId !== hunt.id) {
+    resetBrandPuzzle(hunt, config.type);
+  }
+
+  const mode = state.tabletPreviewEnabled
+    ? state.brandPuzzleMode
+    : config.type;
+  if (mode !== state.brandPuzzleMode) {
+    resetBrandPuzzle(hunt, mode);
+  }
+
+  elements.brandPuzzlePanel.classList.remove("hidden");
+  elements.brandPuzzlePanel.classList.toggle(
+    "solved",
+    state.brandPuzzleSolved
+  );
+  elements.brandPuzzleEyebrow.textContent = state.tabletPreviewEnabled
+    ? "Pringles Puzzle Prototype"
+    : "Brand Decoder";
+  elements.brandPuzzleTitle.textContent = PUZZLE_MODE_LABELS[mode];
+  elements.brandPuzzleBadge.textContent = state.brandPuzzleSolved
+    ? "Brand Revealed"
+    : "Decode Brand";
+  elements.brandPuzzleModePicker.classList.toggle(
+    "hidden",
+    !state.tabletPreviewEnabled
+  );
+  elements.brandPuzzleModePicker
+    .querySelectorAll("[data-puzzle-mode]")
+    .forEach(button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.puzzleMode === mode
+      );
+    });
+
+  const renderers = {
+    "missing-letter": renderMissingLetterPuzzle,
+    glyph: renderGlyphPuzzle,
+    route: renderRoutePuzzle,
+    scramble: renderScramblePuzzle
+  };
+  const result = renderers[mode](config.answer);
+  elements.brandPuzzleInstructions.textContent = result.instructions;
+  elements.brandPuzzleBody.innerHTML = result.html;
+  elements.brandPuzzleStatus.textContent = state.brandPuzzleSolved
+    ? `Brand decoded: ${config.answer}`
+    : state.brandPuzzleMessage;
+  elements.brandPuzzleStatus.className = [
+    "brand-puzzle-status",
+    state.brandPuzzleSolved ? "solved" : "",
+    state.brandPuzzleMessage ? "show" : ""
+  ].filter(Boolean).join(" ");
+}
+
+function renderMissingLetterPuzzle(answer) {
+  const hiddenIndexes = answer === "PRINGLES" ? [2, 5] : [1, 4];
+  const hiddenLetters = hiddenIndexes
+    .map(index => answer[index])
+    .filter(Boolean);
+  let hiddenPosition = 0;
+  const slots = Array.from(answer).map((letter, index) => {
+    if (!hiddenIndexes.includes(index)) {
+      return `<span class="vault-letter revealed">${letter}</span>`;
+    }
+
+    const entered = state.brandPuzzleInput[hiddenPosition] || "";
+    hiddenPosition += 1;
+    return `
+      <span class="vault-letter missing ${entered ? "filled" : ""}">
+        ${entered || "?"}
+      </span>
+    `;
+  }).join("");
+  const letterBank = Array.from(new Set(
+    hiddenLetters.concat(["A", "O", "T"])
+  )).map(letter => `
+    <button
+      type="button"
+      data-puzzle-letter="${letter}"
+      ${state.brandPuzzleSolved ? "disabled" : ""}
+    >${letter}</button>
+  `).join("");
+
+  return {
+    instructions:
+      "Choose the missing letters to open the vault and reveal the brand.",
+    html: `
+      <div class="missing-letter-vault">
+        <div class="vault-bolts" aria-hidden="true">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="vault-word" aria-label="Partially decoded brand">
+          ${slots}
+        </div>
+        <div class="puzzle-letter-bank" aria-label="Letter choices">
+          ${letterBank}
+        </div>
+      </div>
+    `
+  };
+}
+
+function renderGlyphPuzzle(answer) {
+  const glyphs = Array.from(answer).map((letter, index) => {
+    const glyph = GLYPH_ALPHABET.find(([mapped]) => mapped === letter);
+    const shape = glyph?.[1] || GLYPH_ALPHABET[index % GLYPH_ALPHABET.length][1];
+    return `<span class="glyph-mark glyph-${shape}" aria-label="Encoded symbol"></span>`;
+  }).join("");
+  const decoded = Array.from(answer).map((letter, index) => `
+    <span>${state.brandPuzzleInput[index] || "_"}</span>
+  `).join("");
+  const key = GLYPH_ALPHABET.map(([letter, shape]) => `
+    <span class="glyph-key-item">
+      <span class="glyph-mark glyph-${shape}" aria-hidden="true"></span>
+      <strong>${letter}</strong>
+    </span>
+  `).join("");
+  const letterBank = Array.from(new Set(
+    Array.from(answer).concat(["A", "O", "T"])
+  )).map(letter => `
+    <button
+      type="button"
+      data-puzzle-letter="${letter}"
+      ${state.brandPuzzleSolved ? "disabled" : ""}
+    >${letter}</button>
+  `).join("");
+
+  return {
+    instructions:
+      "Use the stone key to translate each glyph, then enter the brand in order.",
+    html: `
+      <div class="glyph-cipher">
+        <div class="glyph-message">${glyphs}</div>
+        <div class="glyph-decoded">${decoded}</div>
+        <div class="glyph-key">${key}</div>
+        <div class="puzzle-letter-bank compact">${letterBank}</div>
+      </div>
+    `
+  };
+}
+
+function renderRoutePuzzle(answer) {
+  const route = [
+    [15, 18],
+    [50, 18],
+    [85, 18],
+    [85, 50],
+    [50, 50],
+    [15, 50],
+    [15, 82],
+    [50, 82]
+  ];
+  const routePoints = route
+    .map(([x, y]) => `${x * 3},${y * 2.4}`)
+    .join(" ");
+  const progress = Math.min(
+    1,
+    state.brandPuzzleRouteIndex / answer.length
+  );
+  const nodes = route.map(([x, y], index) => `
+    <button
+      class="route-node ${
+        index < state.brandPuzzleRouteIndex
+          ? "complete"
+          : index === state.brandPuzzleRouteIndex
+            ? "next"
+            : ""
+      }"
+      type="button"
+      style="left:${x}%;top:${y}%"
+      data-route-step="${index}"
+      ${state.brandPuzzleSolved ? "disabled" : ""}
+    >${answer[index]}</button>
+  `).join("");
+
+  return {
+    instructions:
+      "Follow the glowing trail. Tap connected letters in route order to reveal the brand.",
+    html: `
+      <div class="route-cipher">
+        <svg viewBox="0 0 300 240" aria-hidden="true">
+          <polyline class="route-track" points="${routePoints}"></polyline>
+          <polyline
+            class="route-progress"
+            points="${routePoints}"
+            style="stroke-dashoffset:${680 * (1 - progress)}"
+          ></polyline>
+        </svg>
+        ${nodes}
+        <button
+          class="route-node decoy"
+          type="button"
+          style="left:85%;top:82%"
+          data-route-step="99"
+          ${state.brandPuzzleSolved ? "disabled" : ""}
+        >O</button>
+      </div>
+    `
+  };
+}
+
+function renderScramblePuzzle(answer) {
+  const tiles = state.brandPuzzleScrambleLetters.map((letter, index) => `
+    <button
+      class="scramble-tile ${
+        state.brandPuzzleScrambleSelected === index ? "selected" : ""
+      }"
+      type="button"
+      data-scramble-index="${index}"
+      ${state.brandPuzzleSolved ? "disabled" : ""}
+    >
+      <small>${index + 1}</small>
+      <strong>${letter}</strong>
+    </button>
+  `).join("");
+
+  return {
+    instructions:
+      "Tap one brass letter tile, then another, to swap them until the brand reads correctly.",
+    html: `
+      <div class="scramble-lock">
+        <div class="scramble-lock-rail" aria-hidden="true"></div>
+        <div class="scramble-tiles">${tiles}</div>
+        <div class="scramble-lock-status">
+          ${state.brandPuzzleSolved ? answer : "Align all eight tumblers"}
+        </div>
+      </div>
+    `
+  };
+}
+
+function handlePuzzleModeSelection(event) {
+  const button = event.target.closest("[data-puzzle-mode]");
+  if (!button || !state.tabletPreviewEnabled) {
+    return;
+  }
+
+  const hunt = getPreviewHunt();
+  resetBrandPuzzle(hunt, button.dataset.puzzleMode);
+  renderBrandPuzzle(hunt);
+}
+
+function handleBrandPuzzleInteraction(event) {
+  const hunt = state.tabletPreviewEnabled
+    ? getPreviewHunt()
+    : getActiveHunt();
+  const config = getBrandPuzzleConfig(hunt);
+  if (!config || state.brandPuzzleSolved) {
+    return;
+  }
+
+  const letterButton = event.target.closest("[data-puzzle-letter]");
+  if (letterButton) {
+    handlePuzzleLetter(letterButton.dataset.puzzleLetter, config.answer);
+    renderBrandPuzzle(hunt);
+    return;
+  }
+
+  const routeButton = event.target.closest("[data-route-step]");
+  if (routeButton) {
+    handleRouteStep(Number(routeButton.dataset.routeStep), config.answer);
+    renderBrandPuzzle(hunt);
+    return;
+  }
+
+  const scrambleButton = event.target.closest("[data-scramble-index]");
+  if (scrambleButton) {
+    handleScrambleTile(
+      Number(scrambleButton.dataset.scrambleIndex),
+      config.answer
+    );
+    renderBrandPuzzle(hunt);
+  }
+}
+
+function handlePuzzleLetter(letter, answer) {
+  const expectedAnswer = state.brandPuzzleMode === "missing-letter"
+    ? answer === "PRINGLES"
+      ? "IL"
+      : Array.from(answer).filter((_, index) => [1, 4].includes(index)).join("")
+    : answer;
+  const expected = expectedAnswer[state.brandPuzzleInput.length];
+
+  if (letter !== expected) {
+    state.brandPuzzleMessage = "That symbol does not fit the next slot.";
+    pulseBody("wrong-pulse");
+    return;
+  }
+
+  state.brandPuzzleInput += letter;
+  state.brandPuzzleMessage = "";
+  if (state.brandPuzzleInput === expectedAnswer) {
+    completeBrandPuzzle(answer);
+  }
+}
+
+function handleRouteStep(index, answer) {
+  if (index !== state.brandPuzzleRouteIndex) {
+    state.brandPuzzleMessage = "The route breaks there. Follow the next glowing node.";
+    pulseBody("wrong-pulse");
+    return;
+  }
+
+  state.brandPuzzleRouteIndex += 1;
+  state.brandPuzzleMessage = "";
+  if (state.brandPuzzleRouteIndex === answer.length) {
+    completeBrandPuzzle(answer);
+  }
+}
+
+function handleScrambleTile(index, answer) {
+  if (state.brandPuzzleScrambleSelected === null) {
+    state.brandPuzzleScrambleSelected = index;
+    state.brandPuzzleMessage = "Choose a second tile to swap positions.";
+    return;
+  }
+
+  if (state.brandPuzzleScrambleSelected === index) {
+    state.brandPuzzleScrambleSelected = null;
+    state.brandPuzzleMessage = "";
+    return;
+  }
+
+  const firstIndex = state.brandPuzzleScrambleSelected;
+  const letters = state.brandPuzzleScrambleLetters.slice();
+  [letters[firstIndex], letters[index]] = [letters[index], letters[firstIndex]];
+  state.brandPuzzleScrambleLetters = letters;
+  state.brandPuzzleScrambleSelected = null;
+  state.brandPuzzleMessage = "";
+  if (letters.join("") === answer) {
+    completeBrandPuzzle(answer);
+  }
+}
+
+function completeBrandPuzzle(answer) {
+  state.brandPuzzleSolved = true;
+  state.brandPuzzleMessage = `Brand decoded: ${answer}`;
+  if ("vibrate" in navigator) {
+    navigator.vibrate([80, 40, 140]);
+  }
+  pulseBody("success-pulse");
 }
 
 function upgradeClue() {
@@ -1144,6 +1598,8 @@ function completeHunt(hunt, scanned) {
     title: "Gotcha!",
     context: `${hunt.name} found`,
     reward: prize,
+    productImage: hunt.productImage,
+    productName: hunt.name,
     finePrint: "Your guesses have been refreshed for the next hunt.",
     actionLabel: "Start Next Hunt"
   });
@@ -1484,12 +1940,29 @@ function resumeScannerAfterOverlay() {
 
 function showRewardOverlay(details) {
   const reward = details.reward;
+  const showProduct = Boolean(details.productImage);
   elements.rewardOverlayLabel.textContent = details.label;
   elements.prizeHeading.textContent = details.title;
   elements.prizeItemText.textContent = details.context;
   elements.prizeOverlayText.textContent =
     `${reward.label} - ${reward.subtitle}`;
-  elements.prizeCoinImage.classList.toggle("hidden", !reward.coins);
+  elements.prizeOverlayCard.classList.toggle(
+    "product-celebration-active",
+    showProduct
+  );
+  elements.productCelebration.classList.toggle("hidden", !showProduct);
+  if (showProduct) {
+    elements.productCelebrationImage.src = details.productImage;
+    elements.productCelebrationImage.alt =
+      `${details.productName || "Product"} surrounded by Gotcha! Gold`;
+  } else {
+    elements.productCelebrationImage.removeAttribute("src");
+    elements.productCelebrationImage.alt = "";
+  }
+  elements.prizeCoinImage.classList.toggle(
+    "hidden",
+    !reward.coins || showProduct
+  );
   elements.prizeArtifactIcon.classList.toggle("hidden", !reward.icon);
   if (reward.icon) {
     elements.prizeArtifactIconUse.setAttribute("href", `#${reward.icon}`);
@@ -1500,7 +1973,7 @@ function showRewardOverlay(details) {
   );
   elements.rewardTreasureImage.classList.toggle(
     "hidden",
-    !details.showChest
+    !details.showChest || showProduct
   );
   elements.rewardFinePrint.textContent = details.finePrint;
   elements.rewardActionText.textContent =
@@ -1558,13 +2031,27 @@ function closePrizeOverlay() {
 }
 
 function getPreviewHunt() {
-  const huntOffset = Math.min(
-    state.scanPreviewProgress,
-    DAILY_GOAL - 1
+  const pringlesHunt = state.hunts.find(
+    hunt => hunt.id === "pringles-original-5-2oz"
+  );
+  if (state.scanPreviewProgress === 0 && pringlesHunt) {
+    return pringlesHunt;
+  }
+
+  const remainingHunts = state.hunts.filter(
+    hunt => hunt.id !== "pringles-original-5-2oz"
+  );
+  if (remainingHunts.length === 0) {
+    return pringlesHunt || state.hunts[0];
+  }
+
+  const huntOffset = Math.max(
+    0,
+    Math.min(state.scanPreviewProgress - 1, DAILY_GOAL - 2)
   );
   const index =
-    (getDailyStartIndex() + huntOffset) % state.hunts.length;
-  return state.hunts[index];
+    (getDailyStartIndex() + huntOffset) % remainingHunts.length;
+  return remainingHunts[index];
 }
 
 function renderScanPreview() {
@@ -1578,6 +2065,7 @@ function renderScanPreview() {
   elements.scanAdminPanel.classList.remove("hidden");
   elements.guessesValue.textContent = state.scanPreviewGuesses;
   elements.clueText.textContent = hunt.clue;
+  renderBrandPuzzle(hunt);
   elements.huntMeta.textContent =
     `Admin preview - Hunt ${Math.min(completed + 1, DAILY_GOAL)} of ${DAILY_GOAL}`;
   elements.dailyProgressText.textContent =
@@ -1702,6 +2190,8 @@ function simulatePreviewCorrectScan() {
     title: "Gotcha!",
     context: `${hunt.name} found`,
     reward,
+    productImage: hunt.productImage,
+    productName: hunt.name,
     finePrint:
       "Preview reward only. Your walkthrough guesses have been refreshed.",
     actionLabel: completedDailyHunt
@@ -1772,6 +2262,11 @@ function resetPreviewScans() {
   state.scanPreviewRewardQueue = [];
   state.scanPreviewReturnToTablet = false;
   state.scanLocked = false;
+  const previewHunt = getPreviewHunt();
+  const puzzleConfig = getBrandPuzzleConfig(previewHunt);
+  if (puzzleConfig) {
+    resetBrandPuzzle(previewHunt, puzzleConfig.type);
+  }
   elements.prizeOverlay.classList.add("hidden");
   elements.wrongOverlay.classList.add("hidden");
   stopBarcodeScanner();

@@ -10,14 +10,14 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=22" />
+  <link rel="stylesheet" href="styles.css?v=23" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.js"
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=23" defer></script>
+  <script src="app.js?v=24" defer></script>
 </head>
 
 <body>
@@ -169,6 +169,42 @@
           <svg><use href="#icon-scan"></use></svg>
         </button>
       </div>
+
+      <section
+        id="brandPuzzlePanel"
+        class="brand-puzzle-panel hidden"
+        aria-labelledby="brandPuzzleTitle"
+      >
+        <div class="brand-puzzle-heading">
+          <div>
+            <div id="brandPuzzleEyebrow" class="eyebrow">Brand Decoder</div>
+            <h2 id="brandPuzzleTitle">Decode the brand</h2>
+          </div>
+          <span id="brandPuzzleBadge">Puzzle</span>
+        </div>
+        <div id="brandPuzzleModePicker" class="puzzle-mode-picker hidden">
+          <button type="button" data-puzzle-mode="missing-letter">
+            Missing Letters
+          </button>
+          <button type="button" data-puzzle-mode="glyph">
+            Ancient Glyphs
+          </button>
+          <button type="button" data-puzzle-mode="route">
+            Glowing Route
+          </button>
+          <button type="button" data-puzzle-mode="scramble">
+            Scramble Lock
+          </button>
+        </div>
+        <p id="brandPuzzleInstructions" class="brand-puzzle-instructions"></p>
+        <div id="brandPuzzleBody" class="brand-puzzle-body"></div>
+        <div
+          id="brandPuzzleStatus"
+          class="brand-puzzle-status"
+          role="status"
+          aria-live="polite"
+        ></div>
+      </section>
 
       <div class="clue-panel">
         <div class="clue-label">
@@ -985,8 +1021,21 @@
     aria-modal="true"
     aria-labelledby="prizeHeading"
   >
-    <div class="overlay-card">
+    <div id="prizeOverlayCard" class="overlay-card">
       <div id="rewardOverlayLabel" class="found-label">Treasure found!</div>
+      <div id="productCelebration" class="product-celebration hidden">
+        <span class="product-gold-piece piece-1"></span>
+        <span class="product-gold-piece piece-2"></span>
+        <span class="product-gold-piece piece-3"></span>
+        <span class="product-gold-piece piece-4"></span>
+        <span class="product-gold-piece piece-5"></span>
+        <span class="product-gold-piece piece-6"></span>
+        <img
+          id="productCelebrationImage"
+          src=""
+          alt=""
+        />
+      </div>
       <img
         id="rewardTreasureImage"
         class="treasure-image"
