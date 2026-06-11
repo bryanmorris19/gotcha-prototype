@@ -15,9 +15,9 @@
   <title>Gotcha! Hunt Admin</title>
   <link rel="manifest" href="admin.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="admin.css?v=3" />
+  <link rel="stylesheet" href="admin.css?v=4" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
-  <script src="admin.js?v=2" defer></script>
+  <script src="admin.js?v=3" defer></script>
 </head>
 
 <body>
@@ -112,6 +112,36 @@
             <input id="productName" maxlength="80" placeholder="Pringles Original can" />
           </label>
 
+          <section class="brand-builder full-field">
+            <div class="field-heading">
+              <div>
+                <strong>Brand puzzle</strong>
+                <small>
+                  Enter the brand only. The written clues should identify the
+                  exact product or flavor.
+                </small>
+              </div>
+              <span class="random-badge">Random</span>
+            </div>
+            <label>
+              <span>Brand name</span>
+              <input
+                id="brandName"
+                maxlength="40"
+                placeholder="Pringles"
+                autocomplete="off"
+              />
+            </label>
+            <div class="puzzle-type-list" aria-label="Random puzzle rotation">
+              <span>Missing-Letter Vault</span>
+              <span>Ancient Glyphs</span>
+              <span>Scramble Lock</span>
+            </div>
+            <p id="brandPuzzlePreview" class="brand-puzzle-preview">
+              Enter a brand to create its puzzle answer.
+            </p>
+          </section>
+
           <label>
             <span>Item ID <small>Optional</small></span>
             <input id="itemId" maxlength="80" placeholder="Generated from name" />
@@ -200,7 +230,7 @@
         </div>
       </div>
       <p>
-        Compare four Pringles brand puzzles, simulate correct and wrong daily
+        Compare the three brand puzzle formats, simulate correct and wrong daily
         scans, preview the product celebration, recover a tablet fragment, and
         test the final prize flow without changing player progress.
       </p>

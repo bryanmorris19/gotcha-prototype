@@ -24,6 +24,7 @@ function initializeAdmin() {
   cacheElements();
   bindEvents();
   setDefaultDate();
+  updateBrandPuzzlePreview();
   loadPublicCatalog();
   registerServiceWorker();
 
@@ -43,6 +44,8 @@ function cacheElements() {
     "connectionStatus",
     "huntFieldset",
     "productName",
+    "brandName",
+    "brandPuzzlePreview",
     "itemId",
     "availableFrom",
     "hardClue",
@@ -79,6 +82,7 @@ function bindEvents() {
     }
   });
   elements.addBarcodeButton.addEventListener("click", addBarcodeFromInput);
+  elements.brandName.addEventListener("input", updateBrandPuzzlePreview);
   elements.barcodeInput.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -216,6 +220,10 @@ function renderCatalog() {
     const availability = hunt.availableFrom
       ? `Available ${hunt.availableFrom}`
       : "Available now";
+    const brand = hunt.brand || hunt.brandPuzzle?.answer || "";
+    const puzzleSummary = brand
+      ? `${brand} brand puzzle: random`
+      : "No brand puzzle";
     return `
       <article class="catalog-item">
         <div class="catalog-item-heading">
@@ -230,6 +238,7 @@ function renderCatalog() {
             : ""}
         </div>
         <code>${escapeHtml(barcodes)}</code>
+        <small>${escapeHtml(puzzleSummary)}</small>
         <small>${escapeHtml(availability)} &middot; ${escapeHtml(hunt.clue || "")}</small>
       </article>
     `;
@@ -420,6 +429,8 @@ async function publishHunt() {
         name: item.name,
         clue: item.clue,
         betterClue: item.betterClue,
+        brand: item.brand,
+        brandPuzzle: item.brandPuzzle,
         barcodes: item.barcodes,
         availableFrom: item.availableFrom
       }
@@ -466,9 +477,15 @@ async function publishHunt() {
 
 function buildItemFromForm() {
   const name = elements.productName.value.trim();
+  const brand = elements.brandName.value.trim();
   return {
     id: slugify(elements.itemId.value.trim() || name),
     name,
+    brand,
+    brandPuzzle: {
+      type: "random",
+      answer: normalizeBrandAnswer(brand)
+    },
     clue: elements.hardClue.value.trim(),
     betterClue: elements.easierClue.value.trim(),
     barcodes: [...state.barcodes],
@@ -482,6 +499,15 @@ function validateItem(item) {
   }
   if (!item.id) {
     return "A valid item ID could not be generated.";
+  }
+  if (!item.brand) {
+    return "Brand name is required for the puzzle.";
+  }
+  if (item.brandPuzzle.answer.length < 2) {
+    return "The brand must contain at least two letters or numbers.";
+  }
+  if (item.brandPuzzle.answer.length > 18) {
+    return "The brand puzzle answer must be 18 characters or fewer.";
   }
   if (!item.clue || !item.betterClue) {
     return "Both the hard clue and easier clue are required.";
@@ -522,13 +548,23 @@ function validateBarcodeAgainstCatalog(barcode) {
 
 function resetItemForm() {
   elements.productName.value = "";
+  elements.brandName.value = "";
   elements.itemId.value = "";
   elements.hardClue.value = "";
   elements.easierClue.value = "";
   state.barcodes = [];
   renderBarcodes();
   clearStatus(elements.barcodeStatus);
+  updateBrandPuzzlePreview();
   setDefaultDate();
+}
+
+function updateBrandPuzzlePreview() {
+  const answer = normalizeBrandAnswer(elements.brandName.value);
+  elements.brandPuzzlePreview.innerHTML = answer
+    ? `Puzzle answer: <strong>${escapeHtml(answer)}</strong>. ` +
+      "Players receive one of the three puzzle types at random."
+    : "Enter a brand to create its puzzle answer.";
 }
 
 async function startScanner() {
@@ -669,6 +705,12 @@ function getFriendlyApiError(error) {
 
 function normalizeBarcode(value) {
   return String(value || "").replace(/\D+/g, "");
+}
+
+function normalizeBrandAnswer(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
 }
 
 function barcodeVariants(value) {

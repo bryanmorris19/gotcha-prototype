@@ -7,6 +7,10 @@ on:
         description: Product name shown after a correct scan
         required: true
         type: string
+      brand_name:
+        description: Brand name used as the randomized puzzle answer
+        required: true
+        type: string
       item_id:
         description: Optional short ID; leave blank to generate it from the name
         required: false
@@ -46,6 +50,7 @@ jobs:
         env:
           HUNT_ID: ${{ inputs.item_id }}
           HUNT_NAME: ${{ inputs.product_name }}
+          HUNT_BRAND: ${{ inputs.brand_name }}
           HUNT_CLUE: ${{ inputs.hard_clue }}
           HUNT_BETTER_CLUE: ${{ inputs.easier_clue }}
           HUNT_BARCODES: ${{ inputs.barcodes }}

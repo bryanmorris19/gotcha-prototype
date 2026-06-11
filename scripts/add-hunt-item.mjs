@@ -5,6 +5,7 @@ const huntsPath = new URL("../hunts.json", import.meta.url);
 const input = {
   id: process.env.HUNT_ID?.trim() || "",
   name: process.env.HUNT_NAME?.trim() || "",
+  brand: process.env.HUNT_BRAND?.trim() || "",
   clue: process.env.HUNT_CLUE?.trim() || "",
   betterClue: process.env.HUNT_BETTER_CLUE?.trim() || "",
   barcodes: process.env.HUNT_BARCODES?.trim() || "",
@@ -43,6 +44,14 @@ function getTomorrowDateKey() {
 
 if (!input.name) {
   fail("Product name is required.");
+}
+
+const brandAnswer = input.brand.toUpperCase().replace(/[^A-Z0-9]/g, "");
+if (!input.brand) {
+  fail("Brand name is required.");
+}
+if (brandAnswer.length < 2 || brandAnswer.length > 18) {
+  fail("Brand puzzle answer must contain between 2 and 18 letters or numbers.");
 }
 
 if (!input.clue) {
@@ -112,6 +121,11 @@ for (const barcode of barcodes) {
 hunts.push({
   id,
   name: input.name,
+  brand: input.brand,
+  brandPuzzle: {
+    type: "random",
+    answer: brandAnswer
+  },
   clue: input.clue,
   betterClue: input.betterClue,
   barcodes,

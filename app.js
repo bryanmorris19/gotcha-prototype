@@ -20,18 +20,23 @@ const TUTORIAL_VERSION = 1;
 const PUZZLE_MODE_LABELS = {
   "missing-letter": "Missing-Letter Vault",
   glyph: "Ancient Glyph Substitution",
-  route: "Glowing Route Cipher",
   scramble: "Brand Scramble Lock"
 };
-const GLYPH_ALPHABET = [
-  ["P", "sun"],
-  ["R", "diamond"],
-  ["I", "waves"],
-  ["N", "arch"],
-  ["G", "star"],
-  ["L", "square"],
-  ["E", "moon"],
-  ["S", "trident"]
+const PUZZLE_MODES = [
+  "missing-letter",
+  "glyph",
+  "scramble"
+];
+const PUZZLE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const GLYPH_SHAPES = [
+  "sun",
+  "diamond",
+  "waves",
+  "arch",
+  "star",
+  "square",
+  "moon",
+  "trident"
 ];
 
 const prizes = [
@@ -210,7 +215,6 @@ const state = {
   brandPuzzleMode: "missing-letter",
   brandPuzzleSolved: false,
   brandPuzzleInput: "",
-  brandPuzzleRouteIndex: 0,
   brandPuzzleScrambleLetters: [],
   brandPuzzleScrambleSelected: null,
   brandPuzzleGlyphKey: [],
@@ -972,10 +976,19 @@ function getBrandPuzzleConfig(hunt) {
 
   return {
     answer,
-    type: PUZZLE_MODE_LABELS[hunt.brandPuzzle.type]
-      ? hunt.brandPuzzle.type
-      : "missing-letter"
+    type: hunt.brandPuzzle.type === "random"
+      ? getRandomPuzzleMode(hunt)
+      : PUZZLE_MODE_LABELS[hunt.brandPuzzle.type]
+        ? hunt.brandPuzzle.type
+        : getRandomPuzzleMode(hunt)
   };
+}
+
+function getRandomPuzzleMode(hunt) {
+  const dateKey = state.player?.dailyDate || getDateKey();
+  const index =
+    hashDate(`${dateKey}:${hunt.id}:brand-puzzle`) % PUZZLE_MODES.length;
+  return PUZZLE_MODES[index];
 }
 
 function resetBrandPuzzle(hunt, mode) {
@@ -990,10 +1003,11 @@ function resetBrandPuzzle(hunt, mode) {
     : config.type;
   state.brandPuzzleSolved = false;
   state.brandPuzzleInput = "";
-  state.brandPuzzleRouteIndex = 0;
   state.brandPuzzleScrambleLetters = getScrambledLetters(config.answer);
   state.brandPuzzleScrambleSelected = null;
-  state.brandPuzzleGlyphKey = shufflePuzzleItems(GLYPH_ALPHABET);
+  state.brandPuzzleGlyphKey = shufflePuzzleItems(
+    getGlyphKeyCharacters(config.answer)
+  );
   state.brandPuzzleLetterBank = getPuzzleLetterBank(
     config.answer,
     state.brandPuzzleMode
@@ -1021,13 +1035,19 @@ function shufflePuzzleItems(items) {
 }
 
 function getMissingLetterIndexes(answer) {
-  if (answer === "PRINGLES") {
-    return [1, 2, 4, 5, 6];
+  const length = answer.length;
+  if (length <= 2) {
+    return length === 2 ? [1] : [];
+  }
+
+  const revealedIndexes = new Set([0, length - 1]);
+  if (length >= 7) {
+    revealedIndexes.add(Math.floor((length - 1) / 2));
   }
 
   return Array.from(answer)
     .map((_, index) => index)
-    .filter(index => index % 2 === 1 || index === 2);
+    .filter(index => !revealedIndexes.has(index));
 }
 
 function getMissingLetterAnswer(answer) {
@@ -1044,6 +1064,37 @@ function getPuzzleLetterBank(answer, mode) {
   return shufflePuzzleItems(
     Array.from(new Set(requiredLetters.concat(["A", "O", "T", "U"])))
   );
+}
+
+function getGlyphKeyCharacters(answer) {
+  const answerCharacters = Array.from(new Set(Array.from(answer)));
+  const decoys = Array.from("AOTUXZQ").filter(
+    character => !answerCharacters.includes(character)
+  );
+  return answerCharacters.concat(decoys.slice(0, 4));
+}
+
+function getGlyphDescriptor(character) {
+  const characterIndex = Math.max(
+    0,
+    PUZZLE_CHARACTERS.indexOf(character)
+  );
+  return {
+    shape: GLYPH_SHAPES[characterIndex % GLYPH_SHAPES.length],
+    modifier: Math.floor(characterIndex / GLYPH_SHAPES.length)
+  };
+}
+
+function getGlyphMarkHtml(character, className = "") {
+  const descriptor = getGlyphDescriptor(character);
+  return `
+    <span
+      class="glyph-mark glyph-${descriptor.shape} ${className}"
+      aria-label="Encoded symbol"
+    >
+      <i class="glyph-modifier modifier-${descriptor.modifier}" aria-hidden="true"></i>
+    </span>
+  `;
 }
 
 function getScrambledLetters(answer) {
@@ -1079,7 +1130,7 @@ function renderBrandPuzzle(hunt) {
     state.brandPuzzleSolved
   );
   elements.brandPuzzleEyebrow.textContent = state.tabletPreviewEnabled
-    ? "Pringles Puzzle Prototype"
+    ? "Brand Puzzle Prototype"
     : "Brand Decoder";
   elements.brandPuzzleTitle.textContent = PUZZLE_MODE_LABELS[mode];
   elements.brandPuzzleBadge.textContent = state.brandPuzzleSolved
@@ -1101,7 +1152,6 @@ function renderBrandPuzzle(hunt) {
   const renderers = {
     "missing-letter": renderMissingLetterPuzzle,
     glyph: renderGlyphPuzzle,
-    route: renderRoutePuzzle,
     scramble: renderScramblePuzzle
   };
   const result = renderers[mode](config.answer);
@@ -1161,17 +1211,15 @@ function renderMissingLetterPuzzle(answer) {
 }
 
 function renderGlyphPuzzle(answer) {
-  const glyphs = Array.from(answer).map((letter, index) => {
-    const glyph = GLYPH_ALPHABET.find(([mapped]) => mapped === letter);
-    const shape = glyph?.[1] || GLYPH_ALPHABET[index % GLYPH_ALPHABET.length][1];
-    return `<span class="glyph-mark glyph-${shape}" aria-label="Encoded symbol"></span>`;
-  }).join("");
+  const glyphs = Array.from(answer)
+    .map(letter => getGlyphMarkHtml(letter, "glyph-message-mark"))
+    .join("");
   const decoded = Array.from(answer).map((letter, index) => `
     <span>${state.brandPuzzleInput[index] || "_"}</span>
   `).join("");
-  const key = state.brandPuzzleGlyphKey.map(([letter, shape]) => `
+  const key = state.brandPuzzleGlyphKey.map(letter => `
     <span class="glyph-key-item">
-      <span class="glyph-mark glyph-${shape}" aria-hidden="true"></span>
+      ${getGlyphMarkHtml(letter)}
       <strong>${letter}</strong>
     </span>
   `).join("");
@@ -1192,66 +1240,6 @@ function renderGlyphPuzzle(answer) {
         <div class="glyph-decoded">${decoded}</div>
         <div class="glyph-key">${key}</div>
         <div class="puzzle-letter-bank compact">${letterBank}</div>
-      </div>
-    `
-  };
-}
-
-function renderRoutePuzzle(answer) {
-  const route = [
-    [15, 18],
-    [50, 18],
-    [85, 18],
-    [85, 50],
-    [50, 50],
-    [15, 50],
-    [15, 82],
-    [50, 82]
-  ];
-  const routePoints = route
-    .map(([x, y]) => `${x * 3},${y * 2.4}`)
-    .join(" ");
-  const progress = Math.min(
-    1,
-    state.brandPuzzleRouteIndex / answer.length
-  );
-  const nodes = route.map(([x, y], index) => `
-    <button
-      class="route-node ${
-        index < state.brandPuzzleRouteIndex
-          ? "complete"
-          : index === state.brandPuzzleRouteIndex
-            ? "next"
-            : ""
-      }"
-      type="button"
-      style="left:${x}%;top:${y}%"
-      data-route-step="${index}"
-      ${state.brandPuzzleSolved ? "disabled" : ""}
-    >${answer[index]}</button>
-  `).join("");
-
-  return {
-    instructions:
-      "Follow the glowing trail. Tap connected letters in route order to reveal the brand.",
-    html: `
-      <div class="route-cipher">
-        <svg viewBox="0 0 300 240" aria-hidden="true">
-          <polyline class="route-track" points="${routePoints}"></polyline>
-          <polyline
-            class="route-progress"
-            points="${routePoints}"
-            style="stroke-dashoffset:${680 * (1 - progress)}"
-          ></polyline>
-        </svg>
-        ${nodes}
-        <button
-          class="route-node decoy"
-          type="button"
-          style="left:85%;top:82%"
-          data-route-step="99"
-          ${state.brandPuzzleSolved ? "disabled" : ""}
-        >O</button>
       </div>
     `
   };
@@ -1280,7 +1268,9 @@ function renderScramblePuzzle(answer) {
         <div class="scramble-lock-rail" aria-hidden="true"></div>
         <div class="scramble-tiles">${tiles}</div>
         <div class="scramble-lock-status">
-          ${state.brandPuzzleSolved ? answer : "Align all eight tumblers"}
+          ${state.brandPuzzleSolved
+            ? answer
+            : `Align all ${answer.length} tumblers`}
         </div>
       </div>
     `
@@ -1314,13 +1304,6 @@ function handleBrandPuzzleInteraction(event) {
     return;
   }
 
-  const routeButton = event.target.closest("[data-route-step]");
-  if (routeButton) {
-    handleRouteStep(Number(routeButton.dataset.routeStep), config.answer);
-    renderBrandPuzzle(hunt);
-    return;
-  }
-
   const scrambleButton = event.target.closest("[data-scramble-index]");
   if (scrambleButton) {
     handleScrambleTile(
@@ -1346,20 +1329,6 @@ function handlePuzzleLetter(letter, answer) {
   state.brandPuzzleInput += letter;
   state.brandPuzzleMessage = "";
   if (state.brandPuzzleInput === expectedAnswer) {
-    completeBrandPuzzle(answer);
-  }
-}
-
-function handleRouteStep(index, answer) {
-  if (index !== state.brandPuzzleRouteIndex) {
-    state.brandPuzzleMessage = "The route breaks there. Follow the next glowing node.";
-    pulseBody("wrong-pulse");
-    return;
-  }
-
-  state.brandPuzzleRouteIndex += 1;
-  state.brandPuzzleMessage = "";
-  if (state.brandPuzzleRouteIndex === answer.length) {
     completeBrandPuzzle(answer);
   }
 }

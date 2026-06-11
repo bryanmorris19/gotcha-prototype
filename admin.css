@@ -301,6 +301,7 @@ fieldset {
   grid-column: 1 / -1;
 }
 
+.brand-builder,
 .barcode-builder,
 .publish-summary {
   margin-top: 18px;
@@ -308,6 +309,18 @@ fieldset {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(247, 252, 248, 0.8);
+}
+
+.brand-builder {
+  margin-top: 0;
+  background:
+    radial-gradient(circle at 100% 0, rgba(242, 201, 76, 0.15), transparent 30%),
+    rgba(255, 251, 238, 0.86);
+}
+
+.brand-builder label {
+  display: block;
+  margin-top: 14px;
 }
 
 .field-heading,
@@ -325,6 +338,48 @@ fieldset {
 .field-heading small {
   display: block;
   margin-top: 3px;
+}
+
+.random-badge {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: #6f4b00;
+  background: #ffe699;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.puzzle-type-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.puzzle-type-list span {
+  padding: 6px 8px;
+  border: 1px solid rgba(155, 104, 0, 0.14);
+  border-radius: 999px;
+  color: #725313;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.brand-puzzle-preview {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.brand-puzzle-preview strong {
+  color: var(--emerald-dark);
+  letter-spacing: 0.08em;
 }
 
 .scan-button,

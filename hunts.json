@@ -2,6 +2,7 @@
   {
     "id": "pringles-original-5-2oz",
     "name": "Pringles Original",
+    "brand": "Pringles",
     "clue": "Find the classic flavor in the brand's signature red can. This is the stack that started it all.",
     "betterClue": "Look for the tall red can labeled Original, filled with plain salted potato crisps.",
     "barcodes": [
@@ -10,13 +11,18 @@
     "availableFrom": "2026-06-10",
     "productImage": "assets/pringles-original-celebration.webp",
     "brandPuzzle": {
-      "type": "missing-letter",
+      "type": "random",
       "answer": "PRINGLES"
     }
   },
   {
     "id": "zbar-cookies-n-cream",
     "name": "ZBar Cookies ‘N Cream",
+    "brand": "ZBar",
+    "brandPuzzle": {
+      "type": "random",
+      "answer": "ZBAR"
+    },
     "clue": "A skateboarder on the wrapper might help you find this fiber-packed treat.",
     "betterClue": "Look for a USDA Organic snack bar inspired by cookies and cream, found among grab-and-go nutrition bars rather than candy bars.",
     "barcodes": [
@@ -27,6 +33,11 @@
   {
     "id": "del-monte-sleaf-spinach",
     "name": "Del Monte SLeaf Spinach",
+    "brand": "Del Monte",
+    "brandPuzzle": {
+      "type": "random",
+      "answer": "DELMONTE"
+    },
     "clue": "Sailors once believed this leafy green could help prevent a nutritional deficiency. Today, you’ll find it preserved in a metal container rather than the produce section.",
     "betterClue": "Look for a canned vegetable known for its dark green leaves and association with a famous cartoon sailor.",
     "barcodes": [
@@ -37,6 +48,11 @@
   {
     "id": "town-house-original-crackers",
     "name": "Town House Original Crackers",
+    "brand": "Town House",
+    "brandPuzzle": {
+      "type": "random",
+      "answer": "TOWNHOUSE"
+    },
     "clue": "Not all crackers are square. Search for the oven-baked classic whose name suggests a place where people live.",
     "betterClue": "You’re looking for Town House Original crackers in a bright red box.",
     "barcodes": [
@@ -47,6 +63,11 @@
   {
     "id": "kirkland-coconut-water",
     "name": "Kirkland Coconut Water",
+    "brand": "Kirkland",
+    "brandPuzzle": {
+      "type": "random",
+      "answer": "KIRKLAND"
+    },
     "clue": "This tropical drink comes straight from a fruit that’s famous for surviving long ocean voyages. Look for a naturally sweet hydrator with nothing added.",
     "betterClue": "Find the organic beverage made from young tropical fruit, sold in a shelf-stable carton rather than a bottle.",
     "barcodes": [
