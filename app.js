@@ -213,6 +213,8 @@ const state = {
   brandPuzzleRouteIndex: 0,
   brandPuzzleScrambleLetters: [],
   brandPuzzleScrambleSelected: null,
+  brandPuzzleGlyphKey: [],
+  brandPuzzleLetterBank: [],
   brandPuzzleMessage: ""
 };
 
@@ -991,7 +993,57 @@ function resetBrandPuzzle(hunt, mode) {
   state.brandPuzzleRouteIndex = 0;
   state.brandPuzzleScrambleLetters = getScrambledLetters(config.answer);
   state.brandPuzzleScrambleSelected = null;
+  state.brandPuzzleGlyphKey = shufflePuzzleItems(GLYPH_ALPHABET);
+  state.brandPuzzleLetterBank = getPuzzleLetterBank(
+    config.answer,
+    state.brandPuzzleMode
+  );
   state.brandPuzzleMessage = "";
+}
+
+function shufflePuzzleItems(items) {
+  const shuffled = items.slice();
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [
+      shuffled[swapIndex],
+      shuffled[index]
+    ];
+  }
+
+  if (
+    shuffled.length > 1 &&
+    shuffled.every((item, index) => item === items[index])
+  ) {
+    shuffled.push(shuffled.shift());
+  }
+  return shuffled;
+}
+
+function getMissingLetterIndexes(answer) {
+  if (answer === "PRINGLES") {
+    return [1, 2, 4, 5, 6];
+  }
+
+  return Array.from(answer)
+    .map((_, index) => index)
+    .filter(index => index % 2 === 1 || index === 2);
+}
+
+function getMissingLetterAnswer(answer) {
+  const hiddenIndexes = getMissingLetterIndexes(answer);
+  return Array.from(answer)
+    .filter((_, index) => hiddenIndexes.includes(index))
+    .join("");
+}
+
+function getPuzzleLetterBank(answer, mode) {
+  const requiredLetters = mode === "missing-letter"
+    ? Array.from(getMissingLetterAnswer(answer))
+    : Array.from(answer);
+  return shufflePuzzleItems(
+    Array.from(new Set(requiredLetters.concat(["A", "O", "T", "U"])))
+  );
 }
 
 function getScrambledLetters(answer) {
@@ -1066,10 +1118,7 @@ function renderBrandPuzzle(hunt) {
 }
 
 function renderMissingLetterPuzzle(answer) {
-  const hiddenIndexes = answer === "PRINGLES" ? [2, 5] : [1, 4];
-  const hiddenLetters = hiddenIndexes
-    .map(index => answer[index])
-    .filter(Boolean);
+  const hiddenIndexes = getMissingLetterIndexes(answer);
   let hiddenPosition = 0;
   const slots = Array.from(answer).map((letter, index) => {
     if (!hiddenIndexes.includes(index)) {
@@ -1084,9 +1133,7 @@ function renderMissingLetterPuzzle(answer) {
       </span>
     `;
   }).join("");
-  const letterBank = Array.from(new Set(
-    hiddenLetters.concat(["A", "O", "T"])
-  )).map(letter => `
+  const letterBank = state.brandPuzzleLetterBank.map(letter => `
     <button
       type="button"
       data-puzzle-letter="${letter}"
@@ -1122,15 +1169,13 @@ function renderGlyphPuzzle(answer) {
   const decoded = Array.from(answer).map((letter, index) => `
     <span>${state.brandPuzzleInput[index] || "_"}</span>
   `).join("");
-  const key = GLYPH_ALPHABET.map(([letter, shape]) => `
+  const key = state.brandPuzzleGlyphKey.map(([letter, shape]) => `
     <span class="glyph-key-item">
       <span class="glyph-mark glyph-${shape}" aria-hidden="true"></span>
       <strong>${letter}</strong>
     </span>
   `).join("");
-  const letterBank = Array.from(new Set(
-    Array.from(answer).concat(["A", "O", "T"])
-  )).map(letter => `
+  const letterBank = state.brandPuzzleLetterBank.map(letter => `
     <button
       type="button"
       data-puzzle-letter="${letter}"
@@ -1288,9 +1333,7 @@ function handleBrandPuzzleInteraction(event) {
 
 function handlePuzzleLetter(letter, answer) {
   const expectedAnswer = state.brandPuzzleMode === "missing-letter"
-    ? answer === "PRINGLES"
-      ? "IL"
-      : Array.from(answer).filter((_, index) => [1, 4].includes(index)).join("")
+    ? getMissingLetterAnswer(answer)
     : answer;
   const expected = expectedAnswer[state.brandPuzzleInput.length];
 
