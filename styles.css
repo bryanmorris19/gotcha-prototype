@@ -2482,8 +2482,40 @@ button:disabled {
   pointer-events: none;
 }
 
+.assembled-tablet-image {
+  position: absolute;
+  z-index: 6;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  opacity: 0;
+  transform: scale(1.035);
+  filter: saturate(0.9) brightness(0.82);
+  pointer-events: none;
+  transition:
+    opacity 650ms ease,
+    transform 900ms cubic-bezier(0.2, 0.78, 0.2, 1),
+    filter 850ms ease;
+}
+
+.tablet-stage.assembled .assembled-tablet-image {
+  opacity: 1;
+  transform: scale(1);
+  filter: saturate(1.06) brightness(1);
+}
+
+.tablet-stage.assembled .tablet-piece {
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
 .tablet-stage.complete .stone-tablet-map {
   animation: tablet-complete-pulse 2.6s ease-in-out infinite;
+}
+
+.tablet-stage.assembled .stone-tablet-map {
+  animation: assembled-tablet-glow 3.2s ease-in-out infinite;
 }
 
 .tablet-stage-caption {
@@ -2506,6 +2538,73 @@ button:disabled {
   border-radius: 4px;
   background: linear-gradient(145deg, #d7b475, #8b6238);
   box-shadow: 0 0 8px rgba(242, 201, 76, 0.55);
+}
+
+.assemble-tablet-button {
+  --assembly-hold-duration: 1800ms;
+  position: relative;
+  isolation: isolate;
+  width: calc(100% - 12px);
+  min-height: 62px;
+  margin: 10px 6px 1px;
+  overflow: hidden;
+  border: 1px solid rgba(117, 75, 0, 0.38);
+  color: #fff;
+  background:
+    radial-gradient(circle at 80% 15%, rgba(255, 239, 163, 0.32), transparent 28%),
+    linear-gradient(135deg, #b77b00, #6d4500);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.28),
+    0 12px 25px rgba(116, 73, 0, 0.25);
+  touch-action: none;
+  user-select: none;
+}
+
+.assembly-hold-fill {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 248, 205, 0.42), transparent 55%),
+    linear-gradient(135deg, #f2c94c, #d49708);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.assemble-tablet-button.holding .assembly-hold-fill {
+  transform: scaleX(1);
+  transition: transform var(--assembly-hold-duration) linear;
+}
+
+.assembly-hold-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+}
+
+.assembly-hold-content > span {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.assembly-hold-content strong {
+  font-size: 13px;
+}
+
+.assembly-hold-content small {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.assemble-tablet-button.holding .assembly-hold-content {
+  color: #3e2900;
+}
+
+.assemble-tablet-button.holding .assembly-hold-content small {
+  color: rgba(62, 41, 0, 0.72);
 }
 
 .final-hunt-panel {
@@ -2579,6 +2678,111 @@ button:disabled {
   margin-top: 13px;
   background: linear-gradient(135deg, #f5cf55, #b77b00);
   box-shadow: 0 10px 24px rgba(164, 110, 0, 0.25);
+}
+
+.final-vault-panel {
+  display: grid;
+  gap: 15px;
+  overflow: hidden;
+  border-color: rgba(45, 48, 46, 0.14);
+  background:
+    radial-gradient(circle at 92% 4%, rgba(242, 201, 76, 0.13), transparent 28%),
+    linear-gradient(145deg, #252824, #111512);
+  color: #fff;
+}
+
+.final-vault-panel.locked {
+  filter: saturate(0.45);
+}
+
+.final-vault-panel.active {
+  border-color: rgba(242, 201, 76, 0.45);
+  box-shadow: 0 18px 35px rgba(38, 29, 6, 0.18);
+}
+
+.final-vault-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+}
+
+.final-vault-heading .eyebrow {
+  color: #f2c94c;
+}
+
+.final-vault-heading h2 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.final-vault-heading > strong {
+  padding: 6px 9px;
+  border: 1px solid rgba(242, 201, 76, 0.35);
+  border-radius: 999px;
+  color: #f9db72;
+  background: rgba(242, 201, 76, 0.1);
+  font-size: 10px;
+}
+
+.final-vault-emblem {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 16px;
+  color: #f2c94c;
+  background: rgba(242, 201, 76, 0.12);
+}
+
+.final-vault-emblem svg {
+  width: 25px;
+  height: 25px;
+}
+
+.final-vault-locks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.vault-lock-slot {
+  display: grid;
+  min-height: 86px;
+  place-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 17px;
+  color: #8f9691;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.vault-lock-slot svg {
+  width: 27px;
+  height: 27px;
+}
+
+.vault-lock-slot small {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vault-lock-slot.opened {
+  border-color: rgba(242, 201, 76, 0.58);
+  color: #f2c94c;
+  background:
+    radial-gradient(circle at center, rgba(242, 201, 76, 0.25), transparent 65%),
+    rgba(242, 201, 76, 0.08);
+  box-shadow: inset 0 0 18px rgba(242, 201, 76, 0.1);
+}
+
+.final-vault-panel p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 .tablet-admin-panel {
@@ -2663,6 +2867,89 @@ button:disabled {
 
 .final-scanner-overlay {
   z-index: 1250;
+}
+
+.tablet-assembly-overlay {
+  z-index: 1270;
+  background: rgba(6, 10, 8, 0.9);
+}
+
+.tablet-assembly-card {
+  width: min(94vw, 650px);
+  border-color: rgba(242, 201, 76, 0.66);
+  color: #fff;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(242, 201, 76, 0.16), transparent 42%),
+    linear-gradient(160deg, #172019, #080b09);
+}
+
+.tablet-assembly-card h2 {
+  margin: 5px 0 15px;
+  color: #fff;
+  font-size: clamp(25px, 7vw, 34px);
+}
+
+.tablet-assembly-card .found-label {
+  color: #f2c94c;
+}
+
+.assembled-tablet-reveal {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(242, 201, 76, 0.55);
+  border-radius: 22px;
+  background: #050706;
+  box-shadow:
+    0 20px 38px rgba(0, 0, 0, 0.42),
+    0 0 35px rgba(242, 201, 76, 0.16);
+  animation: tablet-reveal-pop 720ms cubic-bezier(0.2, 0.78, 0.2, 1);
+}
+
+.assembled-tablet-reveal img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1280 / 853;
+  object-fit: cover;
+}
+
+.tablet-reveal-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 45px rgba(242, 201, 76, 0.24);
+  pointer-events: none;
+}
+
+.tablet-assembly-card p {
+  margin: 15px 4px 12px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.scanner-opening-progress {
+  height: 5px;
+  margin: 0 4px 13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.scanner-opening-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f2c94c, #fff1aa);
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: scanner-opening-progress 2.6s linear forwards;
+}
+
+.tablet-assembly-card button {
+  margin: 0;
+  color: #302000;
+  background: linear-gradient(135deg, #ffe88d, #d49a08);
 }
 
 .final-scanner-card {
@@ -2797,10 +3084,106 @@ button:disabled {
   height: 48px;
 }
 
+.final-key-icon {
+  transform: rotate(-8deg);
+}
+
 .final-scanner-success p {
   margin: 4px 0 14px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.vault-key-reward {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 13px;
+  padding: 16px;
+  border: 2px solid #e5b626;
+  border-radius: 20px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.2), transparent 24%),
+    linear-gradient(145deg, #107a3e, #09572b);
+  text-align: left;
+}
+
+.vault-key-art {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  border: 1px solid rgba(255, 239, 159, 0.65);
+  border-radius: 23px;
+  color: #ffe477;
+  background: rgba(8, 71, 34, 0.58);
+  box-shadow: inset 0 0 18px rgba(242, 201, 76, 0.16);
+}
+
+.vault-key-art svg {
+  width: 38px;
+  height: 38px;
+  filter: drop-shadow(0 5px 8px rgba(33, 19, 0, 0.28));
+}
+
+.vault-key-reward > div {
+  display: grid;
+  gap: 4px;
+}
+
+.vault-key-reward span {
+  color: #ffe690;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+}
+
+.vault-key-reward strong {
+  font-size: 23px;
+}
+
+.vault-key-reward small {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 10px;
+}
+
+.final-success-locks {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.final-success-locks span {
+  display: grid;
+  min-height: 65px;
+  place-items: center;
+  gap: 3px;
+  border: 1px solid #d6d9d6;
+  border-radius: 15px;
+  color: #909691;
+  background: #f0f1ee;
+}
+
+.final-success-locks span.opened {
+  border-color: #d9ae28;
+  color: #9a6900;
+  background: #fff4c8;
+}
+
+.final-success-locks svg {
+  width: 24px;
+  height: 24px;
+}
+
+.final-success-locks small {
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .simulated-entry-badge {
@@ -3758,6 +4141,38 @@ body.tutorial-open {
   }
 }
 
+@keyframes assembled-tablet-glow {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 28px rgba(0, 0, 0, 0.26),
+      0 18px 22px rgba(55, 40, 22, 0.2),
+      0 0 0 rgba(242, 201, 76, 0);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 20px rgba(242, 201, 76, 0.12),
+      0 18px 22px rgba(55, 40, 22, 0.18),
+      0 0 24px rgba(242, 201, 76, 0.3);
+  }
+}
+
+@keyframes tablet-reveal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.88) translateY(14px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.025) translateY(0);
+  }
+}
+
+@keyframes scanner-opening-progress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
 @keyframes final-scanner-sweep {
   0%, 100% {
     transform: translateY(0);
@@ -3862,6 +4277,9 @@ body.tutorial-open {
 
   .tablet-piece.unlocked,
   .tablet-stage.complete .stone-tablet-map,
+  .tablet-stage.assembled .stone-tablet-map,
+  .assembled-tablet-reveal,
+  .scanner-opening-progress span,
   .final-scanner-beam,
   .vault-letter.missing,
   .dig-rock,
@@ -3871,6 +4289,10 @@ body.tutorial-open {
   .product-celebration img,
   .product-gold-piece {
     animation: none;
+  }
+
+  .scanner-opening-progress span {
+    transform: scaleX(1);
   }
 }
 

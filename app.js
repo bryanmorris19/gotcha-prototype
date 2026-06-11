@@ -33,6 +33,10 @@ const PUZZLE_MODES = [
 ];
 const DUST_PATCH_COUNT = 24;
 const DUST_CLEAR_TARGET = 16;
+const TABLET_ASSEMBLY_HOLD_DURATION = 1800;
+const TABLET_REVEAL_DURATION = 2600;
+const FINAL_VAULT_KEY_ID = "stone-map-key";
+const FINAL_VAULT_KEY_COUNT = 3;
 const PUZZLE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const GLYPH_SHAPES = [
   "sun",
@@ -216,7 +220,11 @@ const state = {
   tabletPreviewEnabled:
     new URLSearchParams(window.location.search).get("tablet-preview") === "1",
   tabletPreviewCount: 0,
+  tabletPreviewAssembled: false,
   tabletPreviewFinalSuccess: false,
+  tabletAssemblyTimer: null,
+  tabletRevealTimer: null,
+  tabletAssemblyHolding: false,
   scanPreviewProgress: 0,
   scanPreviewGuesses: STARTING_GUESSES,
   scanPreviewSignalFragments: 0,
@@ -378,16 +386,32 @@ function cacheElements() {
     "artifactPuzzleMessage"
   );
   elements.tabletStage = document.getElementById("tabletStage");
+  elements.tabletStageCaption = document.getElementById(
+    "tabletStageCaption"
+  );
+  elements.assembleTabletButton = document.getElementById(
+    "assembleTabletButton"
+  );
   elements.tabletPieces = Array.from(
     document.querySelectorAll("[data-tablet-piece]")
   );
   elements.finalHuntPanel = document.getElementById("finalHuntPanel");
   elements.finalHuntSealUse = document.getElementById("finalHuntSealUse");
   elements.finalHuntLocked = document.getElementById("finalHuntLocked");
+  elements.finalHuntLockedMessage = document.getElementById(
+    "finalHuntLockedMessage"
+  );
   elements.finalHuntUnlocked = document.getElementById("finalHuntUnlocked");
+  elements.finalHuntTitle = document.getElementById("finalHuntTitle");
   elements.openFinalScannerButton = document.getElementById(
     "openFinalScannerButton"
   );
+  elements.finalVaultPanel = document.getElementById("finalVaultPanel");
+  elements.finalVaultCount = document.getElementById("finalVaultCount");
+  elements.finalVaultLocks = Array.from(
+    document.querySelectorAll("[data-vault-lock]")
+  );
+  elements.finalVaultMessage = document.getElementById("finalVaultMessage");
   elements.tabletAdminPanel = document.getElementById("tabletAdminPanel");
   elements.scanAdminPanel = document.getElementById("scanAdminPanel");
   elements.scanPreviewStatus = document.getElementById("scanPreviewStatus");
@@ -421,6 +445,12 @@ function cacheElements() {
     "tabletPreviewComplete"
   );
   elements.tabletPreviewReset = document.getElementById("tabletPreviewReset");
+  elements.tabletAssemblyOverlay = document.getElementById(
+    "tabletAssemblyOverlay"
+  );
+  elements.continueToFinalScannerButton = document.getElementById(
+    "continueToFinalScannerButton"
+  );
   elements.finalScannerOverlay = document.getElementById(
     "finalScannerOverlay"
   );
@@ -529,7 +559,39 @@ function bindEvents() {
   elements.torchButton.addEventListener("click", toggleTorch);
   elements.nextHuntButton.addEventListener("click", closePrizeOverlay);
   elements.wrongActionButton.addEventListener("click", closeWrongOverlay);
+  elements.assembleTabletButton.addEventListener(
+    "pointerdown",
+    startTabletAssemblyHold
+  );
+  elements.assembleTabletButton.addEventListener(
+    "pointerup",
+    cancelTabletAssemblyHold
+  );
+  elements.assembleTabletButton.addEventListener(
+    "pointercancel",
+    cancelTabletAssemblyHold
+  );
+  elements.assembleTabletButton.addEventListener(
+    "lostpointercapture",
+    cancelTabletAssemblyHold
+  );
+  elements.assembleTabletButton.addEventListener(
+    "keydown",
+    handleTabletAssemblyKeydown
+  );
+  elements.assembleTabletButton.addEventListener(
+    "keyup",
+    handleTabletAssemblyKeyup
+  );
+  elements.assembleTabletButton.addEventListener(
+    "contextmenu",
+    event => event.preventDefault()
+  );
   elements.openFinalScannerButton.addEventListener("click", openFinalScanner);
+  elements.continueToFinalScannerButton.addEventListener(
+    "click",
+    continueToFinalScanner
+  );
   elements.closeFinalScannerButton.addEventListener(
     "click",
     closeFinalScanner
@@ -673,6 +735,8 @@ function createDefaultPlayer() {
     nickname: "Treasure Hunter",
     bestStreak: 0,
     collection: {},
+    tabletAssembled: false,
+    vaultKeys: [],
     rewardHistory: [],
     groceryItems: [],
     tutorialVersion: 0,
@@ -769,6 +833,10 @@ function loadPlayer() {
         ? saved.completedHunts
         : [],
       collection,
+      tabletAssembled: Boolean(saved.tabletAssembled),
+      vaultKeys: Array.isArray(saved.vaultKeys)
+        ? saved.vaultKeys.filter(key => key === FINAL_VAULT_KEY_ID)
+        : [],
       dailyArtifactClaimed: Boolean(
         saved.dailyArtifactClaimed ?? saved.dailyChestClaimed
       ),
@@ -944,7 +1012,7 @@ function render() {
   elements.dailyArtifactMessage.textContent =
     state.player.dailyArtifactClaimed
       ? puzzleComplete
-        ? "Daily fragment recovered. The complete tablet reveals the final scanner."
+        ? "Daily fragment recovered. Assemble the complete tablet to reveal the final scanner."
         : "Daily fragment recovered. Return tomorrow to recover another map section."
       : `${scansRemaining} more correct ${
           scansRemaining === 1 ? "scan" : "scans"
@@ -1939,7 +2007,7 @@ function unlockDailyArtifact(showOverlay = true) {
       context: `${DAILY_GOAL} correct scans completed`,
       reward: artifact,
       finePrint: remainingArtifacts === 0
-        ? "Tablet complete. The special final scanner is now unlocked."
+        ? "All fragments recovered. Press and hold to assemble the tablet."
         : `${remainingArtifacts} ${
             remainingArtifacts === 1 ? "fragment remains" : "fragments remain"
           } in the stone tablet.`,
@@ -2426,7 +2494,7 @@ function simulatePreviewCorrectScan() {
       context: `${DAILY_GOAL} correct scans completed`,
       reward: fragment,
       finePrint: state.tabletPreviewCount >= artifactCatalog.length
-        ? "Tablet complete. The special final scanner is now unlocked."
+        ? "All fragments recovered. Press and hold to assemble the tablet."
         : `${artifactCatalog.length - state.tabletPreviewCount} fragments remain in the stone tablet.`,
       actionLabel: "Lock into Map"
     });
@@ -2534,6 +2602,8 @@ function renderCollection() {
     ? state.tabletPreviewCount
     : actualUnlockedCount;
   const puzzleComplete = unlockedCount === artifactCatalog.length;
+  const tabletAssembled = isTabletAssembled();
+  const vaultKeyRecovered = hasFinalVaultKey();
 
   elements.collectionCount.textContent =
     `${unlockedCount} of ${artifactCatalog.length} fragments`;
@@ -2545,12 +2615,18 @@ function renderCollection() {
     "aria-valuenow",
     String(unlockedCount)
   );
-  elements.artifactPuzzleMessage.textContent = puzzleComplete
-    ? "The six-stone map is complete. The final scanner is active."
-    : "Each recovered stone locks into its matching place on the map.";
-  elements.artifactPuzzleHint.textContent = puzzleComplete
-    ? "All six stones are in place. The final scanner is unlocked."
-    : "Complete the map to unlock the special final scanner.";
+  elements.artifactPuzzleMessage.textContent = tabletAssembled
+    ? "The stone tablet is assembled and its hidden route is active."
+    : puzzleComplete
+      ? "All six fragments are recovered. Assemble them to reveal the route."
+      : "Each recovered stone locks into its matching place on the map.";
+  elements.artifactPuzzleHint.textContent = tabletAssembled
+    ? vaultKeyRecovered
+      ? "Vault Key I has been recovered from the final product signal."
+      : "The final scanner is ready to reveal the first vault key."
+    : puzzleComplete
+      ? "Press and hold below to complete the stone tablet."
+      : "Complete the map to unlock the assembly ritual.";
 
   elements.tabletPieces.forEach((piece, index) => {
     const unlocked = index < unlockedCount;
@@ -2564,31 +2640,103 @@ function renderCollection() {
     );
   });
   elements.tabletStage.classList.toggle("complete", puzzleComplete);
-  elements.finalHuntPanel.classList.toggle("unlocked", puzzleComplete);
-  elements.finalHuntPanel.classList.toggle("locked", !puzzleComplete);
-  elements.finalHuntLocked.classList.toggle("hidden", puzzleComplete);
-  elements.finalHuntUnlocked.classList.toggle("hidden", !puzzleComplete);
+  elements.tabletStage.classList.toggle("assembled", tabletAssembled);
+  elements.assembleTabletButton.classList.toggle(
+    "hidden",
+    !puzzleComplete || tabletAssembled
+  );
+  elements.assembleTabletButton.disabled = !puzzleComplete || tabletAssembled;
+  elements.tabletStageCaption.innerHTML = tabletAssembled
+    ? '<span class="tablet-map-key"></span>The complete route points to the final product signal.'
+    : puzzleComplete
+      ? '<span class="tablet-map-key"></span>All fragments recovered. Hold below to assemble the tablet.'
+      : '<span class="tablet-map-key"></span>Recovered stones return to their exact place on the map.';
+
+  elements.finalHuntPanel.classList.toggle("unlocked", tabletAssembled);
+  elements.finalHuntPanel.classList.toggle("locked", !tabletAssembled);
+  elements.finalHuntLocked.classList.toggle("hidden", tabletAssembled);
+  elements.finalHuntUnlocked.classList.toggle("hidden", !tabletAssembled);
+  elements.finalHuntLockedMessage.textContent = puzzleComplete
+    ? "All fragments are present. Press and hold the assembly control to reveal the final route."
+    : "Recover all six fragments, then assemble the tablet to activate its special scanner.";
+  elements.finalHuntTitle.textContent = vaultKeyRecovered
+    ? "Vault Key I has been secured"
+    : "The final route has appeared";
+  elements.openFinalScannerButton.innerHTML = vaultKeyRecovered
+    ? '<svg class="button-icon"><use href="#icon-key"></use></svg>View Recovered Key'
+    : '<svg class="button-icon"><use href="#icon-scan"></use></svg>Open Final Scanner';
   elements.finalHuntSealUse.setAttribute(
     "href",
-    puzzleComplete ? "#icon-scan" : "#icon-lock"
+    tabletAssembled
+      ? vaultKeyRecovered
+        ? "#icon-key"
+        : "#icon-scan"
+      : "#icon-lock"
   );
+  renderFinalVault(vaultKeyRecovered);
 
   elements.tabletAdminPanel.classList.toggle(
     "hidden",
     !state.tabletPreviewEnabled
   );
   if (state.tabletPreviewEnabled) {
-    elements.tabletPreviewStatus.textContent =
-      `${unlockedCount} of ${artifactCatalog.length} fragments visible`;
+    elements.tabletPreviewStatus.textContent = tabletAssembled
+      ? vaultKeyRecovered
+        ? "Tablet assembled - Vault Key I recovered"
+        : "Tablet assembled - final scanner ready"
+      : `${unlockedCount} of ${artifactCatalog.length} fragments visible`;
     elements.tabletPreviewPrevious.disabled = unlockedCount === 0;
     elements.tabletPreviewNext.disabled =
       unlockedCount === artifactCatalog.length;
     elements.tabletPreviewComplete.disabled = puzzleComplete;
     elements.tabletPreviewReset.disabled =
-      unlockedCount === 0 && !state.tabletPreviewFinalSuccess;
+      unlockedCount === 0 &&
+      !state.tabletPreviewAssembled &&
+      !state.tabletPreviewFinalSuccess;
   }
 
   renderRewardHistory();
+}
+
+function isTabletAssembled() {
+  const assembled = state.tabletPreviewEnabled
+    ? state.tabletPreviewAssembled
+    : Boolean(state.player.tabletAssembled);
+  return assembled && getUnlockedTabletCount() >= artifactCatalog.length;
+}
+
+function hasFinalVaultKey() {
+  const recovered = state.tabletPreviewEnabled
+    ? state.tabletPreviewFinalSuccess
+    : state.player.vaultKeys.includes(FINAL_VAULT_KEY_ID);
+  return recovered && isTabletAssembled();
+}
+
+function renderFinalVault(vaultKeyRecovered) {
+  const recoveredCount = vaultKeyRecovered ? 1 : 0;
+  elements.finalVaultPanel.classList.toggle(
+    "active",
+    isTabletAssembled()
+  );
+  elements.finalVaultPanel.classList.toggle(
+    "locked",
+    !isTabletAssembled()
+  );
+  elements.finalVaultCount.textContent =
+    `${recoveredCount} of ${FINAL_VAULT_KEY_COUNT}`;
+  elements.finalVaultLocks.forEach((lock, index) => {
+    const opened = index < recoveredCount;
+    lock.classList.toggle("opened", opened);
+    lock.querySelector("use").setAttribute(
+      "href",
+      opened ? "#icon-key" : "#icon-lock"
+    );
+  });
+  elements.finalVaultMessage.textContent = vaultKeyRecovered
+    ? "The stone map opened the first lock. Two future grand hunts will reveal Keys II and III."
+    : isTabletAssembled()
+      ? "Scan the final product to recover Key I and open the first prize lock."
+      : "The completed stone map leads to the first key. Two future grand hunts will reveal the remaining keys.";
 }
 
 function animatePendingTabletFragment() {
@@ -2604,12 +2752,121 @@ function animatePendingTabletFragment() {
   piece.classList.add("unlocked");
 }
 
+function startTabletAssemblyHold(event) {
+  if (
+    state.tabletAssemblyHolding ||
+    isTabletAssembled() ||
+    getUnlockedTabletCount() < artifactCatalog.length
+  ) {
+    return;
+  }
+
+  if (event.type === "pointerdown") {
+    if (event.button !== 0) {
+      return;
+    }
+    elements.assembleTabletButton.setPointerCapture?.(event.pointerId);
+  }
+
+  event.preventDefault();
+  state.tabletAssemblyHolding = true;
+  elements.assembleTabletButton.classList.add("holding");
+  elements.assembleTabletButton.setAttribute("aria-pressed", "true");
+  state.tabletAssemblyTimer = window.setTimeout(
+    completeTabletAssembly,
+    TABLET_ASSEMBLY_HOLD_DURATION
+  );
+}
+
+function cancelTabletAssemblyHold() {
+  if (!state.tabletAssemblyHolding) {
+    return;
+  }
+
+  window.clearTimeout(state.tabletAssemblyTimer);
+  state.tabletAssemblyTimer = null;
+  state.tabletAssemblyHolding = false;
+  elements.assembleTabletButton.classList.remove("holding");
+  elements.assembleTabletButton.setAttribute("aria-pressed", "false");
+}
+
+function handleTabletAssemblyKeydown(event) {
+  if (
+    event.repeat ||
+    (event.key !== " " && event.key !== "Enter")
+  ) {
+    return;
+  }
+  startTabletAssemblyHold(event);
+}
+
+function handleTabletAssemblyKeyup(event) {
+  if (event.key !== " " && event.key !== "Enter") {
+    return;
+  }
+  event.preventDefault();
+  cancelTabletAssemblyHold();
+}
+
+function completeTabletAssembly() {
+  if (
+    getUnlockedTabletCount() < artifactCatalog.length ||
+    isTabletAssembled()
+  ) {
+    cancelTabletAssemblyHold();
+    return;
+  }
+
+  state.tabletAssemblyTimer = null;
+  state.tabletAssemblyHolding = false;
+  elements.assembleTabletButton.classList.remove("holding");
+  elements.assembleTabletButton.setAttribute("aria-pressed", "false");
+
+  if (state.tabletPreviewEnabled) {
+    state.tabletPreviewAssembled = true;
+  } else {
+    state.player.tabletAssembled = true;
+    savePlayer();
+    trackEvent("stone_tablet_assembled");
+  }
+
+  playSuccessFeedback();
+  renderCollection();
+  showTabletAssemblyReveal();
+}
+
+function getUnlockedTabletCount() {
+  return state.tabletPreviewEnabled
+    ? state.tabletPreviewCount
+    : artifactCatalog.filter(
+        artifact => state.player.collection[artifact.id]
+      ).length;
+}
+
+function showTabletAssemblyReveal() {
+  window.clearTimeout(state.tabletRevealTimer);
+  elements.finalScannerOverlay.classList.add("hidden");
+  elements.tabletAssemblyOverlay.classList.remove("hidden");
+  state.tabletRevealTimer = window.setTimeout(
+    continueToFinalScanner,
+    TABLET_REVEAL_DURATION
+  );
+}
+
+function continueToFinalScanner() {
+  window.clearTimeout(state.tabletRevealTimer);
+  state.tabletRevealTimer = null;
+  elements.tabletAssemblyOverlay.classList.add("hidden");
+  openFinalScanner();
+}
+
 function initializeTabletPreview() {
   if (!state.tabletPreviewEnabled) {
     return;
   }
 
   state.tabletPreviewCount = 0;
+  state.tabletPreviewAssembled = false;
   state.tabletPreviewFinalSuccess = false;
   state.scanPreviewProgress = 0;
   state.scanPreviewGuesses = STARTING_GUESSES;
@@ -2634,7 +2891,9 @@ function previewPreviousTabletFragment() {
   }
 
   state.tabletPreviewCount = Math.max(0, state.tabletPreviewCount - 1);
+  state.tabletPreviewAssembled = false;
   state.tabletPreviewFinalSuccess = false;
+  closeTabletAssemblyReveal();
   closeFinalScanner();
   renderCollection();
 }
@@ -2648,6 +2907,7 @@ function previewNextTabletFragment() {
     artifactCatalog.length,
     state.tabletPreviewCount + 1
   );
+  state.tabletPreviewAssembled = false;
   state.tabletPreviewFinalSuccess = false;
   renderCollection();
 }
@@ -2658,6 +2918,7 @@ function previewCompleteTablet() {
   }
 
   state.tabletPreviewCount = artifactCatalog.length;
+  state.tabletPreviewAssembled = false;
   state.tabletPreviewFinalSuccess = false;
   renderCollection();
 }
@@ -2668,24 +2929,21 @@ function resetTabletPreview() {
   }
 
   state.tabletPreviewCount = 0;
+  state.tabletPreviewAssembled = false;
   state.tabletPreviewFinalSuccess = false;
+  closeTabletAssemblyReveal();
   closeFinalScanner();
   renderCollection();
 }
 
 function openFinalScanner() {
-  const unlockedCount = state.tabletPreviewEnabled
-    ? state.tabletPreviewCount
-    : artifactCatalog.filter(
-        artifact => state.player.collection[artifact.id]
-      ).length;
-
-  if (unlockedCount < artifactCatalog.length) {
+  if (!isTabletAssembled()) {
     return;
   }
 
-  elements.finalScannerReady.classList.remove("hidden");
-  elements.finalScannerSuccess.classList.add("hidden");
+  const vaultKeyRecovered = hasFinalVaultKey();
+  elements.finalScannerReady.classList.toggle("hidden", vaultKeyRecovered);
+  elements.finalScannerSuccess.classList.toggle("hidden", !vaultKeyRecovered);
   elements.simulateFinalScanButton.classList.toggle(
     "hidden",
     !state.tabletPreviewEnabled
@@ -2697,6 +2955,12 @@ function closeFinalScanner() {
   elements.finalScannerOverlay.classList.add("hidden");
   elements.finalScannerReady.classList.remove("hidden");
   elements.finalScannerSuccess.classList.add("hidden");
+}
+
+function closeTabletAssemblyReveal() {
+  window.clearTimeout(state.tabletRevealTimer);
+  state.tabletRevealTimer = null;
+  elements.tabletAssemblyOverlay.classList.add("hidden");
 }
 
 function simulateFinalScanSuccess() {
@@ -3773,7 +4037,9 @@ function clearHuntNotice() {
 function resetDemo() {
   if (state.tabletPreviewEnabled) {
     state.tabletPreviewCount = 0;
+    state.tabletPreviewAssembled = false;
     state.tabletPreviewFinalSuccess = false;
+    closeTabletAssemblyReveal();
     resetPreviewScans();
     renderCollection();
     return;

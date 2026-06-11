@@ -10,14 +10,14 @@
   <title>Gotcha!</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=26" />
+  <link rel="stylesheet" href="styles.css?v=27" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.1/dist/umd/supabase.js"
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=28" defer></script>
+  <script src="app.js?v=29" defer></script>
 </head>
 
 <body>
@@ -443,11 +443,32 @@
                 <svg><use href="#icon-lock"></use></svg>
               </span>
             </div>
+            <img
+              id="assembledTabletImage"
+              class="assembled-tablet-image"
+              src="assets/tablet-complete.webp"
+              alt="The fully assembled stone tablet map"
+            />
           </div>
-          <div class="tablet-stage-caption">
+          <div id="tabletStageCaption" class="tablet-stage-caption">
             <span class="tablet-map-key"></span>
             Recovered stones return to their exact place on the map.
           </div>
+          <button
+            id="assembleTabletButton"
+            class="assemble-tablet-button hidden"
+            type="button"
+            aria-describedby="assembleTabletHint"
+          >
+            <span class="assembly-hold-fill" aria-hidden="true"></span>
+            <span class="assembly-hold-content">
+              <svg class="button-icon"><use href="#icon-sparkle"></use></svg>
+              <span>
+                <strong>Press and hold to assemble</strong>
+                <small id="assembleTabletHint">Keep holding until the map locks into place</small>
+              </span>
+            </span>
+          </button>
         </div>
       </section>
 
@@ -458,11 +479,14 @@
         <div id="finalHuntLocked">
           <div class="eyebrow">Final Signal Sealed</div>
           <h2>Complete the stone map</h2>
-          <p>The sixth fragment reveals the final clue and activates a special scanner.</p>
+          <p id="finalHuntLockedMessage">
+            Recover all six fragments, then assemble the tablet to activate its
+            special scanner.
+          </p>
         </div>
         <div id="finalHuntUnlocked" class="hidden">
-          <div class="eyebrow">Final Hunt Unlocked</div>
-          <h2>The last clue has appeared</h2>
+          <div class="eyebrow">Tablet Signal Activated</div>
+          <h2 id="finalHuntTitle">The final route has appeared</h2>
           <blockquote>
             Beyond the last carved wave, the trail ends where an aged white
             treasure waits. It was baked for the voyage, never fried.
@@ -472,6 +496,37 @@
             Open Final Scanner
           </button>
         </div>
+      </section>
+
+      <section id="finalVaultPanel" class="card final-vault-panel locked">
+        <div class="final-vault-heading">
+          <span class="final-vault-emblem" aria-hidden="true">
+            <svg><use href="#icon-key"></use></svg>
+          </span>
+          <div>
+            <div class="eyebrow">Grand Prize Vault</div>
+            <h2>Recover all three keys</h2>
+          </div>
+          <strong id="finalVaultCount">0 of 3</strong>
+        </div>
+        <div id="finalVaultLocks" class="final-vault-locks" aria-label="Three prize locks">
+          <span class="vault-lock-slot" data-vault-lock="0">
+            <svg><use href="#icon-lock"></use></svg>
+            <small>Key I</small>
+          </span>
+          <span class="vault-lock-slot" data-vault-lock="1">
+            <svg><use href="#icon-lock"></use></svg>
+            <small>Key II</small>
+          </span>
+          <span class="vault-lock-slot" data-vault-lock="2">
+            <svg><use href="#icon-lock"></use></svg>
+            <small>Key III</small>
+          </span>
+        </div>
+        <p id="finalVaultMessage">
+          The completed stone map leads to the first key. Two future grand
+          hunts will reveal the remaining keys.
+        </p>
       </section>
 
       <section id="tabletAdminPanel" class="card tablet-admin-panel hidden">
@@ -496,7 +551,7 @@
           </button>
           <button id="tabletPreviewNext" type="button">Next Fragment</button>
           <button id="tabletPreviewComplete" class="secondary" type="button">
-            Complete Tablet
+            Show All Fragments
           </button>
           <button id="tabletPreviewReset" class="text-button" type="button">
             Reset Preview
@@ -781,7 +836,8 @@
             <h3>Complete the daily hunt</h3>
             <p>
               Correctly scan all three daily items to recover a stone
-              fragment. Complete the tablet to unlock the final scanner.
+              fragment. Assemble the completed tablet to unlock the final
+              scanner and recover a vault key.
             </p>
           </article>
         </div>
@@ -871,6 +927,37 @@
   </section>
 
   <section
+    id="tabletAssemblyOverlay"
+    class="overlay tablet-assembly-overlay hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="tabletAssemblyHeading"
+  >
+    <div class="overlay-card tablet-assembly-card">
+      <div class="found-label">Six Fragments United</div>
+      <h2 id="tabletAssemblyHeading">The Stone Tablet Is Complete</h2>
+      <div class="assembled-tablet-reveal">
+        <img
+          src="assets/tablet-complete.webp"
+          alt="The completed stone tablet map with a compass and route to an ancient temple"
+        />
+        <span class="tablet-reveal-glow" aria-hidden="true"></span>
+      </div>
+      <p>
+        The carved route is responding. The final product signal is coming
+        online.
+      </p>
+      <div class="scanner-opening-progress" aria-hidden="true">
+        <span></span>
+      </div>
+      <button id="continueToFinalScannerButton" type="button">
+        <svg class="button-icon"><use href="#icon-scan"></use></svg>
+        Open Final Scanner
+      </button>
+    </div>
+  </section>
+
+  <section
     id="finalScannerOverlay"
     class="overlay final-scanner-overlay hidden"
     role="dialog"
@@ -917,18 +1004,38 @@
       </div>
 
       <div id="finalScannerSuccess" class="final-scanner-success hidden">
-        <span class="final-success-icon">
-          <svg><use href="#icon-trophy"></use></svg>
+        <span class="final-success-icon final-key-icon">
+          <svg><use href="#icon-key"></use></svg>
         </span>
         <div class="found-label">Final Product Verified</div>
-        <h2>Grand Prize Entry Unlocked!</h2>
+        <h2>Vault Key I Recovered!</h2>
         <p>
-          Pirate's Booty Aged White Cheddar completed the stone map.
+          Pirate's Booty Aged White Cheddar revealed the stone tablet's hidden
+          key.
         </p>
-        <div class="simulated-entry-badge">
-          <span>SIMULATED BETA REWARD</span>
-          <strong>1 Grand Prize Entry</strong>
-          <small>No cash value during MVP testing</small>
+        <div class="vault-key-reward">
+          <span class="vault-key-art" aria-hidden="true">
+            <svg><use href="#icon-key"></use></svg>
+          </span>
+          <div>
+            <span>STONE MAP KEY</span>
+            <strong>Key 1 of 3</strong>
+            <small>Two locks remain on the final prize vault</small>
+          </div>
+        </div>
+        <div class="final-success-locks" aria-label="One of three prize locks opened">
+          <span class="opened">
+            <svg><use href="#icon-key"></use></svg>
+            <small>Open</small>
+          </span>
+          <span>
+            <svg><use href="#icon-lock"></use></svg>
+            <small>Locked</small>
+          </span>
+          <span>
+            <svg><use href="#icon-lock"></use></svg>
+            <small>Locked</small>
+          </span>
         </div>
         <button id="closeFinalSuccessButton" type="button">
           Return to Tablet
@@ -1057,8 +1164,8 @@
 
       <p class="odds-note">
         Only unique wrong barcodes earn fragments. Discovery Caches are capped
-        at three per day. Completing the stone tablet unlocks a simulated
-        prize chance with no cash value. Gotcha! is not designed for children under 13; family
+        at three per day. Assembling the stone tablet unlocks a simulated final
+        scan and the first of three prize-vault keys. Gotcha! is not designed for children under 13; family
         participation should be supervised by a parent or guardian.
       </p>
       <button id="closeRewardOddsButton" type="button">Close</button>

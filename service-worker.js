@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gotcha-mvp-v32";
+const CACHE_NAME = "gotcha-mvp-v33";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,9 +8,9 @@ const APP_SHELL = [
   "./admin.css?v=4",
   "./admin.js?v=4",
   "./admin.webmanifest",
-  "./styles.css?v=26",
+  "./styles.css?v=27",
   "./supabase-config.js?v=1",
-  "./app.js?v=28",
+  "./app.js?v=29",
   "./hunts.json",
   "./manifest.webmanifest",
   "./images/background.png",
@@ -21,6 +21,7 @@ const APP_SHELL = [
   "./assets/pringles-original-celebration.webp",
   "./assets/treasure-chest.png",
   "./assets/tablet-map-locked.webp",
+  "./assets/tablet-complete.webp",
   "./assets/tablet-fragment-1.webp",
   "./assets/tablet-fragment-2.webp",
   "./assets/tablet-fragment-3.webp",
