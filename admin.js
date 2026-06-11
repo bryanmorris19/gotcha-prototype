@@ -563,7 +563,7 @@ function updateBrandPuzzlePreview() {
   const answer = normalizeBrandAnswer(elements.brandName.value);
   elements.brandPuzzlePreview.innerHTML = answer
     ? `Puzzle answer: <strong>${escapeHtml(answer)}</strong>. ` +
-      "Players receive one of the three puzzle types at random."
+      "Players receive one of the five puzzle types at random."
     : "Enter a brand to create its puzzle answer.";
 }
 

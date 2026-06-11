@@ -20,13 +20,19 @@ const TUTORIAL_VERSION = 1;
 const PUZZLE_MODE_LABELS = {
   "missing-letter": "Missing-Letter Vault",
   glyph: "Ancient Glyph Substitution",
-  scramble: "Brand Scramble Lock"
+  dig: "Brand Dig Site",
+  dust: "Hidden Inscription",
+  decoder: "Decoder Wheel"
 };
 const PUZZLE_MODES = [
   "missing-letter",
   "glyph",
-  "scramble"
+  "dig",
+  "dust",
+  "decoder"
 ];
+const DUST_PATCH_COUNT = 24;
+const DUST_CLEAR_TARGET = 16;
 const PUZZLE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const GLYPH_SHAPES = [
   "sun",
@@ -222,10 +228,12 @@ const state = {
   brandPuzzleMode: "missing-letter",
   brandPuzzleSolved: false,
   brandPuzzleInput: "",
-  brandPuzzleScrambleLetters: [],
-  brandPuzzleScrambleSelected: null,
   brandPuzzleGlyphKey: [],
   brandPuzzleLetterBank: [],
+  brandPuzzleDigCleared: [],
+  brandPuzzleDustCleared: [],
+  brandPuzzleDustActive: false,
+  brandPuzzleDecoderOffset: 0,
   brandPuzzleMessage: ""
 };
 
@@ -495,6 +503,22 @@ function bindEvents() {
   elements.brandPuzzleBody.addEventListener(
     "click",
     handleBrandPuzzleInteraction
+  );
+  elements.brandPuzzleBody.addEventListener(
+    "pointerdown",
+    handleDustPointerStart
+  );
+  elements.brandPuzzleBody.addEventListener(
+    "pointermove",
+    handleDustPointerMove
+  );
+  elements.brandPuzzleBody.addEventListener(
+    "pointerup",
+    stopDustPointer
+  );
+  elements.brandPuzzleBody.addEventListener(
+    "pointercancel",
+    stopDustPointer
   );
   elements.buyGuessButton.addEventListener("click", buyExtraGuess);
   elements.rewardOddsButton.addEventListener("click", openRewardOdds);
@@ -1016,8 +1040,6 @@ function resetBrandPuzzle(hunt, mode) {
     : config.type;
   state.brandPuzzleSolved = false;
   state.brandPuzzleInput = "";
-  state.brandPuzzleScrambleLetters = getScrambledLetters(config.answer);
-  state.brandPuzzleScrambleSelected = null;
   state.brandPuzzleGlyphKey = shufflePuzzleItems(
     getGlyphKeyCharacters(config.answer)
   );
@@ -1025,6 +1047,11 @@ function resetBrandPuzzle(hunt, mode) {
     config.answer,
     state.brandPuzzleMode
   );
+  state.brandPuzzleDigCleared = [];
+  state.brandPuzzleDustCleared = [];
+  state.brandPuzzleDustActive = false;
+  state.brandPuzzleDecoderOffset =
+    (getDecoderTargetOffset(config.answer) + 3) % 26;
   state.brandPuzzleMessage = "";
 }
 
@@ -1110,15 +1137,6 @@ function getGlyphMarkHtml(character, className = "") {
   `;
 }
 
-function getScrambledLetters(answer) {
-  if (answer === "PRINGLES") {
-    return Array.from("GSPIRLNE");
-  }
-
-  const letters = Array.from(answer);
-  return letters.slice(2).concat(letters.slice(0, 2));
-}
-
 function renderBrandPuzzle(hunt) {
   const config = getBrandPuzzleConfig(hunt);
   if (!config) {
@@ -1165,7 +1183,9 @@ function renderBrandPuzzle(hunt) {
   const renderers = {
     "missing-letter": renderMissingLetterPuzzle,
     glyph: renderGlyphPuzzle,
-    scramble: renderScramblePuzzle
+    dig: renderDigPuzzle,
+    dust: renderDustPuzzle,
+    decoder: renderDecoderPuzzle
   };
   const result = renderers[mode](config.answer);
   elements.brandPuzzleInstructions.textContent = result.instructions;
@@ -1258,32 +1278,127 @@ function renderGlyphPuzzle(answer) {
   };
 }
 
-function renderScramblePuzzle(answer) {
-  const tiles = state.brandPuzzleScrambleLetters.map((letter, index) => `
+function renderDigPuzzle(answer) {
+  const cleared = new Set(state.brandPuzzleDigCleared);
+  const digCells = Array.from(answer).map((letter, index) => `
     <button
-      class="scramble-tile ${
-        state.brandPuzzleScrambleSelected === index ? "selected" : ""
-      }"
+      class="dig-cell ${cleared.has(index) ? "cleared" : ""}"
       type="button"
-      data-scramble-index="${index}"
+      data-dig-index="${index}"
+      aria-label="${
+        cleared.has(index)
+          ? `Excavated letter ${letter}`
+          : `Excavate site ${index + 1}`
+      }"
       ${state.brandPuzzleSolved ? "disabled" : ""}
     >
-      <small>${index + 1}</small>
-      <strong>${letter}</strong>
+      <span class="dig-letter">${letter}</span>
+      <span class="dig-rock" aria-hidden="true">
+        <i></i><i></i><i></i>
+      </span>
     </button>
   `).join("");
 
   return {
     instructions:
-      "Tap one brass letter tile, then another, to swap them until the brand reads correctly.",
+      "Tap the rock-covered sites to excavate the brand inscription.",
     html: `
-      <div class="scramble-lock">
-        <div class="scramble-lock-rail" aria-hidden="true"></div>
-        <div class="scramble-tiles">${tiles}</div>
-        <div class="scramble-lock-status">
-          ${state.brandPuzzleSolved
-            ? answer
-            : `Align all ${answer.length} tumblers`}
+      <div class="dig-site">
+        <div class="dig-site-header">
+          <span>Excavation ${cleared.size}/${answer.length}</span>
+          <span>Tap rocks</span>
+        </div>
+        <div class="dig-grid">${digCells}</div>
+      </div>
+    `
+  };
+}
+
+function renderDustPuzzle(answer) {
+  const cleared = new Set(state.brandPuzzleDustCleared);
+  const patches = Array.from({ length: DUST_PATCH_COUNT }, (_, index) => `
+    <span
+      class="dust-patch ${cleared.has(index) ? "cleared" : ""}"
+      data-dust-index="${index}"
+      aria-hidden="true"
+    ></span>
+  `).join("");
+
+  return {
+    instructions:
+      "Swipe a finger across the dusty tablet to uncover the hidden inscription.",
+    html: `
+      <div class="dust-tablet">
+        <div class="dust-inscription" aria-label="Hidden brand inscription">
+          ${Array.from(answer).map(letter => `<span>${letter}</span>`).join("")}
+        </div>
+        <div class="dust-layer">${patches}</div>
+        <div class="dust-progress">
+          ${Math.min(cleared.size, DUST_CLEAR_TARGET)} of ${DUST_CLEAR_TARGET} areas cleared
+        </div>
+      </div>
+    `
+  };
+}
+
+function getDecoderTargetOffset(answer) {
+  return (hashDate(`${answer}:decoder-wheel`) % 25) + 1;
+}
+
+function shiftPuzzleText(value, shift) {
+  return Array.from(value).map(character => {
+    const index = PUZZLE_CHARACTERS.indexOf(character);
+    if (index < 0 || index >= 26) {
+      return character;
+    }
+    return PUZZLE_CHARACTERS[(index + shift + 26) % 26];
+  }).join("");
+}
+
+function renderDecoderPuzzle(answer) {
+  const targetOffset = getDecoderTargetOffset(answer);
+  const encoded = shiftPuzzleText(answer, targetOffset);
+  const decoded = shiftPuzzleText(
+    encoded,
+    -state.brandPuzzleDecoderOffset
+  );
+  const rotation = state.brandPuzzleDecoderOffset * (360 / 26);
+  const decoderFontSize = Math.max(
+    8.5,
+    12.5 - Math.max(0, answer.length - 8) * 0.4
+  );
+  const markers = Array.from("ABCDEFGH").map((letter, index) => `
+    <span style="--marker:${index}">${letter}</span>
+  `).join("");
+
+  return {
+    instructions:
+      "Rotate the cipher wheel until the center inscription becomes the brand.",
+    html: `
+      <div class="decoder-puzzle">
+        <div class="decoder-encoded">
+          Encoded inscription <strong>${encoded}</strong>
+        </div>
+        <div class="decoder-wheel-shell">
+          <div
+            class="decoder-wheel"
+            style="transform:rotate(${rotation}deg)"
+            aria-hidden="true"
+          >
+            ${markers}
+          </div>
+          <div class="decoder-window">
+            <small>Decoded</small>
+            <strong style="font-size:${decoderFontSize}px">${decoded}</strong>
+          </div>
+        </div>
+        <div class="decoder-controls">
+          <button type="button" data-decoder-step="-1" aria-label="Rotate decoder left">
+            &#8592; Rotate
+          </button>
+          <button type="button" data-decoder-step="1" aria-label="Rotate decoder right">
+            Rotate &#8594;
+          </button>
         </div>
       </div>
     `
@@ -1317,10 +1432,24 @@ function handleBrandPuzzleInteraction(event) {
     return;
   }
 
-  const scrambleButton = event.target.closest("[data-scramble-index]");
-  if (scrambleButton) {
-    handleScrambleTile(
-      Number(scrambleButton.dataset.scrambleIndex),
+  const digButton = event.target.closest("[data-dig-index]");
+  if (digButton) {
+    handleDigSite(Number(digButton.dataset.digIndex), config.answer);
+    renderBrandPuzzle(hunt);
+    return;
+  }
+
+  const dustPatch = event.target.closest("[data-dust-index]");
+  if (dustPatch) {
+    clearDustPatch(Number(dustPatch.dataset.dustIndex), config.answer);
+    renderBrandPuzzle(hunt);
+    return;
+  }
+
+  const decoderButton = event.target.closest("[data-decoder-step]");
+  if (decoderButton) {
+    handleDecoderStep(
+      Number(decoderButton.dataset.decoderStep),
       config.answer
     );
     renderBrandPuzzle(hunt);
@@ -1346,32 +1475,101 @@ function handlePuzzleLetter(letter, answer) {
   }
 }
 
-function handleScrambleTile(index, answer) {
-  if (state.brandPuzzleScrambleSelected === null) {
-    state.brandPuzzleScrambleSelected = index;
-    state.brandPuzzleMessage = "Choose a second tile to swap positions.";
+function handleDigSite(index, answer) {
+  if (!state.brandPuzzleDigCleared.includes(index)) {
+    state.brandPuzzleDigCleared.push(index);
+  }
+  state.brandPuzzleMessage =
+    `${state.brandPuzzleDigCleared.length} of ${answer.length} letters excavated.`;
+  if (state.brandPuzzleDigCleared.length >= answer.length) {
+    completeBrandPuzzle(answer);
+  }
+}
+
+function handleDustPointerStart(event) {
+  if (state.brandPuzzleMode !== "dust" || state.brandPuzzleSolved) {
+    return;
+  }
+  state.brandPuzzleDustActive = true;
+  event.preventDefault();
+  clearDustAtPoint(event);
+}
+
+function handleDustPointerMove(event) {
+  if (
+    !state.brandPuzzleDustActive ||
+    state.brandPuzzleMode !== "dust" ||
+    state.brandPuzzleSolved
+  ) {
+    return;
+  }
+  event.preventDefault();
+  clearDustAtPoint(event);
+}
+
+function stopDustPointer() {
+  state.brandPuzzleDustActive = false;
+}
+
+function clearDustAtPoint(event) {
+  const target = document.elementFromPoint(event.clientX, event.clientY);
+  const patch = target?.closest("[data-dust-index]");
+  if (!patch) {
     return;
   }
 
-  if (state.brandPuzzleScrambleSelected === index) {
-    state.brandPuzzleScrambleSelected = null;
-    state.brandPuzzleMessage = "";
+  const hunt = state.tabletPreviewEnabled
+    ? getPreviewHunt()
+    : getActiveHunt();
+  const config = getBrandPuzzleConfig(hunt);
+  if (!config) {
     return;
   }
 
-  const firstIndex = state.brandPuzzleScrambleSelected;
-  const letters = state.brandPuzzleScrambleLetters.slice();
-  [letters[firstIndex], letters[index]] = [letters[index], letters[firstIndex]];
-  state.brandPuzzleScrambleLetters = letters;
-  state.brandPuzzleScrambleSelected = null;
-  state.brandPuzzleMessage = "";
-  if (letters.join("") === answer) {
+  const index = Number(patch.dataset.dustIndex);
+  if (!clearDustPatch(index, config.answer)) {
+    return;
+  }
+  patch.classList.add("cleared");
+  const progress = elements.brandPuzzleBody.querySelector(".dust-progress");
+  if (progress) {
+    progress.textContent =
+      `${Math.min(state.brandPuzzleDustCleared.length, DUST_CLEAR_TARGET)} ` +
+      `of ${DUST_CLEAR_TARGET} areas cleared`;
+  }
+  if (state.brandPuzzleSolved) {
+    renderBrandPuzzle(hunt);
+  }
+}
+
+function clearDustPatch(index, answer) {
+  if (state.brandPuzzleDustCleared.includes(index)) {
+    return false;
+  }
+  state.brandPuzzleDustCleared.push(index);
+  state.brandPuzzleMessage =
+    `${Math.min(state.brandPuzzleDustCleared.length, DUST_CLEAR_TARGET)} ` +
+    `of ${DUST_CLEAR_TARGET} dusty areas cleared.`;
+  if (state.brandPuzzleDustCleared.length >= DUST_CLEAR_TARGET) {
+    completeBrandPuzzle(answer);
+  }
+  return true;
+}
+
+function handleDecoderStep(step, answer) {
+  state.brandPuzzleDecoderOffset =
+    (state.brandPuzzleDecoderOffset + step + 26) % 26;
+  state.brandPuzzleMessage = "The wheel clicks into a new position.";
+  if (
+    state.brandPuzzleDecoderOffset === getDecoderTargetOffset(answer)
+  ) {
     completeBrandPuzzle(answer);
   }
 }
 
 function completeBrandPuzzle(answer) {
   state.brandPuzzleSolved = true;
+  state.brandPuzzleDustActive = false;
   state.brandPuzzleMessage = `Brand decoded: ${answer}`;
   if ("vibrate" in navigator) {
     navigator.vibrate([80, 40, 140]);
