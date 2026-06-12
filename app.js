@@ -48,16 +48,7 @@ const HUNT_LOCATIONS = [
   }
 ];
 const PUZZLE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const GLYPH_SHAPES = [
-  "sun",
-  "diamond",
-  "waves",
-  "arch",
-  "star",
-  "square",
-  "moon",
-  "trident"
-];
+const GLYPH_SPRITE_COLUMNS = 6;
 
 const prizes = [
   {
@@ -1220,8 +1211,8 @@ function getGlyphDescriptor(character) {
     PUZZLE_CHARACTERS.indexOf(character)
   );
   return {
-    shape: GLYPH_SHAPES[characterIndex % GLYPH_SHAPES.length],
-    modifier: Math.floor(characterIndex / GLYPH_SHAPES.length)
+    column: characterIndex % GLYPH_SPRITE_COLUMNS,
+    row: Math.floor(characterIndex / GLYPH_SPRITE_COLUMNS)
   };
 }
 
@@ -1229,10 +1220,11 @@ function getGlyphMarkHtml(character, className = "") {
   const descriptor = getGlyphDescriptor(character);
   return `
     <span
-      class="glyph-mark glyph-${descriptor.shape} ${className}"
+      class="glyph-mark ${className}"
+      style="--glyph-x: ${descriptor.column * 20}%; --glyph-y: ${descriptor.row * 20}%;"
       aria-label="Encoded symbol"
     >
-      <i class="glyph-modifier modifier-${descriptor.modifier}" aria-hidden="true"></i>
+      <i class="glyph-symbol" aria-hidden="true"></i>
     </span>
   `;
 }
@@ -1371,8 +1363,26 @@ function renderGlyphPuzzle(answer) {
       <div class="glyph-cipher">
         <div class="glyph-message">${glyphs}</div>
         <div class="glyph-decoded">${decoded}</div>
+        <div class="glyph-key-heading">
+          <span>Legend fragments</span>
+          <small>Symbols are intentionally shuffled</small>
+        </div>
         <div class="glyph-key">${key}</div>
         <div class="puzzle-letter-bank compact">${letterBank}</div>
+        <details class="glyph-legend-reference">
+          <summary>View the full Gotcha! Glyph Legend</summary>
+          <div>
+            <img
+              src="assets/gotcha-glyph-legend.webp"
+              alt="Gotcha glyph legend showing ancient symbols for letters, numbers, and punctuation"
+              loading="lazy"
+            />
+            <small>
+              The in-game fragments include every symbol needed for
+              today&apos;s brand.
+            </small>
+          </div>
+        </details>
       </div>
     `
   };

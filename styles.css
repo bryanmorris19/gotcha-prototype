@@ -673,134 +673,25 @@ svg {
 }
 
 .glyph-message .glyph-mark {
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   border-radius: 8px;
-  background: rgba(67, 48, 28, 0.14);
+  background:
+    linear-gradient(rgba(255, 246, 210, 0.16), rgba(84, 57, 30, 0.07)),
+    rgba(67, 48, 28, 0.13);
+  box-shadow: inset 0 1px 2px rgba(255, 245, 206, 0.18);
 }
 
-.glyph-mark::before,
-.glyph-mark::after {
-  position: absolute;
-  content: "";
-}
-
-.glyph-modifier {
-  position: absolute;
-  z-index: 2;
+.glyph-symbol {
   display: block;
+  width: 100%;
+  height: 100%;
+  background-image: url("assets/gotcha-glyph-sprite.png");
+  background-position: var(--glyph-x) var(--glyph-y);
+  background-repeat: no-repeat;
+  background-size: 600% 600%;
+  filter: drop-shadow(0 1px 0 rgba(255, 241, 192, 0.2));
   pointer-events: none;
-}
-
-.glyph-modifier.modifier-0 {
-  display: none;
-}
-
-.glyph-modifier.modifier-1 {
-  top: 1px;
-  right: 1px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #4d3a24;
-}
-
-.glyph-modifier.modifier-2 {
-  top: 1px;
-  right: 1px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #4d3a24;
-  box-shadow: 0 7px 0 #4d3a24;
-}
-
-.glyph-modifier.modifier-3 {
-  right: 0;
-  bottom: 1px;
-  width: 9px;
-  height: 3px;
-  border-radius: 999px;
-  background: #4d3a24;
-}
-
-.glyph-modifier.modifier-4 {
-  top: 0;
-  right: 0;
-  width: 7px;
-  height: 7px;
-  border-top: 3px solid #4d3a24;
-  border-right: 3px solid #4d3a24;
-}
-
-.glyph-sun::before {
-  width: 10px;
-  height: 10px;
-  border: 3px solid #4d3a24;
-  border-radius: 50%;
-  box-shadow: 0 -8px 0 -3px #4d3a24, 0 8px 0 -3px #4d3a24,
-    8px 0 0 -3px #4d3a24, -8px 0 0 -3px #4d3a24;
-}
-
-.glyph-diamond::before {
-  width: 13px;
-  height: 13px;
-  border: 3px solid #4d3a24;
-  transform: rotate(45deg);
-}
-
-.glyph-waves::before {
-  width: 21px;
-  height: 12px;
-  border-top: 3px solid #4d3a24;
-  border-bottom: 3px solid #4d3a24;
-  transform: skewX(-24deg);
-}
-
-.glyph-arch::before {
-  width: 16px;
-  height: 15px;
-  border: 3px solid #4d3a24;
-  border-bottom: 0;
-  border-radius: 12px 12px 0 0;
-}
-
-.glyph-star::before {
-  width: 18px;
-  height: 18px;
-  background: #4d3a24;
-  clip-path: polygon(50% 0, 62% 36%, 100% 38%, 70% 60%, 80% 100%, 50% 76%, 20% 100%, 30% 60%, 0 38%, 38% 36%);
-}
-
-.glyph-square::before {
-  width: 14px;
-  height: 14px;
-  border: 3px solid #4d3a24;
-}
-
-.glyph-moon::before {
-  width: 17px;
-  height: 17px;
-  border: 4px solid #4d3a24;
-  border-top-color: transparent;
-  border-right-color: transparent;
-  border-radius: 50%;
-  transform: rotate(30deg);
-}
-
-.glyph-trident::before {
-  width: 16px;
-  height: 18px;
-  border-left: 3px solid #4d3a24;
-  border-right: 3px solid #4d3a24;
-  border-bottom: 3px solid #4d3a24;
-  border-radius: 0 0 8px 8px;
-}
-
-.glyph-trident::after {
-  width: 3px;
-  height: 22px;
-  background: #4d3a24;
 }
 
 .glyph-decoded {
@@ -821,16 +712,83 @@ svg {
   background: rgba(255, 250, 231, 0.54);
 }
 
+.glyph-key-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 3px 6px;
+  color: #4d3a24;
+}
+
+.glyph-key-heading span {
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.glyph-key-heading small {
+  font-size: 8px;
+  font-weight: 750;
+}
+
 .glyph-key-item {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
+  padding: 3px 5px 3px 3px;
+  border: 1px solid rgba(77, 58, 36, 0.1);
+  border-radius: 9px;
   color: #4d3a24;
+  background: rgba(255, 250, 231, 0.34);
   font-size: 10px;
 }
 
 .glyph-key-item .glyph-mark {
-  transform: scale(0.68);
+  width: 26px;
+  height: 26px;
+}
+
+.glyph-legend-reference {
+  margin-top: 13px;
+  border: 1px solid rgba(77, 58, 36, 0.22);
+  border-radius: 12px;
+  color: #4d3a24;
+  background: rgba(255, 250, 231, 0.4);
+}
+
+.glyph-legend-reference summary {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.glyph-legend-reference[open] summary {
+  border-bottom: 1px solid rgba(77, 58, 36, 0.14);
+}
+
+.glyph-legend-reference > div {
+  padding: 9px;
+}
+
+.glyph-legend-reference img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(57, 39, 20, 0.2);
+}
+
+.glyph-legend-reference small {
+  display: block;
+  margin-top: 8px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .dig-site {
@@ -4664,8 +4622,8 @@ body.tutorial-open {
   }
 
   .glyph-message .glyph-mark {
-    width: 27px;
-    height: 27px;
+    width: 28px;
+    height: 28px;
   }
 
   .decoder-wheel-shell {
