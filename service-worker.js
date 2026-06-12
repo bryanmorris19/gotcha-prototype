@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gotcha-mvp-v35";
+const CACHE_NAME = "gotcha-mvp-v36";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -21,6 +21,10 @@ const APP_SHELL = [
   "./assets/gotcha-glyph-legend.webp",
   "./assets/gotcha-glyph-sprite.png",
   "./assets/pringles-original-celebration.webp",
+  "./assets/zbar-cookies-n-cream-celebration.webp",
+  "./assets/del-monte-leaf-spinach-celebration.webp",
+  "./assets/town-house-original-celebration.webp",
+  "./assets/kirkland-coconut-water-celebration.webp",
   "./assets/treasure-chest.png",
   "./assets/tablet-map-locked.webp",
   "./assets/tablet-complete.webp",
