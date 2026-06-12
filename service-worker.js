@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gotcha-mvp-v36";
+const CACHE_NAME = "gotcha-mvp-v37";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,9 +8,9 @@ const APP_SHELL = [
   "./admin.css?v=4",
   "./admin.js?v=4",
   "./admin.webmanifest",
-  "./styles.css?v=29",
+  "./styles.css?v=30",
   "./supabase-config.js?v=1",
-  "./app.js?v=31",
+  "./app.js?v=32",
   "./hunts.json",
   "./manifest.webmanifest",
   "./images/background.png",
@@ -25,6 +25,11 @@ const APP_SHELL = [
   "./assets/del-monte-leaf-spinach-celebration.webp",
   "./assets/town-house-original-celebration.webp",
   "./assets/kirkland-coconut-water-celebration.webp",
+  "./assets/pringles-brand-reveal.webp",
+  "./assets/zbar-brand-reveal.webp",
+  "./assets/del-monte-brand-reveal.webp",
+  "./assets/town-house-brand-reveal.webp",
+  "./assets/kirkland-brand-reveal.webp",
   "./assets/treasure-chest.png",
   "./assets/tablet-map-locked.webp",
   "./assets/tablet-complete.webp",

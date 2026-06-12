@@ -303,6 +303,14 @@ function cacheElements() {
   elements.streakValue = document.getElementById("streakValue");
   elements.clueText = document.getElementById("clueText");
   elements.huntMeta = document.getElementById("huntMeta");
+  elements.brandStageIndicator = document.getElementById(
+    "brandStageIndicator"
+  );
+  elements.clueStageIndicator = document.getElementById(
+    "clueStageIndicator"
+  );
+  elements.brandPuzzleGate = document.getElementById("brandPuzzleGate");
+  elements.huntClueStage = document.getElementById("huntClueStage");
   elements.brandPuzzlePanel = document.getElementById("brandPuzzlePanel");
   elements.brandPuzzleEyebrow = document.getElementById(
     "brandPuzzleEyebrow"
@@ -375,6 +383,19 @@ function cacheElements() {
   elements.rewardFinePrint = document.getElementById("rewardFinePrint");
   elements.rewardActionText = document.getElementById("rewardActionText");
   elements.nextHuntButton = document.getElementById("nextHuntButton");
+  elements.brandRevealOverlay = document.getElementById(
+    "brandRevealOverlay"
+  );
+  elements.brandRevealImage = document.getElementById("brandRevealImage");
+  elements.brandRevealFallback = document.getElementById(
+    "brandRevealFallback"
+  );
+  elements.brandRevealHeading = document.getElementById(
+    "brandRevealHeading"
+  );
+  elements.continueToClueButton = document.getElementById(
+    "continueToClueButton"
+  );
   elements.wrongOverlay = document.getElementById("wrongOverlay");
   elements.wrongScanText = document.getElementById("wrongScanText");
   elements.wrongRewardText = document.getElementById("wrongRewardText");
@@ -572,6 +593,10 @@ function bindEvents() {
   elements.stopScannerButton.addEventListener("click", stopBarcodeScanner);
   elements.torchButton.addEventListener("click", toggleTorch);
   elements.nextHuntButton.addEventListener("click", closePrizeOverlay);
+  elements.continueToClueButton.addEventListener(
+    "click",
+    closeBrandReveal
+  );
   elements.wrongActionButton.addEventListener("click", closeWrongOverlay);
   elements.assembleTabletButton.addEventListener(
     "pointerdown",
@@ -924,6 +949,8 @@ function applyDailyReset(persist = true) {
   state.player.dailyCachesOpened = 0;
   state.player.dailyScannedBarcodes = [];
   state.player.dailyArtifactClaimed = false;
+  state.brandPuzzleHuntId = "";
+  state.brandPuzzleSolved = false;
   if (persist) {
     savePlayer();
   }
@@ -945,6 +972,7 @@ function scheduleMidnightReset() {
     state.pendingRewards = [];
     state.resumeScannerAfterRewards = false;
     elements.prizeOverlay.classList.add("hidden");
+    elements.brandRevealOverlay.classList.add("hidden");
     elements.wrongOverlay.classList.add("hidden");
     elements.rewardOddsOverlay.classList.add("hidden");
     clearStatus();
@@ -1008,7 +1036,9 @@ function render() {
     return;
   }
 
-  const hunt = getActiveHunt();
+  const hunt = state.tabletPreviewEnabled
+    ? getPreviewHunt()
+    : getActiveHunt();
   elements.guessesValue.textContent = state.player.guesses;
   renderMusicToggle();
   elements.coinsValue.textContent = state.player.coins;
@@ -1017,6 +1047,7 @@ function render() {
     ? hunt.betterClue
     : hunt.clue;
   renderBrandPuzzle(hunt);
+  renderHuntStage();
   elements.huntMeta.textContent =
     `Hunt ${state.player.dailyProgress + 1} for ${formatDate(state.player.dailyDate)}`;
   const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
@@ -1041,9 +1072,13 @@ function render() {
           scansRemaining === 1 ? "scan" : "scans"
         } to recover today's tablet fragment.`;
   elements.scannerLaunchButton.disabled =
-    state.player.guesses <= 0 || state.scannerRunning;
+    !state.brandPuzzleSolved ||
+    state.player.guesses <= 0 ||
+    state.scannerRunning;
   elements.betterClueButton.disabled =
-    state.player.coins < BETTER_CLUE_COST || state.player.betterClueUsed;
+    !state.brandPuzzleSolved ||
+    state.player.coins < BETTER_CLUE_COST ||
+    state.player.betterClueUsed;
   renderRewardProgress();
   renderCollection();
   renderGroceryList();
@@ -1075,6 +1110,7 @@ function renderRewardProgress() {
     ? "Daily cache limit reached"
     : `${cachesRemaining} ${cachesRemaining === 1 ? "cache" : "caches"} available today`;
   elements.buyGuessButton.disabled =
+    !state.brandPuzzleSolved ||
     state.player.coins < EXTRA_GUESS_COST ||
     state.player.guesses >= MAX_GUESSES;
   elements.buyGuessLabel.textContent =
@@ -1290,6 +1326,16 @@ function renderBrandPuzzle(hunt) {
     state.brandPuzzleSolved ? "solved" : "",
     state.brandPuzzleMessage ? "show" : ""
   ].filter(Boolean).join(" ");
+}
+
+function renderHuntStage() {
+  const unlocked = state.brandPuzzleSolved;
+  elements.huntClueStage.classList.toggle("hidden", !unlocked);
+  elements.brandPuzzleGate.classList.toggle("hidden", unlocked);
+  elements.scannerLaunchButton.classList.toggle("hidden", !unlocked);
+  elements.brandStageIndicator.classList.toggle("active", !unlocked);
+  elements.brandStageIndicator.classList.toggle("complete", unlocked);
+  elements.clueStageIndicator.classList.toggle("active", unlocked);
 }
 
 function renderMissingLetterPuzzle(answer) {
@@ -1678,6 +1724,9 @@ function handleDecoderStep(step, answer) {
 }
 
 function completeBrandPuzzle(answer) {
+  const hunt = state.tabletPreviewEnabled
+    ? getPreviewHunt()
+    : getActiveHunt();
   state.brandPuzzleSolved = true;
   state.brandPuzzleDustActive = false;
   state.brandPuzzleMessage = `Brand decoded: ${answer}`;
@@ -1685,9 +1734,47 @@ function completeBrandPuzzle(answer) {
     navigator.vibrate([80, 40, 140]);
   }
   pulseBody("success-pulse");
+  playSuccessFeedback();
+  render();
+  showBrandReveal(hunt);
+}
+
+function showBrandReveal(hunt) {
+  const brandName = hunt.brand || getBrandPuzzleConfig(hunt)?.answer || "Brand";
+  const hasBrandImage = Boolean(hunt.brandImage);
+
+  elements.brandRevealHeading.textContent = brandName;
+  elements.brandRevealImage.classList.toggle("hidden", !hasBrandImage);
+  elements.brandRevealFallback.classList.toggle("hidden", hasBrandImage);
+  if (hasBrandImage) {
+    elements.brandRevealImage.src = hunt.brandImage;
+    elements.brandRevealImage.alt =
+      `${brandName} logo surrounded by Gotcha! Gold`;
+  } else {
+    elements.brandRevealImage.removeAttribute("src");
+    elements.brandRevealImage.alt = "";
+    elements.brandRevealFallback.textContent = brandName;
+  }
+  elements.brandRevealOverlay.classList.remove("hidden");
+}
+
+function closeBrandReveal() {
+  elements.brandRevealOverlay.classList.add("hidden");
+  window.requestAnimationFrame(() => {
+    elements.huntClueStage.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+    elements.scannerLaunchButton.focus({ preventScroll: true });
+  });
 }
 
 function upgradeClue() {
+  if (!state.brandPuzzleSolved) {
+    showHuntNotice("Solve the brand puzzle to unlock the clue.", "neutral");
+    return;
+  }
+
   if (state.player.betterClueUsed) {
     showHuntNotice("You already have the better clue.", "neutral");
     return;
@@ -1713,6 +1800,11 @@ function upgradeClue() {
 }
 
 function buyExtraGuess() {
+  if (!state.brandPuzzleSolved) {
+    showHuntNotice("Solve the brand puzzle to unlock the hunt tools.", "neutral");
+    return;
+  }
+
   if (state.player.guesses >= MAX_GUESSES) {
     showHuntNotice(
       `You can hold up to ${MAX_GUESSES} guesses.`,
@@ -1749,6 +1841,11 @@ function closeRewardOdds() {
 }
 
 function startBarcodeScanner() {
+  if (!state.brandPuzzleSolved) {
+    showHuntNotice("Solve the brand puzzle before opening the scanner.", "neutral");
+    return Promise.resolve();
+  }
+
   if (state.tabletPreviewEnabled) {
     openPreviewScanner();
     return Promise.resolve();
@@ -2422,6 +2519,7 @@ function renderScanPreview() {
   elements.guessesValue.textContent = state.scanPreviewGuesses;
   elements.clueText.textContent = hunt.clue;
   renderBrandPuzzle(hunt);
+  renderHuntStage();
   elements.huntMeta.textContent =
     `Admin preview - Hunt ${Math.min(completed + 1, DAILY_GOAL)} of ${DAILY_GOAL}`;
   elements.dailyProgressText.textContent =
@@ -2443,16 +2541,23 @@ function renderScanPreview() {
   elements.resetButton.textContent = "Reset walkthrough";
   elements.resetButton.disabled = false;
   elements.scannerLaunchButton.disabled =
-    state.scanPreviewGuesses <= 0 || completed >= DAILY_GOAL;
-  elements.scanPreviewComplete.disabled = completed >= DAILY_GOAL;
+    !state.brandPuzzleSolved ||
+    state.scanPreviewGuesses <= 0 ||
+    completed >= DAILY_GOAL;
+  elements.scanPreviewComplete.disabled =
+    !state.brandPuzzleSolved || completed >= DAILY_GOAL;
   elements.scanPreviewReset.disabled =
     completed === 0 &&
     state.scanPreviewGuesses === STARTING_GUESSES &&
     state.scanPreviewSignalFragments === 0;
   elements.previewCorrectScanButton.disabled =
-    state.scanPreviewGuesses <= 0 || completed >= DAILY_GOAL;
+    !state.brandPuzzleSolved ||
+    state.scanPreviewGuesses <= 0 ||
+    completed >= DAILY_GOAL;
   elements.previewWrongScanButton.disabled =
-    state.scanPreviewGuesses <= 0 || completed >= DAILY_GOAL;
+    !state.brandPuzzleSolved ||
+    state.scanPreviewGuesses <= 0 ||
+    completed >= DAILY_GOAL;
 
   const fragmentCount = Math.min(
     state.scanPreviewSignalFragments,
@@ -2473,6 +2578,7 @@ function renderScanPreview() {
 
 function openPreviewScanner() {
   if (
+    !state.brandPuzzleSolved ||
     state.scanPreviewGuesses <= 0 ||
     state.scanPreviewProgress >= DAILY_GOAL
   ) {
@@ -2600,6 +2706,7 @@ function simulatePreviewWrongScan() {
 function completePreviewDailyHunt() {
   if (
     !state.tabletPreviewEnabled ||
+    !state.brandPuzzleSolved ||
     state.scanPreviewProgress >= DAILY_GOAL
   ) {
     return;
@@ -2629,6 +2736,7 @@ function resetPreviewScans() {
     resetBrandPuzzle(previewHunt, puzzleConfig.type);
   }
   elements.prizeOverlay.classList.add("hidden");
+  elements.brandRevealOverlay.classList.add("hidden");
   elements.wrongOverlay.classList.add("hidden");
   stopBarcodeScanner();
   clearHuntNotice();
@@ -4322,7 +4430,10 @@ function resetDemo() {
   state.pendingRewards = [];
   state.resumeScannerAfterRewards = false;
   state.pendingTabletRevealIndex = -1;
+  state.brandPuzzleHuntId = "";
+  state.brandPuzzleSolved = false;
   elements.prizeOverlay.classList.add("hidden");
+  elements.brandRevealOverlay.classList.add("hidden");
   elements.wrongOverlay.classList.add("hidden");
   elements.rewardOddsOverlay.classList.add("hidden");
   elements.feedbackStatus.textContent = "";
