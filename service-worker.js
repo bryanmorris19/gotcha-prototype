@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "gotcha-mvp-v33";
+const CACHE_NAME = "gotcha-mvp-v34";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,9 +8,9 @@ const APP_SHELL = [
   "./admin.css?v=4",
   "./admin.js?v=4",
   "./admin.webmanifest",
-  "./styles.css?v=27",
+  "./styles.css?v=28",
   "./supabase-config.js?v=1",
-  "./app.js?v=29",
+  "./app.js?v=30",
   "./hunts.json",
   "./manifest.webmanifest",
   "./images/background.png",
@@ -29,6 +29,8 @@ const APP_SHELL = [
   "./assets/tablet-fragment-5.webp",
   "./assets/tablet-fragment-6.webp",
   "./assets/vendor/html5-qrcode-2.3.8.min.js",
+  "./assets/vendor/leaflet-1.9.4.min.js",
+  "./assets/vendor/leaflet-1.9.4.css",
   "./assets/icon-192.png",
   "./assets/icon-512.png"
 ];

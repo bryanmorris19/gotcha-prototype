@@ -37,6 +37,16 @@ const TABLET_ASSEMBLY_HOLD_DURATION = 1800;
 const TABLET_REVEAL_DURATION = 2600;
 const FINAL_VAULT_KEY_ID = "stone-map-key";
 const FINAL_VAULT_KEY_COUNT = 3;
+const DEFAULT_MAP_ZOOM = 14;
+const HUNT_LOCATIONS = [
+  {
+    id: "albertsons-s-eagle-meridian",
+    name: "Albertsons",
+    address: "4657 S Eagle Road, Meridian, ID 83642",
+    latitude: 43.562358,
+    longitude: -116.3566168
+  }
+];
 const PUZZLE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const GLYPH_SHAPES = [
   "sun",
@@ -197,6 +207,10 @@ const state = {
   countdownTimer: null,
   deferredInstallPrompt: null,
   activeView: "home",
+  huntMap: null,
+  huntMapMarker: null,
+  huntMapUserMarker: null,
+  huntMapAccuracyCircle: null,
   pendingRewards: [],
   resumeScannerAfterRewards: false,
   scannerSessionId: 0,
@@ -476,6 +490,15 @@ function cacheElements() {
   elements.clearCompletedButton = document.getElementById(
     "clearCompletedButton"
   );
+  elements.huntMap = document.getElementById("huntMap");
+  elements.mapStatus = document.getElementById("mapStatus");
+  elements.focusTestLocationButton = document.getElementById(
+    "focusTestLocationButton"
+  );
+  elements.locatePlayerButton = document.getElementById(
+    "locatePlayerButton"
+  );
+  elements.viewMapHuntButton = document.getElementById("viewMapHuntButton");
   elements.profileName = document.getElementById("profileName");
   elements.profileLevel = document.getElementById("profileLevel");
   elements.nicknameInput = document.getElementById("nicknameInput");
@@ -650,6 +673,15 @@ function bindEvents() {
   elements.clearCompletedButton.addEventListener(
     "click",
     clearCompletedGroceryItems
+  );
+  elements.focusTestLocationButton.addEventListener(
+    "click",
+    focusTestHuntLocation
+  );
+  elements.locatePlayerButton.addEventListener("click", locatePlayerOnMap);
+  elements.viewMapHuntButton.addEventListener(
+    "click",
+    () => switchView("home")
   );
   elements.saveNicknameButton.addEventListener("click", saveNickname);
   elements.accountForm.addEventListener("submit", requestMagicLink);
@@ -3726,6 +3758,226 @@ function formatSyncTime(date) {
   }).format(date);
 }
 
+function initializeHuntMap() {
+  if (state.huntMap) {
+    state.huntMap.invalidateSize();
+    return;
+  }
+
+  if (!elements.huntMap || typeof window.L === "undefined") {
+    setMapStatus(
+      "The map could not load. The Albertsons address and directions are still available below.",
+      "fail"
+    );
+    return;
+  }
+
+  const location = HUNT_LOCATIONS[0];
+  const coordinates = [location.latitude, location.longitude];
+  const markerHtml = `
+    <span class="gotcha-map-marker" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path>
+        <circle cx="12" cy="10" r="2.5"></circle>
+      </svg>
+      <strong>G</strong>
+    </span>
+  `;
+
+  state.huntMap = window.L.map(elements.huntMap, {
+    zoomControl: true,
+    scrollWheelZoom: false
+  }).setView(coordinates, DEFAULT_MAP_ZOOM);
+
+  const tiles = window.L.tileLayer(
+    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }
+  );
+
+  tiles.on("tileerror", () => {
+    setMapStatus(
+      "Map tiles are temporarily unavailable. The hunt location is listed below.",
+      "fail"
+    );
+  });
+  tiles.addTo(state.huntMap);
+
+  const markerIcon = window.L.divIcon({
+    className: "gotcha-map-marker-shell",
+    html: markerHtml,
+    iconSize: [52, 62],
+    iconAnchor: [26, 56],
+    popupAnchor: [0, -50]
+  });
+
+  state.huntMapMarker = window.L.marker(coordinates, {
+    icon: markerIcon,
+    title: `${location.name}, ${location.address}`
+  })
+    .addTo(state.huntMap)
+    .bindPopup(`
+      <div class="gotcha-map-popup">
+        <span>Active Test Hunt</span>
+        <strong>${location.name}</strong>
+        <small>${location.address}</small>
+        <em>Today's Gotcha! hunt is available here.</em>
+      </div>
+    `);
+
+  state.huntMap.whenReady(() => {
+    state.huntMap.invalidateSize();
+    state.huntMapMarker.openPopup();
+    setMapStatus("Showing 1 active Gotcha! test location.");
+  });
+}
+
+function focusTestHuntLocation() {
+  initializeHuntMap();
+  if (!state.huntMap || !state.huntMapMarker) {
+    return;
+  }
+
+  const location = HUNT_LOCATIONS[0];
+  state.huntMap.setView(
+    [location.latitude, location.longitude],
+    DEFAULT_MAP_ZOOM,
+    { animate: true }
+  );
+  state.huntMapMarker.openPopup();
+  setMapStatus("Centered on Albertsons at 4657 S Eagle Road.");
+}
+
+function locatePlayerOnMap() {
+  initializeHuntMap();
+  if (!state.huntMap) {
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    setMapStatus(
+      "Location is not supported by this browser. You can still use the directions button.",
+      "fail"
+    );
+    return;
+  }
+
+  elements.locatePlayerButton.disabled = true;
+  elements.locatePlayerButton.setAttribute("aria-busy", "true");
+  setMapStatus("Finding your location...");
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const location = HUNT_LOCATIONS[0];
+      const playerCoordinates = [
+        position.coords.latitude,
+        position.coords.longitude
+      ];
+
+      if (state.huntMapUserMarker) {
+        state.huntMapUserMarker.setLatLng(playerCoordinates);
+        state.huntMapAccuracyCircle
+          .setLatLng(playerCoordinates)
+          .setRadius(position.coords.accuracy);
+      } else {
+        state.huntMapAccuracyCircle = window.L.circle(playerCoordinates, {
+          radius: position.coords.accuracy,
+          className: "map-accuracy-circle",
+          interactive: false
+        }).addTo(state.huntMap);
+        state.huntMapUserMarker = window.L.circleMarker(playerCoordinates, {
+          radius: 8,
+          className: "map-player-marker",
+          fillOpacity: 1
+        })
+          .addTo(state.huntMap)
+          .bindTooltip("You are here", {
+            direction: "top",
+            offset: [0, -8]
+          });
+      }
+
+      const storeCoordinates = [location.latitude, location.longitude];
+      const bounds = window.L.latLngBounds([
+        storeCoordinates,
+        playerCoordinates
+      ]);
+      state.huntMap.fitBounds(bounds.pad(0.35), {
+        animate: true,
+        maxZoom: DEFAULT_MAP_ZOOM
+      });
+
+      const distance = calculateDistanceMiles(
+        position.coords.latitude,
+        position.coords.longitude,
+        location.latitude,
+        location.longitude
+      );
+      setMapStatus(
+        `${formatDistanceMiles(distance)} from Albertsons on South Eagle Road.`
+      );
+      elements.locatePlayerButton.disabled = false;
+      elements.locatePlayerButton.removeAttribute("aria-busy");
+      if (!state.tabletPreviewEnabled) {
+        trackEvent("map_location_used");
+      }
+    },
+    error => {
+      const messages = {
+        1: "Location access was declined. You can still use the directions button.",
+        2: "Your location is currently unavailable. Try again or use the directions button.",
+        3: "Finding your location took too long. Try again or use the directions button."
+      };
+      setMapStatus(
+        messages[error.code] ||
+          "Your location could not be found. You can still use the directions button.",
+        "fail"
+      );
+      elements.locatePlayerButton.disabled = false;
+      elements.locatePlayerButton.removeAttribute("aria-busy");
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 300000
+    }
+  );
+}
+
+function calculateDistanceMiles(latitudeA, longitudeA, latitudeB, longitudeB) {
+  const earthRadiusMiles = 3958.8;
+  const toRadians = value => value * Math.PI / 180;
+  const latitudeDelta = toRadians(latitudeB - latitudeA);
+  const longitudeDelta = toRadians(longitudeB - longitudeA);
+  const a =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(toRadians(latitudeA)) *
+      Math.cos(toRadians(latitudeB)) *
+      Math.sin(longitudeDelta / 2) ** 2;
+
+  return earthRadiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistanceMiles(distance) {
+  if (distance < 0.1) {
+    return "Less than 0.1 miles";
+  }
+
+  return `${distance.toFixed(distance < 10 ? 1 : 0)} miles`;
+}
+
+function setMapStatus(message, type = "") {
+  if (!elements.mapStatus) {
+    return;
+  }
+
+  elements.mapStatus.textContent = message;
+  elements.mapStatus.className = `map-status ${type}`.trim();
+}
+
 function switchView(viewName) {
   if (viewName !== "home" && state.scannerRunning) {
     stopBarcodeScanner();
@@ -3740,6 +3992,9 @@ function switchView(viewName) {
   });
   if (!state.tabletPreviewEnabled) {
     trackEvent("view_opened", { view: viewName });
+  }
+  if (viewName === "map") {
+    window.requestAnimationFrame(initializeHuntMap);
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
