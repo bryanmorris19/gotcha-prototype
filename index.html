@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=30" />
+  <link rel="stylesheet" href="styles.css?v=31" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -19,7 +19,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=32" defer></script>
+  <script src="app.js?v=33" defer></script>
 </head>
 
 <body>
@@ -186,6 +186,17 @@
           <strong>2</strong>
           Find &amp; Scan
         </span>
+      </div>
+
+      <div id="locationCheckInGate" class="location-checkin-gate">
+        <span aria-hidden="true"><svg><use href="#icon-pin"></use></svg></span>
+        <div>
+          <strong>Albertsons clues locked</strong>
+          <small>Go to the in-store Gotcha! clue board and tap the NFC chip to unlock this location.</small>
+        </div>
+        <button class="secondary" type="button" data-target-view="map">
+          Open Map
+        </button>
       </div>
 
       <section
@@ -604,10 +615,10 @@
     <section id="mapView" class="app-view map-view" data-view="map">
       <section class="view-header map-view-header">
         <div>
-          <div class="eyebrow">MVP Test Location</div>
+          <div class="eyebrow">Weekly Hunt Map</div>
           <h1>Hunt Map</h1>
         </div>
-        <span class="collection-count">1 location</span>
+        <span class="collection-count">1 of 3 locations</span>
       </section>
 
       <section class="card map-intro-card">
@@ -617,8 +628,8 @@
         <div>
           <strong>Find Gotcha! hunts near you</strong>
           <p>
-            We are starting with one Meridian test location. More stores can
-            be added as the beta expands.
+            Follow the weekly treasure map to a real store, then tap the
+            Gotcha! clue board NFC chip to unlock that location&apos;s clues.
           </p>
         </div>
       </section>
@@ -656,14 +667,14 @@
             <p>4657 S Eagle Road, Meridian, ID 83642</p>
           </div>
         </div>
-        <div class="map-location-status">
+        <div id="mapLocationStatus" class="map-location-status locked">
           <span aria-hidden="true"></span>
-          Today&apos;s Gotcha! hunt is available here
+          Clues locked. Tap the in-store NFC clue board to check in.
         </div>
         <div class="map-location-actions">
           <button id="viewMapHuntButton" type="button">
             <svg class="button-icon"><use href="#icon-scan"></use></svg>
-            Start Hunt
+            <span id="mapLocationActionText">Clues Locked</span>
           </button>
           <a
             class="button secondary map-directions-button"

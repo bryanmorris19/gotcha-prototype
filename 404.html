@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gotcha! Check-In</title>
+  <script>
+    (function redirectToApp() {
+      var pathParts = window.location.pathname.split("/");
+      var checkInIndex = pathParts.findIndex(function findCheckIn(part) {
+        return part.toLowerCase() === "checkin";
+      });
+      var basePath = "/";
+      var params = new URLSearchParams(window.location.search);
+
+      if (checkInIndex > 0) {
+        basePath = pathParts.slice(0, checkInIndex).join("/") + "/";
+      }
+
+      if (checkInIndex >= 0 && pathParts[checkInIndex + 1] && !params.has("board")) {
+        params.set("board", pathParts[checkInIndex + 1]);
+      }
+
+      window.location.replace(
+        window.location.origin +
+          basePath +
+          (params.toString() ? "?" + params.toString() : "") +
+          window.location.hash
+      );
+    }());
+  </script>
+</head>
+<body>
+  Opening Gotcha! check-in...
+</body>
+</html>

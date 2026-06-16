@@ -618,6 +618,65 @@ svg {
   line-height: 1.35;
 }
 
+.location-checkin-gate {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 13px;
+  padding: 15px;
+  border: 1px solid rgba(138, 90, 23, 0.2);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(242, 201, 76, 0.22), transparent 36%),
+    linear-gradient(135deg, rgba(255, 248, 227, 0.96), rgba(245, 232, 198, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.58);
+}
+
+.location-checkin-gate > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 15px;
+  color: #4d3208;
+  background: linear-gradient(145deg, #ffd96f, var(--gold));
+  box-shadow: 0 9px 20px rgba(138, 90, 23, 0.16);
+}
+
+.location-checkin-gate svg {
+  width: 21px;
+  height: 21px;
+}
+
+.location-checkin-gate strong,
+.location-checkin-gate small {
+  display: block;
+}
+
+.location-checkin-gate strong {
+  color: #402b08;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.location-checkin-gate small {
+  margin-top: 4px;
+  color: #6f5c36;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.location-checkin-gate button {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  margin: 0;
+  border-radius: 13px;
+  font-size: 12px;
+}
+
 .hunt-clue-stage {
   animation: clue-stage-reveal 480ms cubic-bezier(0.2, 0.9, 0.25, 1);
 }
@@ -2213,31 +2272,69 @@ button.map-toolbar-button svg {
 }
 
 .hunt-map {
+  position: relative;
+  overflow: hidden;
   z-index: 1;
   width: 100%;
   height: 390px;
   background:
     linear-gradient(rgba(255, 250, 240, 0.78), rgba(255, 250, 240, 0.78)),
     url("images/background.png") center / 720px auto;
+  isolation: isolate;
 }
 
 .hunt-map.leaflet-container {
   font-family: inherit;
 }
 
+.hunt-map::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(242, 201, 76, 0.18), transparent 24%),
+    radial-gradient(circle at 78% 68%, rgba(16, 122, 62, 0.14), transparent 28%),
+    linear-gradient(rgba(255, 247, 226, 0.38), rgba(239, 216, 176, 0.36)),
+    url("images/background.png") center / 620px auto;
+  mix-blend-mode: multiply;
+}
+
+.hunt-map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 251;
+  pointer-events: none;
+  border: 10px solid rgba(93, 61, 17, 0.08);
+  box-shadow:
+    inset 0 0 42px rgba(73, 43, 7, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+}
+
+.hunt-map .leaflet-tile-pane {
+  filter: sepia(0.62) saturate(0.64) contrast(0.92) brightness(1.05);
+  opacity: 0.9;
+}
+
 .hunt-map .leaflet-control-zoom a {
   color: var(--emerald);
+  background: rgba(255, 248, 227, 0.94);
 }
 
 .hunt-map .leaflet-control-attribution {
   color: var(--muted);
+  background: rgba(255, 248, 227, 0.86);
   font-size: 9px;
 }
 
 .hunt-map .leaflet-popup-content-wrapper {
-  border: 1px solid rgba(16, 122, 62, 0.14);
+  border: 1px solid rgba(138, 90, 23, 0.22);
   border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(33, 42, 35, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 250, 238, 0.98), rgba(247, 232, 199, 0.96));
+  box-shadow: 0 12px 30px rgba(61, 40, 10, 0.2);
 }
 
 .hunt-map .leaflet-popup-content {
@@ -2276,6 +2373,20 @@ button.map-toolbar-button svg {
   font-size: 10px;
   font-style: normal;
   font-weight: 800;
+}
+
+.treasure-map-route {
+  stroke-linecap: round;
+  filter: drop-shadow(0 2px 2px rgba(62, 38, 5, 0.25));
+  animation: treasure-route-dash 18s linear infinite;
+}
+
+.map-hunt-radius {
+  stroke: rgba(16, 122, 62, 0.78);
+  stroke-width: 2px;
+  stroke-dasharray: 8 9;
+  fill: rgba(52, 199, 89, 0.1);
+  filter: drop-shadow(0 0 8px rgba(52, 199, 89, 0.22));
 }
 
 .gotcha-map-marker-shell {
@@ -2345,6 +2456,11 @@ button.map-toolbar-button svg {
   background: #fff4f2;
 }
 
+.map-status.success {
+  color: var(--emerald-dark);
+  background: #e8f8ef;
+}
+
 .map-location-card {
   padding: 17px;
 }
@@ -2380,6 +2496,16 @@ button.map-toolbar-button svg {
   font-weight: 850;
 }
 
+.map-location-status.locked {
+  color: #7a5a14;
+  background: #fff3cf;
+}
+
+.map-location-status.unlocked {
+  color: var(--emerald-ink);
+  background: #e8f8ef;
+}
+
 .map-location-status span {
   width: 9px;
   height: 9px;
@@ -2388,6 +2514,19 @@ button.map-toolbar-button svg {
   border-radius: 50%;
   background: var(--emerald-bright);
   box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.25);
+}
+
+.map-location-status.locked span {
+  background: var(--gold);
+  box-shadow: 0 0 0 2px rgba(242, 201, 76, 0.24);
+}
+
+.map-location-actions button:disabled {
+  cursor: not-allowed;
+  color: #796744;
+  background: linear-gradient(135deg, #f1e6c9, #d8c79e);
+  box-shadow: none;
+  opacity: 0.82;
 }
 
 .map-location-actions {
@@ -4519,6 +4658,12 @@ body.tutorial-open {
   }
 }
 
+@keyframes treasure-route-dash {
+  to {
+    stroke-dashoffset: -140;
+  }
+}
+
 @keyframes clue-stage-reveal {
   from {
     opacity: 0;
@@ -4725,6 +4870,7 @@ body.tutorial-open {
   .product-celebration img,
   .product-gold-piece,
   .gotcha-map-marker,
+  .treasure-map-route,
   .hunt-clue-stage {
     animation: none;
   }

@@ -38,13 +38,20 @@ const TABLET_REVEAL_DURATION = 2600;
 const FINAL_VAULT_KEY_ID = "stone-map-key";
 const FINAL_VAULT_KEY_COUNT = 3;
 const DEFAULT_MAP_ZOOM = 14;
+const CHECKIN_DURATION_HOURS = 4;
+const CHECKIN_QUERY_KEYS = ["board", "checkin", "check-in", "nfc", "clueBoard"];
 const HUNT_LOCATIONS = [
   {
     id: "albertsons-s-eagle-meridian",
     name: "Albertsons",
+    type: "Grocery",
+    weeklySlot: "Week 1",
     address: "4657 S Eagle Road, Meridian, ID 83642",
     latitude: 43.562358,
-    longitude: -116.3566168
+    longitude: -116.3566168,
+    boardCode: "albertsons-meridian-001",
+    nfcUrl: "?board=albertsons-meridian-001",
+    geofenceRadiusMiles: 0.35
   }
 ];
 const PUZZLE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -202,6 +209,9 @@ const state = {
   huntMapMarker: null,
   huntMapUserMarker: null,
   huntMapAccuracyCircle: null,
+  huntMapGeofence: null,
+  huntMapRoute: null,
+  processedCheckInCode: "",
   pendingRewards: [],
   resumeScannerAfterRewards: false,
   scannerSessionId: 0,
@@ -271,6 +281,7 @@ async function initializeApp() {
       savePlayer();
     }
     render();
+    handleIncomingLocationCheckIn();
     initializeTabletPreview();
     scheduleMidnightReset();
     startCountdown();
@@ -311,6 +322,9 @@ function cacheElements() {
   );
   elements.brandPuzzleGate = document.getElementById("brandPuzzleGate");
   elements.huntClueStage = document.getElementById("huntClueStage");
+  elements.locationCheckInGate = document.getElementById(
+    "locationCheckInGate"
+  );
   elements.brandPuzzlePanel = document.getElementById("brandPuzzlePanel");
   elements.brandPuzzleEyebrow = document.getElementById(
     "brandPuzzleEyebrow"
@@ -511,6 +525,10 @@ function cacheElements() {
     "locatePlayerButton"
   );
   elements.viewMapHuntButton = document.getElementById("viewMapHuntButton");
+  elements.mapLocationStatus = document.getElementById("mapLocationStatus");
+  elements.mapLocationActionText = document.getElementById(
+    "mapLocationActionText"
+  );
   elements.profileName = document.getElementById("profileName");
   elements.profileLevel = document.getElementById("profileLevel");
   elements.nicknameInput = document.getElementById("nicknameInput");
@@ -785,6 +803,7 @@ function createDefaultPlayer() {
     collection: {},
     tabletAssembled: false,
     vaultKeys: [],
+    locationCheckIns: {},
     rewardHistory: [],
     groceryItems: [],
     tutorialVersion: 0,
@@ -885,6 +904,10 @@ function loadPlayer() {
       vaultKeys: Array.isArray(saved.vaultKeys)
         ? saved.vaultKeys.filter(key => key === FINAL_VAULT_KEY_ID)
         : [],
+      locationCheckIns:
+        saved.locationCheckIns && typeof saved.locationCheckIns === "object"
+          ? saved.locationCheckIns
+          : {},
       dailyArtifactClaimed: Boolean(
         saved.dailyArtifactClaimed ?? saved.dailyChestClaimed
       ),
@@ -1031,6 +1054,85 @@ function getActiveHunt() {
   return state.hunts[index];
 }
 
+function getActiveHuntLocation() {
+  return HUNT_LOCATIONS[0];
+}
+
+function getLocationCheckIn(location) {
+  if (!state.player?.locationCheckIns || !location) {
+    return null;
+  }
+
+  const checkIn = state.player.locationCheckIns[location.id];
+  if (!checkIn?.expiresAt) {
+    return null;
+  }
+
+  const expiresAt = new Date(checkIn.expiresAt).getTime();
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    return null;
+  }
+
+  return checkIn;
+}
+
+function isLocationUnlocked(location) {
+  return state.tabletPreviewEnabled || Boolean(getLocationCheckIn(location));
+}
+
+function renderLocationCheckInGate(location, unlocked) {
+  if (!elements.locationCheckInGate) {
+    return;
+  }
+
+  elements.locationCheckInGate.classList.toggle("hidden", unlocked);
+  elements.locationCheckInGate.querySelector("strong").textContent =
+    `${location.name} clues locked`;
+  elements.locationCheckInGate.querySelector("small").textContent =
+    `Go to the in-store Gotcha! clue board and tap the NFC chip to unlock the ${location.type.toLowerCase()} hunt.`;
+}
+
+function renderMapLocationStatus() {
+  const location = getActiveHuntLocation();
+  const checkIn = getLocationCheckIn(location);
+  const unlocked = Boolean(checkIn);
+
+  if (elements.mapLocationStatus) {
+    elements.mapLocationStatus.classList.toggle("unlocked", unlocked);
+    elements.mapLocationStatus.classList.toggle("locked", !unlocked);
+    elements.mapLocationStatus.innerHTML = `
+      <span aria-hidden="true"></span>
+      ${
+        unlocked
+          ? `Clues unlocked until ${formatCheckInTime(checkIn.expiresAt)}`
+          : "Clues locked. Tap the in-store NFC clue board to check in."
+      }
+    `;
+  }
+
+  if (elements.mapLocationActionText) {
+    elements.mapLocationActionText.textContent = unlocked
+      ? "Start Hunt"
+      : "Clues Locked";
+  }
+
+  if (elements.viewMapHuntButton) {
+    elements.viewMapHuntButton.disabled = !unlocked;
+  }
+}
+
+function formatCheckInTime(isoDate) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) {
+    return "later today";
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
+}
+
 function render() {
   if (!state.player || state.hunts.length === 0) {
     return;
@@ -1039,6 +1141,8 @@ function render() {
   const hunt = state.tabletPreviewEnabled
     ? getPreviewHunt()
     : getActiveHunt();
+  const activeLocation = getActiveHuntLocation();
+  const locationUnlocked = isLocationUnlocked(activeLocation);
   elements.guessesValue.textContent = state.player.guesses;
   renderMusicToggle();
   elements.coinsValue.textContent = state.player.coins;
@@ -1046,10 +1150,17 @@ function render() {
   elements.clueText.textContent = state.player.betterClueUsed
     ? hunt.betterClue
     : hunt.clue;
-  renderBrandPuzzle(hunt);
-  renderHuntStage();
-  elements.huntMeta.textContent =
-    `Hunt ${state.player.dailyProgress + 1} for ${formatDate(state.player.dailyDate)}`;
+  if (locationUnlocked) {
+    renderBrandPuzzle(hunt);
+  } else {
+    elements.brandPuzzlePanel.classList.add("hidden");
+    elements.brandPuzzleStatus.textContent = "";
+  }
+  renderLocationCheckInGate(activeLocation, locationUnlocked);
+  renderHuntStage(locationUnlocked);
+  elements.huntMeta.textContent = locationUnlocked
+    ? `Hunt ${state.player.dailyProgress + 1} for ${formatDate(state.player.dailyDate)}`
+    : `Check in at ${activeLocation.name} to unlock today's clues`;
   const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
   elements.dailyProgressText.textContent =
     `${dailyCompleted} of ${DAILY_GOAL} correct scans`;
@@ -1072,13 +1183,16 @@ function render() {
           scansRemaining === 1 ? "scan" : "scans"
         } to recover today's tablet fragment.`;
   elements.scannerLaunchButton.disabled =
+    !locationUnlocked ||
     !state.brandPuzzleSolved ||
     state.player.guesses <= 0 ||
     state.scannerRunning;
   elements.betterClueButton.disabled =
+    !locationUnlocked ||
     !state.brandPuzzleSolved ||
     state.player.coins < BETTER_CLUE_COST ||
     state.player.betterClueUsed;
+  renderMapLocationStatus();
   renderRewardProgress();
   renderCollection();
   renderGroceryList();
@@ -1328,14 +1442,20 @@ function renderBrandPuzzle(hunt) {
   ].filter(Boolean).join(" ");
 }
 
-function renderHuntStage() {
-  const unlocked = state.brandPuzzleSolved;
-  elements.huntClueStage.classList.toggle("hidden", !unlocked);
-  elements.brandPuzzleGate.classList.toggle("hidden", unlocked);
-  elements.scannerLaunchButton.classList.toggle("hidden", !unlocked);
-  elements.brandStageIndicator.classList.toggle("active", !unlocked);
-  elements.brandStageIndicator.classList.toggle("complete", unlocked);
-  elements.clueStageIndicator.classList.toggle("active", unlocked);
+function renderHuntStage(locationUnlocked = true) {
+  const puzzleUnlocked = locationUnlocked && state.brandPuzzleSolved;
+  elements.huntClueStage.classList.toggle("hidden", !puzzleUnlocked);
+  elements.brandPuzzleGate.classList.toggle(
+    "hidden",
+    !locationUnlocked || puzzleUnlocked
+  );
+  elements.scannerLaunchButton.classList.toggle("hidden", !puzzleUnlocked);
+  elements.brandStageIndicator.classList.toggle(
+    "active",
+    locationUnlocked && !puzzleUnlocked
+  );
+  elements.brandStageIndicator.classList.toggle("complete", puzzleUnlocked);
+  elements.clueStageIndicator.classList.toggle("active", puzzleUnlocked);
 }
 
 function renderMissingLetterPuzzle(answer) {
@@ -1770,6 +1890,11 @@ function closeBrandReveal() {
 }
 
 function upgradeClue() {
+  if (!isLocationUnlocked(getActiveHuntLocation())) {
+    showHuntNotice("Tap the in-store NFC clue board to unlock this hunt.", "neutral");
+    return;
+  }
+
   if (!state.brandPuzzleSolved) {
     showHuntNotice("Solve the brand puzzle to unlock the clue.", "neutral");
     return;
@@ -1800,6 +1925,11 @@ function upgradeClue() {
 }
 
 function buyExtraGuess() {
+  if (!isLocationUnlocked(getActiveHuntLocation())) {
+    showHuntNotice("Tap the in-store NFC clue board to unlock this hunt.", "neutral");
+    return;
+  }
+
   if (!state.brandPuzzleSolved) {
     showHuntNotice("Solve the brand puzzle to unlock the hunt tools.", "neutral");
     return;
@@ -1841,6 +1971,11 @@ function closeRewardOdds() {
 }
 
 function startBarcodeScanner() {
+  if (!isLocationUnlocked(getActiveHuntLocation())) {
+    showHuntNotice("Tap the in-store NFC clue board to unlock this hunt.", "neutral");
+    return Promise.resolve();
+  }
+
   if (!state.brandPuzzleSolved) {
     showHuntNotice("Solve the brand puzzle before opening the scanner.", "neutral");
     return Promise.resolve();
@@ -3331,6 +3466,7 @@ function maybeOpenTutorial() {
   if (
     state.tabletPreviewEnabled ||
     !state.player ||
+    state.processedCheckInCode ||
     Number(state.player.tutorialVersion || 0) >= TUTORIAL_VERSION
   ) {
     return;
@@ -3876,6 +4012,182 @@ function formatSyncTime(date) {
   }).format(date);
 }
 
+function handleIncomingLocationCheckIn() {
+  const boardCode = getIncomingBoardCode();
+  if (!boardCode || state.processedCheckInCode === boardCode) {
+    return;
+  }
+
+  state.processedCheckInCode = boardCode;
+  const location = HUNT_LOCATIONS.find(
+    item => item.boardCode.toLowerCase() === boardCode
+  );
+
+  switchView("map");
+  window.requestAnimationFrame(initializeHuntMap);
+
+  if (!location) {
+    setMapStatus(
+      `That clue board is not part of this week's hunt: ${boardCode}.`,
+      "fail"
+    );
+    trackEvent("location_checkin_unknown", { boardCode });
+    return;
+  }
+
+  if (isLocationUnlocked(location)) {
+    setMapStatus(
+      `${location.name} clues are already unlocked for this check-in session.`,
+      "success"
+    );
+    renderMapLocationStatus();
+    return;
+  }
+
+  setMapStatus(
+    `NFC clue board detected for ${location.name}. Confirming you are at the store...`
+  );
+  requestLocationCheckIn(location);
+}
+
+function getIncomingBoardCode() {
+  const sources = [
+    new URLSearchParams(window.location.search),
+    getHashSearchParams()
+  ];
+
+  for (const params of sources) {
+    for (const key of CHECKIN_QUERY_KEYS) {
+      const value = normalizeBoardCode(params.get(key));
+      if (value) {
+        return value;
+      }
+    }
+  }
+
+  const pathMatch = window.location.pathname.match(/\/checkin\/([^/?#]+)/i);
+  return normalizeBoardCode(pathMatch?.[1]);
+}
+
+function getHashSearchParams() {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash) {
+    return new URLSearchParams();
+  }
+
+  const query = hash.includes("?")
+    ? hash.slice(hash.indexOf("?") + 1)
+    : hash;
+  return new URLSearchParams(query);
+}
+
+function normalizeBoardCode(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "");
+}
+
+function requestLocationCheckIn(location) {
+  if (!navigator.geolocation) {
+    setMapStatus(
+      "Location access is required to unlock this in-store clue board.",
+      "fail"
+    );
+    trackEvent("location_checkin_failed", {
+      locationId: location.id,
+      reason: "geolocation_unavailable"
+    });
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const distance = calculateDistanceMiles(
+        position.coords.latitude,
+        position.coords.longitude,
+        location.latitude,
+        location.longitude
+      );
+      const accuracyMiles = metersToMiles(position.coords.accuracy || 0);
+      const allowedDistance =
+        location.geofenceRadiusMiles + Math.min(accuracyMiles, 0.15);
+
+      if (distance > allowedDistance) {
+        setMapStatus(
+          `${location.name} clue board detected, but your phone appears ${formatDistanceMiles(distance)} away. Move closer and tap the board again.`,
+          "fail"
+        );
+        trackEvent("location_checkin_failed", {
+          locationId: location.id,
+          reason: "outside_geofence",
+          distanceMiles: Number(distance.toFixed(3)),
+          accuracyMiles: Number(accuracyMiles.toFixed(3))
+        });
+        renderMapLocationStatus();
+        return;
+      }
+
+      completeLocationCheckIn(location, position, distance);
+    },
+    error => {
+      const messages = {
+        1: "Location permission is required to unlock the in-store clues.",
+        2: "Your phone could not confirm its location. Try again near the clue board.",
+        3: "Location confirmation took too long. Tap the NFC board again."
+      };
+      setMapStatus(
+        messages[error.code] ||
+          "Location confirmation failed. Tap the NFC board again.",
+        "fail"
+      );
+      trackEvent("location_checkin_failed", {
+        locationId: location.id,
+        reason: `geolocation_${error.code || "unknown"}`
+      });
+      renderMapLocationStatus();
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 60000
+    }
+  );
+}
+
+function completeLocationCheckIn(location, position, distance) {
+  const now = new Date();
+  const expiresAt = new Date(
+    now.getTime() + CHECKIN_DURATION_HOURS * 60 * 60 * 1000
+  );
+
+  state.player.locationCheckIns = {
+    ...(state.player.locationCheckIns || {}),
+    [location.id]: {
+      locationId: location.id,
+      boardCode: location.boardCode,
+      checkedInAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracyMeters: Math.round(position.coords.accuracy || 0),
+      distanceMiles: Number(distance.toFixed(3))
+    }
+  };
+
+  savePlayer();
+  render();
+  setMapStatus(
+    `${location.name} clues unlocked. Check-in expires at ${formatCheckInTime(expiresAt.toISOString())}.`,
+    "success"
+  );
+  trackEvent("location_checkin_unlocked", {
+    locationId: location.id,
+    boardCode: location.boardCode,
+    distanceMiles: Number(distance.toFixed(3))
+  });
+}
+
 function initializeHuntMap() {
   if (state.huntMap) {
     state.huntMap.invalidateSize();
@@ -3924,6 +4236,26 @@ function initializeHuntMap() {
   });
   tiles.addTo(state.huntMap);
 
+  state.huntMapGeofence = window.L.circle(coordinates, {
+    radius: milesToMeters(location.geofenceRadiusMiles),
+    className: "map-hunt-radius",
+    interactive: false
+  }).addTo(state.huntMap);
+
+  state.huntMapRoute = window.L.polyline(
+    getTreasureRouteCoordinates(location),
+    {
+      className: "treasure-map-route",
+      color: "#8a5a17",
+      weight: 4,
+      opacity: 0.82,
+      dashArray: "2 12",
+      lineCap: "round",
+      lineJoin: "round",
+      interactive: false
+    }
+  ).addTo(state.huntMap);
+
   const markerIcon = window.L.divIcon({
     className: "gotcha-map-marker-shell",
     html: markerHtml,
@@ -3949,7 +4281,12 @@ function initializeHuntMap() {
   state.huntMap.whenReady(() => {
     state.huntMap.invalidateSize();
     state.huntMapMarker.openPopup();
-    setMapStatus("Showing 1 active Gotcha! test location.");
+    setMapStatus(
+      isLocationUnlocked(location)
+        ? "Albertsons clues are unlocked. Follow the trail and start the hunt."
+        : "Follow the trail to Albertsons, then tap the NFC clue board inside."
+    );
+    renderMapLocationStatus();
   });
 }
 
@@ -3966,7 +4303,11 @@ function focusTestHuntLocation() {
     { animate: true }
   );
   state.huntMapMarker.openPopup();
-  setMapStatus("Centered on Albertsons at 4657 S Eagle Road.");
+  setMapStatus(
+    isLocationUnlocked(location)
+      ? "Centered on Albertsons. Clues are unlocked for this session."
+      : "Centered on Albertsons. Tap the in-store NFC clue board to unlock clues."
+  );
 }
 
 function locatePlayerOnMap() {
@@ -4077,6 +4418,25 @@ function calculateDistanceMiles(latitudeA, longitudeA, latitudeB, longitudeB) {
       Math.sin(longitudeDelta / 2) ** 2;
 
   return earthRadiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function milesToMeters(distance) {
+  return distance * 1609.344;
+}
+
+function metersToMiles(distance) {
+  return distance / 1609.344;
+}
+
+function getTreasureRouteCoordinates(location) {
+  return [
+    [location.latitude - 0.0105, location.longitude - 0.014],
+    [location.latitude - 0.006, location.longitude - 0.0105],
+    [location.latitude - 0.0025, location.longitude - 0.005],
+    [location.latitude + 0.0018, location.longitude - 0.0025],
+    [location.latitude + 0.0028, location.longitude + 0.0035],
+    [location.latitude, location.longitude]
+  ];
 }
 
 function formatDistanceMiles(distance) {

@@ -1,16 +1,17 @@
 "use strict";
 
-const CACHE_NAME = "gotcha-mvp-v37";
+const CACHE_NAME = "gotcha-mvp-v39";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./404.html",
   "./admin.html",
   "./admin.css?v=4",
   "./admin.js?v=4",
   "./admin.webmanifest",
-  "./styles.css?v=30",
+  "./styles.css?v=31",
   "./supabase-config.js?v=1",
-  "./app.js?v=32",
+  "./app.js?v=33",
   "./hunts.json",
   "./manifest.webmanifest",
   "./images/background.png",
