@@ -4323,15 +4323,9 @@ function createHuntLocationMarker(location) {
 }
 
 function getHuntLocationMarkerHtml(location) {
-  const typeInitial = location.type.charAt(0).toUpperCase();
   return `
     <span class="gotcha-map-marker treasure-chest-marker" aria-hidden="true">
-      <span class="map-marker-x">X</span>
-      <span class="map-marker-chest">
-        <span class="map-marker-lid"></span>
-        <span class="map-marker-body"></span>
-        <span class="map-marker-lock">${typeInitial}</span>
-      </span>
+      <img src="assets/map-treasure-chest.jpg" alt="" />
     </span>
   `;
 }
