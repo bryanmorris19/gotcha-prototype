@@ -52,6 +52,26 @@ const HUNT_LOCATIONS = [
     boardCode: "albertsons-meridian-001",
     nfcUrl: "?board=albertsons-meridian-001",
     geofenceRadiusMiles: 0.35
+  },
+  {
+    id: "home-depot-meridian",
+    name: "The Home Depot",
+    type: "Home Improvement",
+    weeklySlot: "Week 1",
+    address: "1100 S Progress Avenue, Meridian, ID 83642",
+    latitude: 43.5949834,
+    longitude: -116.3894526,
+    geofenceRadiusMiles: 0.35
+  },
+  {
+    id: "target-eagle-road",
+    name: "Target",
+    type: "Retail",
+    weeklySlot: "Week 1",
+    address: "6280 N Eagle Road, Boise, ID 83713",
+    latitude: 43.6612463,
+    longitude: -116.3516938,
+    geofenceRadiusMiles: 0.35
   }
 ];
 const PUZZLE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -207,9 +227,11 @@ const state = {
   activeView: "home",
   huntMap: null,
   huntMapMarker: null,
+  huntMapMarkers: {},
   huntMapUserMarker: null,
   huntMapAccuracyCircle: null,
   huntMapGeofence: null,
+  huntMapGeofences: [],
   huntMapRoute: null,
   processedCheckInCode: "",
   pendingRewards: [],
@@ -4020,7 +4042,7 @@ function handleIncomingLocationCheckIn() {
 
   state.processedCheckInCode = boardCode;
   const location = HUNT_LOCATIONS.find(
-    item => item.boardCode.toLowerCase() === boardCode
+    item => item.boardCode?.toLowerCase() === boardCode
   );
 
   switchView("map");
@@ -4202,17 +4224,8 @@ function initializeHuntMap() {
     return;
   }
 
-  const location = HUNT_LOCATIONS[0];
-  const coordinates = [location.latitude, location.longitude];
-  const markerHtml = `
-    <span class="gotcha-map-marker" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path>
-        <circle cx="12" cy="10" r="2.5"></circle>
-      </svg>
-      <strong>G</strong>
-    </span>
-  `;
+  const activeLocation = getActiveHuntLocation();
+  const coordinates = [activeLocation.latitude, activeLocation.longitude];
 
   state.huntMap = window.L.map(elements.huntMap, {
     zoomControl: true,
@@ -4236,14 +4249,17 @@ function initializeHuntMap() {
   });
   tiles.addTo(state.huntMap);
 
-  state.huntMapGeofence = window.L.circle(coordinates, {
-    radius: milesToMeters(location.geofenceRadiusMiles),
-    className: "map-hunt-radius",
-    interactive: false
-  }).addTo(state.huntMap);
+  state.huntMapGeofences = HUNT_LOCATIONS.map(location =>
+    window.L.circle([location.latitude, location.longitude], {
+      radius: milesToMeters(location.geofenceRadiusMiles),
+      className: "map-hunt-radius",
+      interactive: false
+    }).addTo(state.huntMap)
+  );
+  state.huntMapGeofence = state.huntMapGeofences[0] || null;
 
   state.huntMapRoute = window.L.polyline(
-    getTreasureRouteCoordinates(location),
+    getTreasureRouteCoordinates(),
     {
       className: "treasure-map-route",
       color: "#8a5a17",
@@ -4256,57 +4272,98 @@ function initializeHuntMap() {
     }
   ).addTo(state.huntMap);
 
-  const markerIcon = window.L.divIcon({
-    className: "gotcha-map-marker-shell",
-    html: markerHtml,
-    iconSize: [52, 62],
-    iconAnchor: [26, 56],
-    popupAnchor: [0, -50]
+  state.huntMapMarkers = {};
+  HUNT_LOCATIONS.forEach(location => {
+    const marker = createHuntLocationMarker(location);
+    state.huntMapMarkers[location.id] = marker;
+    if (location.id === activeLocation.id) {
+      state.huntMapMarker = marker;
+    }
   });
 
-  state.huntMapMarker = window.L.marker(coordinates, {
+  state.huntMap.whenReady(() => {
+    state.huntMap.invalidateSize();
+    fitHuntMapToLocations();
+    state.huntMapMarker?.openPopup();
+    setMapStatus(
+      isLocationUnlocked(activeLocation)
+        ? "Albertsons clues are unlocked. Two more weekly treasure locations are marked."
+        : "Three treasure locations are marked. Tap the Albertsons NFC clue board to unlock today's active hunt."
+    );
+    renderMapLocationStatus();
+  });
+}
+
+function createHuntLocationMarker(location) {
+  const markerIcon = window.L.divIcon({
+    className: "gotcha-map-marker-shell",
+    html: getHuntLocationMarkerHtml(location),
+    iconSize: [74, 78],
+    iconAnchor: [37, 66],
+    popupAnchor: [0, -58]
+  });
+  const isActive = location.id === getActiveHuntLocation().id;
+  const checkInText = location.boardCode
+    ? "Tap the in-store NFC clue board to unlock this hunt."
+    : "Future weekly hunt location. NFC clue board coming soon.";
+
+  return window.L.marker([location.latitude, location.longitude], {
     icon: markerIcon,
     title: `${location.name}, ${location.address}`
   })
     .addTo(state.huntMap)
     .bindPopup(`
       <div class="gotcha-map-popup">
-        <span>Active Test Hunt</span>
-        <strong>${location.name}</strong>
-        <small>${location.address}</small>
-        <em>Today's Gotcha! hunt is available here.</em>
+        <span>${isActive ? "Active Test Hunt" : location.type}</span>
+        <strong>${escapeHtml(location.name)}</strong>
+        <small>${escapeHtml(location.address)}</small>
+        <em>${escapeHtml(checkInText)}</em>
       </div>
     `);
+}
 
-  state.huntMap.whenReady(() => {
-    state.huntMap.invalidateSize();
-    state.huntMapMarker.openPopup();
-    setMapStatus(
-      isLocationUnlocked(location)
-        ? "Albertsons clues are unlocked. Follow the trail and start the hunt."
-        : "Follow the trail to Albertsons, then tap the NFC clue board inside."
-    );
-    renderMapLocationStatus();
+function getHuntLocationMarkerHtml(location) {
+  const typeInitial = location.type.charAt(0).toUpperCase();
+  return `
+    <span class="gotcha-map-marker treasure-chest-marker" aria-hidden="true">
+      <span class="map-marker-x">X</span>
+      <span class="map-marker-chest">
+        <span class="map-marker-lid"></span>
+        <span class="map-marker-body"></span>
+        <span class="map-marker-lock">${typeInitial}</span>
+      </span>
+    </span>
+  `;
+}
+
+function fitHuntMapToLocations(extraCoordinates = []) {
+  if (!state.huntMap || typeof window.L === "undefined") {
+    return;
+  }
+
+  const coordinates = HUNT_LOCATIONS.map(location => [
+    location.latitude,
+    location.longitude
+  ]).concat(extraCoordinates);
+  state.huntMap.fitBounds(window.L.latLngBounds(coordinates).pad(0.25), {
+    animate: true,
+    maxZoom: DEFAULT_MAP_ZOOM
   });
 }
 
 function focusTestHuntLocation() {
   initializeHuntMap();
-  if (!state.huntMap || !state.huntMapMarker) {
+  if (!state.huntMap) {
     return;
   }
 
   const location = HUNT_LOCATIONS[0];
-  state.huntMap.setView(
-    [location.latitude, location.longitude],
-    DEFAULT_MAP_ZOOM,
-    { animate: true }
-  );
+  fitHuntMapToLocations();
   state.huntMapMarker.openPopup();
   setMapStatus(
     isLocationUnlocked(location)
-      ? "Centered on Albertsons. Clues are unlocked for this session."
-      : "Centered on Albertsons. Tap the in-store NFC clue board to unlock clues."
+      ? "Showing all three weekly treasure locations. Albertsons is unlocked."
+      : "Showing all three weekly treasure locations. Tap the Albertsons NFC clue board to unlock clues."
   );
 }
 
@@ -4330,7 +4387,6 @@ function locatePlayerOnMap() {
 
   navigator.geolocation.getCurrentPosition(
     position => {
-      const location = HUNT_LOCATIONS[0];
       const playerCoordinates = [
         position.coords.latitude,
         position.coords.longitude
@@ -4359,24 +4415,14 @@ function locatePlayerOnMap() {
           });
       }
 
-      const storeCoordinates = [location.latitude, location.longitude];
-      const bounds = window.L.latLngBounds([
-        storeCoordinates,
-        playerCoordinates
-      ]);
-      state.huntMap.fitBounds(bounds.pad(0.35), {
-        animate: true,
-        maxZoom: DEFAULT_MAP_ZOOM
-      });
+      fitHuntMapToLocations([playerCoordinates]);
 
-      const distance = calculateDistanceMiles(
+      const nearest = getNearestHuntLocation(
         position.coords.latitude,
-        position.coords.longitude,
-        location.latitude,
-        location.longitude
+        position.coords.longitude
       );
       setMapStatus(
-        `${formatDistanceMiles(distance)} from Albertsons on South Eagle Road.`
+        `${formatDistanceMiles(nearest.distance)} from nearest treasure: ${nearest.location.name}.`
       );
       elements.locatePlayerButton.disabled = false;
       elements.locatePlayerButton.removeAttribute("aria-busy");
@@ -4406,6 +4452,20 @@ function locatePlayerOnMap() {
   );
 }
 
+function getNearestHuntLocation(latitude, longitude) {
+  return HUNT_LOCATIONS
+    .map(location => ({
+      location,
+      distance: calculateDistanceMiles(
+        latitude,
+        longitude,
+        location.latitude,
+        location.longitude
+      )
+    }))
+    .sort((a, b) => a.distance - b.distance)[0];
+}
+
 function calculateDistanceMiles(latitudeA, longitudeA, latitudeB, longitudeB) {
   const earthRadiusMiles = 3958.8;
   const toRadians = value => value * Math.PI / 180;
@@ -4428,15 +4488,25 @@ function metersToMiles(distance) {
   return distance / 1609.344;
 }
 
-function getTreasureRouteCoordinates(location) {
-  return [
-    [location.latitude - 0.0105, location.longitude - 0.014],
-    [location.latitude - 0.006, location.longitude - 0.0105],
-    [location.latitude - 0.0025, location.longitude - 0.005],
-    [location.latitude + 0.0018, location.longitude - 0.0025],
-    [location.latitude + 0.0028, location.longitude + 0.0035],
-    [location.latitude, location.longitude]
-  ];
+function getTreasureRouteCoordinates() {
+  return HUNT_LOCATIONS.flatMap((location, index) => {
+    const point = [location.latitude, location.longitude];
+    if (index === 0) {
+      return [
+        [location.latitude - 0.009, location.longitude - 0.012],
+        [location.latitude - 0.0045, location.longitude - 0.007],
+        point
+      ];
+    }
+
+    return [
+      [
+        location.latitude - 0.003 + index * 0.0015,
+        location.longitude - 0.005
+      ],
+      point
+    ];
+  });
 }
 
 function formatDistanceMiles(distance) {
