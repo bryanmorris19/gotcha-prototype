@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=37" />
+  <link rel="stylesheet" href="styles.css?v=38" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -19,10 +19,10 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=39" defer></script>
+  <script src="app.js?v=40" defer></script>
 </head>
 
-<body>
+<body data-active-view="home">
   <svg class="icon-sprite" aria-hidden="true">
     <symbol id="icon-scan" viewBox="0 0 24 24">
       <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8" />
@@ -162,7 +162,7 @@
     </section>
 
     <section id="homeView" class="app-view active" data-view="home">
-      <section class="treasure-desk" aria-labelledby="treasureDeskTitle">
+      <section class="treasure-desk image-menu" aria-labelledby="treasureDeskTitle">
         <div class="desk-status-panel">
           <div class="desk-avatar" aria-hidden="true">
             <img src="assets/gotcha-icon.svg" alt="" />
@@ -195,58 +195,44 @@
         </button>
 
         <button
-          class="desk-map-object"
+          id="deskMapButton"
+          class="desk-hotspot desk-hotspot-map"
           type="button"
           data-target-view="map"
           aria-describedby="deskMapHint"
         >
-          <span class="desk-map-glow" aria-hidden="true"></span>
-          <span class="desk-map-paper" aria-hidden="true">
-            <i></i><i></i><i></i><i></i><i></i>
-          </span>
-          <span class="desk-map-pin primary">X</span>
-          <span class="desk-map-pin pin-two">X</span>
-          <span class="desk-map-pin pin-three">X</span>
-          <span class="desk-map-label">
+          <span class="desk-map-aura" aria-hidden="true"></span>
+          <span class="desk-hotspot-label desk-map-label">
             <strong id="treasureDeskTitle">New Treasure Hunt</strong>
             <small id="deskMapHint">Tap the map</small>
           </span>
         </button>
 
-        <a class="desk-object desk-object-hints" href="#huntPanel">
-          <span><svg><use href="#icon-bulb"></use></svg></span>
+        <a class="desk-hotspot desk-hotspot-hints" href="#huntPanel">
           <strong>Hints &amp; Clues</strong>
         </a>
 
-        <button class="desk-object desk-object-collection" type="button" data-target-view="collection">
-          <span><svg><use href="#icon-box"></use></svg></span>
+        <button class="desk-hotspot desk-hotspot-collection" type="button" data-target-view="collection">
           <strong>Collections</strong>
         </button>
 
-        <button id="deskDailyPrizeButton" class="desk-object desk-object-daily" type="button">
-          <span class="desk-prize-wheel" aria-hidden="true">
-            <i></i><i></i><i></i><i></i>
-          </span>
+        <button id="deskDailyPrizeButton" class="desk-hotspot desk-hotspot-daily" type="button">
           <strong>Daily Prize</strong>
         </button>
 
-        <button class="desk-object desk-object-inventory" type="button" data-target-view="collection">
-          <span><svg><use href="#icon-key"></use></svg></span>
+        <button class="desk-hotspot desk-hotspot-inventory" type="button" data-target-view="collection">
           <strong>Inventory</strong>
         </button>
 
-        <button class="desk-object desk-object-leaderboard" type="button" data-target-view="profile">
-          <span><svg><use href="#icon-trophy"></use></svg></span>
+        <button class="desk-hotspot desk-hotspot-leaderboard" type="button" data-target-view="profile">
           <strong>Leaderboard</strong>
         </button>
 
-        <button class="desk-object desk-object-profile" type="button" data-target-view="profile">
-          <span><svg><use href="#icon-user"></use></svg></span>
+        <button class="desk-hotspot desk-hotspot-profile" type="button" data-target-view="profile">
           <strong>Profile &amp; Achievements</strong>
         </button>
 
-        <button class="desk-object desk-object-navigation" type="button" data-target-view="map">
-          <span><svg><use href="#icon-compass"></use></svg></span>
+        <button class="desk-hotspot desk-hotspot-navigation" type="button" data-target-view="map">
           <strong>Navigation</strong>
         </button>
       </section>
@@ -968,6 +954,19 @@
       </button>
     </nav>
   </main>
+
+  <section
+    id="deskLoadingOverlay"
+    class="desk-loading-overlay hidden"
+    role="status"
+    aria-live="polite"
+  >
+    <div class="desk-loading-card">
+      <span aria-hidden="true"><svg><use href="#icon-compass"></use></svg></span>
+      <strong>Opening the Treasure Desk</strong>
+      <small>Calibrating today's hunt signal...</small>
+    </div>
+  </section>
 
   <section
     id="tutorialOverlay"

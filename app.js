@@ -346,6 +346,8 @@ function cacheElements() {
   elements.deskStreakValue = document.getElementById("deskStreakValue");
   elements.clueText = document.getElementById("clueText");
   elements.huntMeta = document.getElementById("huntMeta");
+  elements.deskMapButton = document.getElementById("deskMapButton");
+  elements.deskLoadingOverlay = document.getElementById("deskLoadingOverlay");
   elements.brandStageIndicator = document.getElementById(
     "brandStageIndicator"
   );
@@ -3205,6 +3207,7 @@ function initializeTabletPreview() {
   state.scanPreviewGuesses = STARTING_GUESSES;
   state.scanPreviewSignalFragments = 0;
   state.activeView = "home";
+  document.body.dataset.activeView = "home";
   elements.views.forEach(view => {
     view.classList.toggle("active", view.dataset.view === "home");
   });
@@ -3593,6 +3596,9 @@ function closeTutorial(reason) {
   state.player.tutorialVersion = TUTORIAL_VERSION;
   elements.tutorialOverlay.classList.add("hidden");
   document.body.classList.remove("tutorial-open");
+  if (state.activeView === "home") {
+    showDeskLoading();
+  }
   savePlayer();
   trackEvent(`tutorial_${reason}`, {
     version: TUTORIAL_VERSION,
@@ -3604,8 +3610,19 @@ function closeTutorial(reason) {
   if (previousFocus?.isConnected) {
     previousFocus.focus();
   } else {
-    elements.scannerLaunchButton.focus();
+    elements.deskMapButton.focus();
   }
+}
+
+function showDeskLoading() {
+  if (!elements.deskLoadingOverlay) {
+    return;
+  }
+
+  elements.deskLoadingOverlay.classList.remove("hidden");
+  window.setTimeout(() => {
+    elements.deskLoadingOverlay.classList.add("hidden");
+  }, 1150);
 }
 
 function handleTutorialTouchStart(event) {
@@ -4579,6 +4596,7 @@ function switchView(viewName) {
   }
 
   state.activeView = viewName;
+  document.body.dataset.activeView = viewName;
   elements.views.forEach(view => {
     view.classList.toggle("active", view.dataset.view === viewName);
   });
