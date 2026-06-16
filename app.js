@@ -225,7 +225,7 @@ const state = {
   torchOn: false,
   countdownTimer: null,
   deferredInstallPrompt: null,
-  activeView: "map",
+  activeView: "home",
   huntMap: null,
   huntMapMarker: null,
   huntMapMarkers: {},
@@ -340,6 +340,10 @@ function cacheElements() {
   elements.backgroundMusic = document.getElementById("backgroundMusic");
   elements.coinsValue = document.getElementById("coinsValue");
   elements.streakValue = document.getElementById("streakValue");
+  elements.deskLevelValue = document.getElementById("deskLevelValue");
+  elements.deskProgressValue = document.getElementById("deskProgressValue");
+  elements.deskGoldValue = document.getElementById("deskGoldValue");
+  elements.deskStreakValue = document.getElementById("deskStreakValue");
   elements.clueText = document.getElementById("clueText");
   elements.huntMeta = document.getElementById("huntMeta");
   elements.brandStageIndicator = document.getElementById(
@@ -384,6 +388,9 @@ function cacheElements() {
   elements.buyGuessLabel = document.getElementById("buyGuessLabel");
   elements.huntNotice = document.getElementById("huntNotice");
   elements.rewardOddsButton = document.getElementById("rewardOddsButton");
+  elements.deskDailyPrizeButton = document.getElementById(
+    "deskDailyPrizeButton"
+  );
   elements.rewardOddsOverlay = document.getElementById("rewardOddsOverlay");
   elements.closeRewardOddsButton = document.getElementById(
     "closeRewardOddsButton"
@@ -633,6 +640,7 @@ function bindEvents() {
   );
   elements.buyGuessButton.addEventListener("click", buyExtraGuess);
   elements.rewardOddsButton.addEventListener("click", openRewardOdds);
+  elements.deskDailyPrizeButton.addEventListener("click", openRewardOdds);
   elements.closeRewardOddsButton.addEventListener("click", closeRewardOdds);
   elements.resetButton.addEventListener("click", resetDemo);
   elements.scannerLaunchButton.addEventListener("click", startBarcodeScanner);
@@ -1161,6 +1169,13 @@ function formatCheckInTime(isoDate) {
   }).format(date);
 }
 
+function getPlayerLevel() {
+  return Math.max(
+    1,
+    Math.floor(state.player.lifetimeCoins / 250) + 1
+  );
+}
+
 function render() {
   if (!state.player || state.hunts.length === 0) {
     return;
@@ -1175,6 +1190,12 @@ function render() {
   renderMusicToggle();
   elements.coinsValue.textContent = state.player.coins;
   elements.streakValue.textContent = state.player.streak;
+  const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
+  elements.deskLevelValue.textContent = `Level ${getPlayerLevel()}`;
+  elements.deskProgressValue.textContent =
+    `${dailyCompleted} / ${DAILY_GOAL} hunts today`;
+  elements.deskGoldValue.textContent = state.player.coins;
+  elements.deskStreakValue.textContent = state.player.streak;
   elements.clueText.textContent = state.player.betterClueUsed
     ? hunt.betterClue
     : hunt.clue;
@@ -1189,7 +1210,6 @@ function render() {
   elements.huntMeta.textContent = locationUnlocked
     ? `Hunt ${state.player.dailyProgress + 1} for ${formatDate(state.player.dailyDate)}`
     : `Check in at ${activeLocation.name} to unlock today's clues`;
-  const dailyCompleted = Math.min(state.player.dailyProgress, DAILY_GOAL);
   elements.dailyProgressText.textContent =
     `${dailyCompleted} of ${DAILY_GOAL} correct scans`;
   elements.dailyProgressBar.style.width =
@@ -3457,10 +3477,7 @@ function renderProfile() {
   const totalCollectibles = artifactCatalog.filter(
     artifact => state.player.collection[artifact.id]
   ).length;
-  const level = Math.max(
-    1,
-    Math.floor(state.player.lifetimeCoins / 250) + 1
-  );
+  const level = getPlayerLevel();
 
   elements.profileName.textContent = state.player.nickname;
   elements.nicknameInput.value = state.player.nickname;
