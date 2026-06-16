@@ -2440,7 +2440,6 @@ button.map-toolbar-button svg {
   background: transparent;
   box-shadow: none;
   transform: none;
-  animation: treasure-marker-float 3.2s ease-in-out infinite;
 }
 
 .treasure-chest-marker::after {
