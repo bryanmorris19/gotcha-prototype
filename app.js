@@ -235,7 +235,6 @@ const state = {
   huntMapGeofences: [],
   huntMapRoute: null,
   huntMapPlayerCoordinates: null,
-  huntMapIndicatorFrame: 0,
   huntMapAutoLocateAttempted: false,
   processedCheckInCode: "",
   pendingRewards: [],
@@ -546,9 +545,6 @@ function cacheElements() {
     "clearCompletedButton"
   );
   elements.huntMap = document.getElementById("huntMap");
-  elements.treasureDirectionLayer = document.getElementById(
-    "treasureDirectionLayer"
-  );
   elements.mapStatus = document.getElementById("mapStatus");
   elements.focusTestLocationButton = document.getElementById(
     "focusTestLocationButton"
@@ -745,10 +741,6 @@ function bindEvents() {
     focusTestHuntLocation
   );
   elements.locatePlayerButton.addEventListener("click", locatePlayerOnMap);
-  elements.treasureDirectionLayer.addEventListener(
-    "click",
-    handleTreasureDirectionClick
-  );
   elements.viewMapHuntButton.addEventListener(
     "click",
     () => switchView("home")
@@ -4297,10 +4289,6 @@ function initializeHuntMap() {
 
   state.huntMap.whenReady(() => {
     state.huntMap.invalidateSize();
-    state.huntMap.on(
-      "move zoom resize",
-      scheduleTreasureDirectionIndicators
-    );
     centerHuntMapOnPlayer({ automatic: true });
     renderMapLocationStatus();
   });
@@ -4371,7 +4359,6 @@ function focusTestHuntLocation() {
       ? "Showing all three weekly treasure locations. Albertsons is unlocked."
       : "Showing all three weekly treasure locations. Tap the Albertsons NFC clue board to unlock clues."
   );
-  scheduleTreasureDirectionIndicators();
 }
 
 function locatePlayerOnMap() {
@@ -4388,7 +4375,6 @@ function centerHuntMapOnPlayer({ automatic = false } = {}) {
     if (automatic) {
       fitHuntMapToLocations();
       state.huntMapMarker?.openPopup();
-      scheduleTreasureDirectionIndicators();
     }
     setMapStatus(
       automatic
@@ -4400,7 +4386,6 @@ function centerHuntMapOnPlayer({ automatic = false } = {}) {
   }
 
   if (automatic && state.huntMapAutoLocateAttempted) {
-    scheduleTreasureDirectionIndicators();
     return;
   }
 
@@ -4422,7 +4407,7 @@ function centerHuntMapOnPlayer({ automatic = false } = {}) {
       setMapStatus(
         isLocationUnlocked(activeLocation)
           ? `Centered on you. ${formatDistanceMiles(nearest.distance)} from nearest treasure: ${nearest.location.name}.`
-          : `Centered on you. Follow the chest badges toward nearby treasure locations.`
+          : `Centered on you. Follow the chest markers toward nearby treasure locations.`
       );
       if (!automatic) {
         elements.locatePlayerButton.disabled = false;
@@ -4436,7 +4421,6 @@ function centerHuntMapOnPlayer({ automatic = false } = {}) {
       if (automatic) {
         fitHuntMapToLocations();
         state.huntMapMarker?.openPopup();
-        scheduleTreasureDirectionIndicators();
       }
       const messages = {
         1: "Location access was declined. You can still use the directions button.",
@@ -4496,7 +4480,6 @@ function applyPlayerMapPosition(position, { automatic = false } = {}) {
   state.huntMap.setView(playerCoordinates, PLAYER_MAP_ZOOM, {
     animate: !automatic
   });
-  scheduleTreasureDirectionIndicators();
 }
 
 function getNearestHuntLocation(latitude, longitude) {
@@ -4511,149 +4494,6 @@ function getNearestHuntLocation(latitude, longitude) {
       )
     }))
     .sort((a, b) => a.distance - b.distance)[0];
-}
-
-function scheduleTreasureDirectionIndicators() {
-  if (state.huntMapIndicatorFrame || !window.requestAnimationFrame) {
-    return;
-  }
-
-  state.huntMapIndicatorFrame = window.requestAnimationFrame(() => {
-    state.huntMapIndicatorFrame = 0;
-    renderTreasureDirectionIndicators();
-  });
-}
-
-function renderTreasureDirectionIndicators() {
-  if (
-    !state.huntMap ||
-    !elements.treasureDirectionLayer ||
-    typeof window.L === "undefined"
-  ) {
-    return;
-  }
-
-  const mapSize = state.huntMap.getSize();
-  if (!mapSize.x || !mapSize.y) {
-    elements.treasureDirectionLayer.innerHTML = "";
-    return;
-  }
-
-  const bounds = state.huntMap.getBounds().pad(-0.04);
-  const originCoordinates =
-    state.huntMapPlayerCoordinates ||
-    [
-      state.huntMap.getCenter().lat,
-      state.huntMap.getCenter().lng
-    ];
-  const originPoint = state.huntMap.latLngToContainerPoint(originCoordinates);
-  const badges = HUNT_LOCATIONS
-    .map(location => getTreasureDirectionBadge(location, bounds, originPoint))
-    .filter(Boolean)
-    .join("");
-
-  elements.treasureDirectionLayer.innerHTML = badges;
-}
-
-function getTreasureDirectionBadge(location, bounds, originPoint) {
-  const locationLatLng = window.L.latLng(location.latitude, location.longitude);
-  if (bounds.contains(locationLatLng)) {
-    return "";
-  }
-
-  const mapSize = state.huntMap.getSize();
-  const targetPoint = state.huntMap.latLngToContainerPoint(locationLatLng);
-  const deltaX = targetPoint.x - originPoint.x;
-  const deltaY = targetPoint.y - originPoint.y;
-  if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) {
-    return "";
-  }
-
-  const angle = Math.atan2(deltaY || 0.001, deltaX || 0.001);
-  const position = getEdgeIndicatorPosition(angle, mapSize.x, mapSize.y);
-  const direction = getCompassDirection(angle);
-  const distance = state.huntMapPlayerCoordinates
-    ? formatDistanceMiles(
-        calculateDistanceMiles(
-          state.huntMapPlayerCoordinates[0],
-          state.huntMapPlayerCoordinates[1],
-          location.latitude,
-          location.longitude
-        )
-      )
-    : "";
-
-  return `
-    <button
-      class="treasure-direction-indicator"
-      type="button"
-      data-map-location-id="${escapeHtml(location.id)}"
-      style="left: ${position.x}px; top: ${position.y}px;"
-      title="${escapeHtml(`${location.name} treasure ${direction}${distance ? `, ${distance} away` : ""}`)}"
-      aria-label="${escapeHtml(`${location.name} treasure is ${direction}${distance ? `, ${distance} away` : ""}`)}"
-    >
-      <img src="assets/map-treasure-chest-cutout.png" alt="" />
-    </button>
-  `;
-}
-
-function getEdgeIndicatorPosition(angle, width, height) {
-  const margin = 38;
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const cosine = Math.cos(angle);
-  const sine = Math.sin(angle);
-  const halfWidth = Math.max(1, centerX - margin);
-  const halfHeight = Math.max(1, centerY - margin);
-  const scale = Math.min(
-    halfWidth / Math.max(0.001, Math.abs(cosine)),
-    halfHeight / Math.max(0.001, Math.abs(sine))
-  );
-
-  return {
-    x: Math.round(centerX + cosine * scale),
-    y: Math.round(centerY + sine * scale)
-  };
-}
-
-function getCompassDirection(angle) {
-  const degrees = (angle * 180 / Math.PI + 360) % 360;
-  const directions = [
-    "east",
-    "southeast",
-    "south",
-    "southwest",
-    "west",
-    "northwest",
-    "north",
-    "northeast"
-  ];
-  return directions[Math.round(degrees / 45) % directions.length];
-}
-
-function handleTreasureDirectionClick(event) {
-  const button = event.target.closest("[data-map-location-id]");
-  if (!button || !state.huntMap) {
-    return;
-  }
-
-  const location = HUNT_LOCATIONS.find(
-    item => item.id === button.dataset.mapLocationId
-  );
-  if (!location) {
-    return;
-  }
-
-  state.huntMap.setView(
-    [location.latitude, location.longitude],
-    DEFAULT_MAP_ZOOM,
-    { animate: true }
-  );
-  state.huntMapMarkers[location.id]?.openPopup();
-  setMapStatus(`${location.name} treasure selected on the weekly map.`);
-  trackEvent("map_treasure_direction_selected", {
-    locationId: location.id
-  });
 }
 
 function calculateDistanceMiles(latitudeA, longitudeA, latitudeB, longitudeB) {
