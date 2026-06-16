@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=33" />
+  <link rel="stylesheet" href="styles.css?v=34" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -19,7 +19,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=35" defer></script>
+  <script src="app.js?v=36" defer></script>
 </head>
 
 <body>
@@ -645,12 +645,19 @@
             Center on Me
           </button>
         </div>
-        <div
-          id="huntMap"
-          class="hunt-map"
-          role="application"
-          aria-label="Map showing Gotcha treasure hunt locations in the Meridian area"
-        ></div>
+        <div class="hunt-map-shell">
+          <div
+            id="huntMap"
+            class="hunt-map"
+            role="application"
+            aria-label="Map showing Gotcha treasure hunt locations in the Meridian area"
+          ></div>
+          <div
+            id="treasureDirectionLayer"
+            class="treasure-direction-layer"
+            aria-label="Offscreen treasure directions"
+          ></div>
+        </div>
         <div id="mapStatus" class="map-status" role="status" aria-live="polite">
           Loading the hunt map...
         </div>
