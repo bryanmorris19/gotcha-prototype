@@ -225,7 +225,7 @@ const state = {
   torchOn: false,
   countdownTimer: null,
   deferredInstallPrompt: null,
-  activeView: "home",
+  activeView: "map",
   huntMap: null,
   huntMapMarker: null,
   huntMapMarkers: {},
@@ -308,6 +308,9 @@ async function initializeApp() {
     }
     render();
     handleIncomingLocationCheckIn();
+    if (state.activeView === "map") {
+      window.requestAnimationFrame(initializeHuntMap);
+    }
     initializeTabletPreview();
     scheduleMidnightReset();
     startCountdown();

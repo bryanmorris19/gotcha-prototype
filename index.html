@@ -19,7 +19,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=36" defer></script>
+  <script src="app.js?v=37" defer></script>
 </head>
 
 <body>
@@ -161,7 +161,7 @@
       </div>
     </section>
 
-    <section id="homeView" class="app-view active" data-view="home">
+    <section id="homeView" class="app-view" data-view="home">
     <section class="card hunt-card">
       <div class="card-heading">
         <h1 class="hunt-heading">Today's Treasure Hunt</h1>
@@ -612,7 +612,7 @@
       </section>
     </section>
 
-    <section id="mapView" class="app-view map-view" data-view="map">
+    <section id="mapView" class="app-view map-view active" data-view="map">
       <section class="view-header map-view-header">
         <div>
           <div class="eyebrow">Weekly Hunt Map</div>
@@ -862,11 +862,11 @@
     </footer>
 
     <nav class="bottom-nav" aria-label="Primary navigation">
-      <button class="nav-button active" data-view-button="home" type="button">
+      <button class="nav-button" data-view-button="home" type="button">
         <svg><use href="#icon-home"></use></svg>
         <span>Hunt</span>
       </button>
-      <button class="nav-button" data-view-button="map" type="button">
+      <button class="nav-button active" data-view-button="map" type="button">
         <svg><use href="#icon-map"></use></svg>
         <span>Map</span>
       </button>
