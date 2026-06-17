@@ -621,7 +621,11 @@ function cacheElements() {
 }
 
 function bindEvents() {
-  elements.openingStartButton.addEventListener("click", startOpeningFlow);
+  elements.openingStartButton.addEventListener("click", handleOpeningActivation);
+  elements.openingStartButton.addEventListener("pointerup", handleOpeningActivation);
+  elements.openingStartButton.addEventListener("touchend", handleOpeningActivation, {
+    passive: false
+  });
   elements.musicToggleButton.addEventListener("click", toggleBackgroundMusic);
   elements.betterClueButton.addEventListener("click", upgradeClue);
   elements.brandPuzzleModePicker.addEventListener(
@@ -3544,6 +3548,14 @@ function maybeOpenTutorial() {
 
   openTutorial();
   return true;
+}
+
+function handleOpeningActivation(event) {
+  if (event) {
+    event.preventDefault();
+  }
+
+  startOpeningFlow();
 }
 
 function startOpeningFlow() {
