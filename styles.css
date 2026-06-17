@@ -553,6 +553,29 @@ body[data-active-view="home"] #homeView > .card {
   margin-inline: 18px;
 }
 
+body[data-active-view="map"] {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(242, 201, 76, 0.16), transparent 38%),
+    #120d08;
+}
+
+body[data-active-view="map"] .app {
+  width: 1200px;
+  height: 2200px;
+  padding: 0;
+}
+
+body[data-active-view="map"] .header,
+body[data-active-view="map"] .stats,
+body[data-active-view="map"] .bottom-nav,
+body[data-active-view="map"] .footer {
+  display: none;
+}
+
+body[data-active-view="map"] #mapView {
+  height: 2200px;
+}
+
 .treasure-desk.image-menu {
   height: 2200px;
   min-height: 0;
@@ -2721,6 +2744,221 @@ button:disabled {
 
 .map-view {
   padding-bottom: 8px;
+}
+
+.treasure-map-screen {
+  position: relative;
+  overflow: hidden;
+  height: 2200px !important;
+  padding: 0;
+  color: #f8dda0;
+  background:
+    linear-gradient(rgba(8, 5, 2, 0.04), rgba(8, 5, 2, 0.12)),
+    url("assets/treasure-map-screen.webp") center top / 100% 100% no-repeat;
+}
+
+.treasure-map-screen .view-header,
+.treasure-map-screen .map-intro-card {
+  display: none;
+}
+
+.treasure-map-screen .hunt-map-card {
+  position: absolute;
+  z-index: 5;
+  top: 420px;
+  left: 61px;
+  overflow: visible;
+  width: 1078px;
+  height: 1182px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.treasure-map-screen .hunt-map-shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #efe1bd;
+  box-shadow: none;
+}
+
+.treasure-map-screen .hunt-map {
+  width: 100%;
+  height: 100%;
+  background: #efe1bd;
+  opacity: 0.86;
+}
+
+.treasure-map-screen .hunt-map::before,
+.treasure-map-screen .hunt-map::after {
+  display: none;
+}
+
+.treasure-map-screen .hunt-map .leaflet-tile-pane {
+  filter: sepia(0.66) saturate(0.5) contrast(0.9) brightness(1.1);
+  opacity: 0.92;
+}
+
+.treasure-map-screen .hunt-map .leaflet-control-zoom {
+  margin-top: 38px;
+  margin-left: 28px;
+}
+
+.treasure-map-screen .hunt-map .leaflet-control-zoom a {
+  width: 82px;
+  height: 82px;
+  color: #107a3e;
+  background: rgba(255, 246, 218, 0.9);
+  font-size: 42px;
+  line-height: 82px;
+}
+
+.treasure-map-screen .hunt-map .leaflet-control-attribution {
+  display: none;
+}
+
+.treasure-map-screen .map-toolbar {
+  position: absolute;
+  z-index: 20;
+  top: -150px;
+  left: 171px;
+  display: block;
+  width: 822px;
+  height: 170px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.treasure-map-screen button.map-toolbar-button {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: transparent;
+  background: rgba(242, 201, 76, 0.001);
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+.treasure-map-screen button.map-toolbar-button svg {
+  display: none;
+}
+
+.treasure-map-screen #focusTestLocationButton {
+  top: 0;
+  left: 0;
+  width: 392px;
+  height: 115px;
+  border-radius: 20px;
+}
+
+.treasure-map-screen #locatePlayerButton {
+  top: 170px;
+  right: -10px;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+}
+
+.treasure-map-screen .map-status {
+  position: absolute;
+  z-index: 18;
+  bottom: -190px;
+  left: 186px;
+  right: 172px;
+  min-height: 0;
+  padding: 0;
+  color: #f8dda0;
+  background: transparent;
+  font-size: 24px;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+
+.treasure-map-screen .map-status.fail,
+.treasure-map-screen .map-status.success {
+  color: #f8dda0;
+  background: transparent;
+}
+
+.treasure-map-screen .map-location-card {
+  position: absolute;
+  z-index: 19;
+  right: 80px;
+  bottom: 364px;
+  width: 258px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.treasure-map-screen .map-location-heading,
+.treasure-map-screen .map-location-status {
+  display: none;
+}
+
+.treasure-map-screen .map-location-actions {
+  display: block;
+  margin: 0;
+}
+
+.treasure-map-screen .map-location-actions button {
+  display: none;
+}
+
+.treasure-map-screen .map-directions-button {
+  display: grid;
+  min-width: 0;
+  min-height: 88px;
+  margin: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 16px;
+  color: transparent;
+  background: rgba(242, 201, 76, 0.001);
+  box-shadow: none;
+}
+
+.treasure-map-screen .map-directions-button svg {
+  display: none;
+}
+
+.map-frame-nav {
+  position: absolute;
+  z-index: 30;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  height: 205px;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.map-frame-nav button {
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: transparent;
+  background: rgba(242, 201, 76, 0.001);
+  box-shadow: none;
 }
 
 .map-intro-card {
