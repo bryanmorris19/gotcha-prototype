@@ -257,6 +257,7 @@ const state = {
   tutorialTouchStartX: null,
   tutorialTouchStartY: null,
   tutorialPreviousFocus: null,
+  openingScreenDismissed: false,
   tabletPreviewEnabled:
     new URLSearchParams(window.location.search).get("tablet-preview") === "1",
   tabletPreviewCount: 0,
@@ -319,6 +320,7 @@ async function initializeApp() {
       state.accountStatusMessage =
         "Admin walkthrough mode does not connect or sync account progress.";
       renderAccount();
+      dismissOpeningScreen();
       maybeOpenTutorial();
     } else {
       trackEvent("app_opened");
@@ -346,6 +348,8 @@ function cacheElements() {
   elements.deskStreakValue = document.getElementById("deskStreakValue");
   elements.clueText = document.getElementById("clueText");
   elements.huntMeta = document.getElementById("huntMeta");
+  elements.openingScreen = document.getElementById("openingScreen");
+  elements.openingStartButton = document.getElementById("openingStartButton");
   elements.deskMapButton = document.getElementById("deskMapButton");
   elements.deskLoadingOverlay = document.getElementById("deskLoadingOverlay");
   elements.brandStageIndicator = document.getElementById(
@@ -614,6 +618,7 @@ function cacheElements() {
 }
 
 function bindEvents() {
+  elements.openingStartButton.addEventListener("click", startOpeningFlow);
   elements.musicToggleButton.addEventListener("click", toggleBackgroundMusic);
   elements.betterClueButton.addEventListener("click", upgradeClue);
   elements.brandPuzzleModePicker.addEventListener(
@@ -3514,13 +3519,49 @@ function maybeOpenTutorial() {
   if (
     state.tabletPreviewEnabled ||
     !state.player ||
+    !state.openingScreenDismissed ||
     state.processedCheckInCode ||
     Number(state.player.tutorialVersion || 0) >= TUTORIAL_VERSION
   ) {
-    return;
+    return false;
   }
 
   openTutorial();
+  return true;
+}
+
+function startOpeningFlow() {
+  dismissOpeningScreen({
+    runTutorial: true,
+    showLoading: true
+  });
+}
+
+function dismissOpeningScreen({
+  runTutorial = false,
+  showLoading = false
+} = {}) {
+  if (state.openingScreenDismissed) {
+    return;
+  }
+
+  state.openingScreenDismissed = true;
+  elements.openingScreen.classList.add("hidden");
+  trackEvent("opening_screen_started");
+
+  if (runTutorial && maybeOpenTutorial()) {
+    return;
+  }
+
+  if (showLoading) {
+    showDeskLoading();
+  }
+
+  window.setTimeout(() => {
+    if (state.activeView === "home") {
+      elements.deskMapButton.focus();
+    }
+  }, showLoading ? 1150 : 0);
 }
 
 function openTutorial() {
@@ -4080,6 +4121,7 @@ function handleIncomingLocationCheckIn() {
     return;
   }
 
+  dismissOpeningScreen();
   state.processedCheckInCode = boardCode;
   const location = HUNT_LOCATIONS.find(
     item => item.boardCode?.toLowerCase() === boardCode

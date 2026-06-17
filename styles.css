@@ -37,6 +37,67 @@ body::before {
   display: none;
 }
 
+.opening-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: stretch;
+  background:
+    radial-gradient(circle at 50% 72%, rgba(242, 201, 76, 0.18), transparent 26%),
+    #080604;
+}
+
+.opening-screen.hidden {
+  display: none;
+}
+
+.opening-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("assets/gotcha-opening-screen.webp") center / cover no-repeat;
+}
+
+.opening-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 76%, rgba(255, 229, 123, 0.12), transparent 24%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08), transparent 30%, rgba(0, 0, 0, 0.18));
+}
+
+.opening-start-button {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: transparent;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.opening-start-button span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.opening-start-button:focus-visible {
+  outline: 4px solid rgba(242, 201, 76, 0.88);
+  outline-offset: -10px;
+}
+
 .icon-sprite {
   position: absolute;
   width: 0;
