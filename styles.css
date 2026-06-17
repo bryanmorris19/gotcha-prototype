@@ -2797,8 +2797,17 @@ button:disabled {
 .treasure-map-screen {
   color: #f8dda0;
   background:
-    linear-gradient(rgba(8, 5, 2, 0.04), rgba(8, 5, 2, 0.12)),
-    url("assets/treasure-map-screen.webp") center top / 100% 100% no-repeat;
+    radial-gradient(circle at 50% 42%, rgba(242, 201, 76, 0.12), transparent 34%),
+    #080604;
+}
+
+.treasure-map-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  background: url("assets/treasure-map-screen-overlay.webp") center top / 100% 100% no-repeat;
 }
 
 .collections-screen > .view-header,
