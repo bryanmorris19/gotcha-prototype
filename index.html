@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=44" />
+  <link rel="stylesheet" href="styles.css?v=45" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -19,7 +19,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=43" defer></script>
+  <script src="app.js?v=44" defer></script>
 </head>
 
 <body data-active-view="home">
@@ -481,7 +481,7 @@
           <div class="eyebrow">Ancient Map</div>
           <h1>Stone Tablet</h1>
         </div>
-        <span class="collection-count" id="collectionCount">0 of 6 fragments</span>
+        <span class="collection-count" id="collectionCount">0 of 9 fragments</span>
       </section>
       <section class="card artifact-puzzle-card">
         <span class="artifact-puzzle-lock" aria-hidden="true">
@@ -495,13 +495,13 @@
           </p>
         </div>
         <div class="artifact-puzzle-progress">
-          <strong id="artifactPuzzleText">0 of 6 tablet fragments recovered</strong>
+          <strong id="artifactPuzzleText">0 of 9 tablet fragments recovered</strong>
           <div
             class="progress-track"
             role="progressbar"
             aria-label="Stone tablet progress"
             aria-valuemin="0"
-            aria-valuemax="6"
+            aria-valuemax="9"
             aria-valuenow="0"
           >
             <span id="artifactPuzzleBar"></span>
@@ -516,7 +516,7 @@
         <div class="tablet-card-heading">
           <div>
             <div class="eyebrow">Recovered Map</div>
-            <h2>The Six-Stone Map</h2>
+            <h2>The Nine-Stone Map</h2>
           </div>
           <span class="tablet-signal">
             <svg><use href="#icon-sparkle"></use></svg>
@@ -529,9 +529,9 @@
             role="img"
             aria-labelledby="tabletTitle tabletDescription"
           >
-            <span id="tabletTitle" class="sr-only">Six-piece stone treasure map</span>
+            <span id="tabletTitle" class="sr-only">Nine-piece stone treasure map</span>
             <span id="tabletDescription" class="sr-only">
-              A greyed-out map holds six locked positions. Each recovered stone
+              A greyed-out map holds nine locked positions. Each recovered stone
               returns in full color and fits into its matching place.
             </span>
             <div class="tablet-piece locked" data-tablet-piece="0">
@@ -566,6 +566,24 @@
             </div>
             <div class="tablet-piece locked" data-tablet-piece="5">
               <img src="assets/tablet-fragment-6.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="6">
+              <img src="assets/tablet-fragment-7.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="7">
+              <img src="assets/tablet-fragment-8.webp" alt="" />
+              <span class="tablet-piece-lock" aria-hidden="true">
+                <svg><use href="#icon-lock"></use></svg>
+              </span>
+            </div>
+            <div class="tablet-piece locked" data-tablet-piece="8">
+              <img src="assets/tablet-fragment-9.webp" alt="" />
               <span class="tablet-piece-lock" aria-hidden="true">
                 <svg><use href="#icon-lock"></use></svg>
               </span>
@@ -607,7 +625,7 @@
           <div class="eyebrow">Final Signal Sealed</div>
           <h2>Complete the stone map</h2>
           <p id="finalHuntLockedMessage">
-            Recover all six fragments, then assemble the tablet to activate its
+            Recover all nine fragments, then assemble the tablet to activate its
             special scanner.
           </p>
         </div>
@@ -668,7 +686,7 @@
           These controls do not change player progress or sync anything to the
           cloud.
         </p>
-        <strong id="tabletPreviewStatus">0 of 6 fragments visible</strong>
+        <strong id="tabletPreviewStatus">0 of 9 fragments visible</strong>
         <div class="tablet-admin-controls">
           <button id="tabletPreviewViewHunt" class="secondary" type="button">
             Preview Daily Hunt
@@ -1200,7 +1218,7 @@
     aria-labelledby="tabletAssemblyHeading"
   >
     <div class="overlay-card tablet-assembly-card">
-      <div class="found-label">Six Fragments United</div>
+      <div class="found-label">Nine Fragments United</div>
       <h2 id="tabletAssemblyHeading">The Stone Tablet Is Complete</h2>
       <div class="assembled-tablet-reveal">
         <img

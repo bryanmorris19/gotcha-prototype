@@ -169,7 +169,7 @@ const artifactCatalog = [
   {
     id: "lucky-key",
     label: "Tablet Fragment I",
-    subtitle: "The first recovered section of the ancient map",
+    subtitle: "Top-left tablet section of the ancient map",
     rarity: "common",
     icon: "icon-map",
     image: "assets/tablet-fragment-1.webp"
@@ -177,7 +177,7 @@ const artifactCatalog = [
   {
     id: "signal-compass",
     label: "Tablet Fragment II",
-    subtitle: "The second recovered section of the ancient map",
+    subtitle: "Top-center tablet section of the ancient map",
     rarity: "rare",
     icon: "icon-map",
     image: "assets/tablet-fragment-2.webp"
@@ -185,7 +185,7 @@ const artifactCatalog = [
   {
     id: "emerald-lantern",
     label: "Tablet Fragment III",
-    subtitle: "The third recovered section of the ancient map",
+    subtitle: "Top-right tablet section of the ancient map",
     rarity: "rare",
     icon: "icon-map",
     image: "assets/tablet-fragment-3.webp"
@@ -193,7 +193,7 @@ const artifactCatalog = [
   {
     id: "secret-map",
     label: "Tablet Fragment IV",
-    subtitle: "The fourth recovered section of the ancient map",
+    subtitle: "Middle-right tablet section of the ancient map",
     rarity: "epic",
     icon: "icon-map",
     image: "assets/tablet-fragment-4.webp"
@@ -201,7 +201,7 @@ const artifactCatalog = [
   {
     id: "vault-crown",
     label: "Tablet Fragment V",
-    subtitle: "The fifth recovered section of the ancient map",
+    subtitle: "Bottom-right tablet section of the ancient map",
     rarity: "legendary",
     icon: "icon-map",
     image: "assets/tablet-fragment-5.webp"
@@ -209,10 +209,34 @@ const artifactCatalog = [
   {
     id: "star-relic",
     label: "Tablet Fragment VI",
-    subtitle: "The final recovered section of the ancient map",
+    subtitle: "Bottom-center tablet section of the ancient map",
     rarity: "legendary",
     icon: "icon-map",
     image: "assets/tablet-fragment-6.webp"
+  },
+  {
+    id: "river-rune",
+    label: "Tablet Fragment VII",
+    subtitle: "Bottom-left tablet section of the ancient map",
+    rarity: "epic",
+    icon: "icon-map",
+    image: "assets/tablet-fragment-7.webp"
+  },
+  {
+    id: "tower-sigil",
+    label: "Tablet Fragment VIII",
+    subtitle: "Middle-left tablet section of the ancient map",
+    rarity: "rare",
+    icon: "icon-map",
+    image: "assets/tablet-fragment-8.webp"
+  },
+  {
+    id: "vault-door",
+    label: "Tablet Fragment IX",
+    subtitle: "The final center-door section of the ancient map",
+    rarity: "legendary",
+    icon: "icon-map",
+    image: "assets/tablet-fragment-9.webp"
   }
 ];
 const artifactIds = new Set(artifactCatalog.map(artifact => artifact.id));
@@ -2978,7 +3002,7 @@ function renderCollection() {
   elements.artifactPuzzleMessage.textContent = tabletAssembled
     ? "The stone tablet is assembled and its hidden route is active."
     : puzzleComplete
-      ? "All six fragments are recovered. Assemble them to reveal the route."
+      ? "All nine fragments are recovered. Assemble them to reveal the route."
       : "Each recovered stone locks into its matching place on the map.";
   elements.artifactPuzzleHint.textContent = tabletAssembled
     ? vaultKeyRecovered
@@ -3018,7 +3042,7 @@ function renderCollection() {
   elements.finalHuntUnlocked.classList.toggle("hidden", !tabletAssembled);
   elements.finalHuntLockedMessage.textContent = puzzleComplete
     ? "All fragments are present. Press and hold the assembly control to reveal the final route."
-    : "Recover all six fragments, then assemble the tablet to activate its special scanner.";
+    : "Recover all nine fragments, then assemble the tablet to activate its special scanner.";
   elements.finalHuntTitle.textContent = vaultKeyRecovered
     ? "Vault Key I has been secured"
     : "The final route has appeared";

@@ -2824,11 +2824,11 @@ button:disabled {
 .collections-screen .tablet-card {
   position: absolute;
   z-index: 8;
-  top: 645px;
-  left: 126px;
+  top: 505px;
+  left: 150px;
   overflow: visible;
-  width: 948px;
-  height: 830px;
+  width: 900px;
+  height: 990px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -2854,7 +2854,7 @@ button:disabled {
 
 .collections-screen .stone-tablet-map {
   width: 100%;
-  height: 800px;
+  height: 100%;
   margin: 0;
   border: 0;
   border-radius: 0;
@@ -2875,6 +2875,7 @@ button:disabled {
 }
 
 .collections-screen .assembled-tablet-image {
+  object-fit: contain;
   filter:
     saturate(1.05)
     brightness(0.98)
@@ -3961,7 +3962,7 @@ button.map-toolbar-button svg {
 .stone-tablet-map {
   position: relative;
   width: min(100%, 620px);
-  aspect-ratio: 1280 / 853;
+  aspect-ratio: 1;
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid rgba(35, 42, 39, 0.24);
@@ -3984,29 +3985,45 @@ button.map-toolbar-button svg {
   transform-origin: center;
 }
 
-.tablet-piece:nth-of-type(3n + 1) {
+.tablet-piece {
+  width: 33.333333%;
+  height: 33.333333%;
+}
+
+.tablet-piece[data-tablet-piece="0"],
+.tablet-piece[data-tablet-piece="7"],
+.tablet-piece[data-tablet-piece="6"] {
   left: 0;
-  width: 33.28125%;
 }
 
-.tablet-piece:nth-of-type(3n + 2) {
-  left: 33.28125%;
-  width: 33.359375%;
+.tablet-piece[data-tablet-piece="1"],
+.tablet-piece[data-tablet-piece="8"],
+.tablet-piece[data-tablet-piece="5"] {
+  left: 33.333333%;
 }
 
-.tablet-piece:nth-of-type(3n) {
-  left: 66.640625%;
-  width: 33.359375%;
+.tablet-piece[data-tablet-piece="2"],
+.tablet-piece[data-tablet-piece="3"],
+.tablet-piece[data-tablet-piece="4"] {
+  left: 66.666667%;
 }
 
-.tablet-piece:nth-of-type(-n + 3) {
+.tablet-piece[data-tablet-piece="0"],
+.tablet-piece[data-tablet-piece="1"],
+.tablet-piece[data-tablet-piece="2"] {
   top: 0;
-  height: 49.941383%;
 }
 
-.tablet-piece:nth-of-type(n + 4) {
-  top: 49.941383%;
-  height: 50.058617%;
+.tablet-piece[data-tablet-piece="7"],
+.tablet-piece[data-tablet-piece="8"],
+.tablet-piece[data-tablet-piece="3"] {
+  top: 33.333333%;
+}
+
+.tablet-piece[data-tablet-piece="6"],
+.tablet-piece[data-tablet-piece="5"],
+.tablet-piece[data-tablet-piece="4"] {
+  top: 66.666667%;
 }
 
 .tablet-piece img {
@@ -4014,7 +4031,7 @@ button.map-toolbar-button svg {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill;
+  object-fit: contain;
   opacity: 0;
   filter:
     drop-shadow(0 5px 6px rgba(0, 0, 0, 0.42))
