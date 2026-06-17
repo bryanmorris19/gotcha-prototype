@@ -553,26 +553,47 @@ body[data-active-view="home"] #homeView > .card {
   margin-inline: 18px;
 }
 
-body[data-active-view="map"] {
+body[data-active-view="collection"],
+body[data-active-view="inventory"],
+body[data-active-view="map"],
+body[data-active-view="profile"] {
   background:
     radial-gradient(circle at 50% 18%, rgba(242, 201, 76, 0.16), transparent 38%),
     #120d08;
 }
 
-body[data-active-view="map"] .app {
+body[data-active-view="collection"] .app,
+body[data-active-view="inventory"] .app,
+body[data-active-view="map"] .app,
+body[data-active-view="profile"] .app {
   width: 1200px;
   height: 2200px;
   padding: 0;
 }
 
+body[data-active-view="collection"] .header,
+body[data-active-view="collection"] .stats,
+body[data-active-view="collection"] .bottom-nav,
+body[data-active-view="collection"] .footer,
+body[data-active-view="inventory"] .header,
+body[data-active-view="inventory"] .stats,
+body[data-active-view="inventory"] .bottom-nav,
+body[data-active-view="inventory"] .footer,
 body[data-active-view="map"] .header,
 body[data-active-view="map"] .stats,
 body[data-active-view="map"] .bottom-nav,
-body[data-active-view="map"] .footer {
+body[data-active-view="map"] .footer,
+body[data-active-view="profile"] .header,
+body[data-active-view="profile"] .stats,
+body[data-active-view="profile"] .bottom-nav,
+body[data-active-view="profile"] .footer {
   display: none;
 }
 
-body[data-active-view="map"] #mapView {
+body[data-active-view="collection"] #collectionView,
+body[data-active-view="inventory"] #inventoryView,
+body[data-active-view="map"] #mapView,
+body[data-active-view="profile"] #profileView {
   height: 2200px;
 }
 
@@ -2746,15 +2767,217 @@ button:disabled {
   padding-bottom: 8px;
 }
 
-.treasure-map-screen {
+.game-art-screen {
   position: relative;
   overflow: hidden;
   height: 2200px !important;
   padding: 0;
   color: #f8dda0;
+  background-position: center top;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.collections-screen {
+  background-image: url("assets/collections-screen.webp");
+}
+
+.inventory-screen {
+  background-image: url("assets/inventory-screen.webp");
+}
+
+.profile-screen {
+  background-image: url("assets/profile-screen.webp");
+}
+
+.treasure-map-screen {
+  color: #f8dda0;
   background:
     linear-gradient(rgba(8, 5, 2, 0.04), rgba(8, 5, 2, 0.12)),
     url("assets/treasure-map-screen.webp") center top / 100% 100% no-repeat;
+}
+
+.collections-screen > .view-header,
+.collections-screen .artifact-puzzle-card,
+.collections-screen #finalHuntPanel,
+.collections-screen #finalVaultPanel,
+.collections-screen #tabletAdminPanel,
+.collections-screen .reward-history-card,
+.inventory-screen > .view-header,
+.profile-screen .install-card {
+  display: none;
+}
+
+.collections-screen .tablet-card {
+  position: absolute;
+  z-index: 8;
+  top: 645px;
+  left: 126px;
+  overflow: visible;
+  width: 948px;
+  height: 830px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.collections-screen .tablet-card-heading,
+.collections-screen .tablet-stage-caption {
+  display: none;
+}
+
+.collections-screen .tablet-stage {
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.collections-screen .stone-tablet-map {
+  width: 100%;
+  height: 800px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.collections-screen .tablet-piece-lock {
+  display: none;
+}
+
+.collections-screen .tablet-piece.unlocked img {
+  filter:
+    saturate(1.08)
+    brightness(1.04)
+    drop-shadow(0 10px 18px rgba(0, 0, 0, 0.58))
+    drop-shadow(0 0 18px rgba(242, 201, 76, 0.42));
+}
+
+.collections-screen .assembled-tablet-image {
+  filter:
+    saturate(1.05)
+    brightness(0.98)
+    drop-shadow(0 12px 20px rgba(0, 0, 0, 0.48));
+}
+
+.collections-screen .assemble-tablet-button {
+  position: absolute;
+  right: 155px;
+  bottom: -75px;
+  left: 155px;
+  z-index: 10;
+}
+
+.inventory-empty-panel {
+  position: absolute;
+  z-index: 8;
+  top: 690px;
+  left: 206px;
+  display: grid;
+  width: 790px;
+  gap: 10px;
+  padding: 24px 30px;
+  border: 1px solid rgba(242, 201, 76, 0.25);
+  border-radius: 24px;
+  color: #f8dda0;
+  background: rgba(20, 11, 4, 0.42);
+  box-shadow:
+    inset 0 1px rgba(255, 236, 168, 0.12),
+    0 16px 34px rgba(0, 0, 0, 0.22);
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.inventory-empty-panel h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+.inventory-empty-panel p {
+  margin: 0;
+  color: rgba(255, 239, 189, 0.82);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.profile-screen .profile-hero,
+.profile-screen .profile-card,
+.profile-screen .account-card,
+.profile-screen .profile-metrics,
+.profile-screen .tutorial-replay-card {
+  position: absolute;
+  z-index: 8;
+  width: 860px;
+  margin: 0;
+  border: 1px solid rgba(242, 201, 76, 0.22);
+  color: #f8dda0;
+  background: rgba(26, 15, 6, 0.56);
+  box-shadow:
+    inset 0 1px rgba(255, 236, 168, 0.1),
+    0 16px 36px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(3px);
+}
+
+.profile-screen#profileView .tutorial-replay-card {
+  display: grid;
+}
+
+.profile-screen .profile-hero {
+  top: 372px;
+  left: 170px;
+}
+
+.profile-screen .profile-card {
+  top: 545px;
+  left: 170px;
+}
+
+.profile-screen .account-card {
+  top: 710px;
+  left: 170px;
+}
+
+.profile-screen .profile-metrics {
+  top: 1180px;
+  left: 170px;
+  display: grid;
+}
+
+.profile-screen .tutorial-replay-card {
+  top: 1328px;
+  left: 170px;
+}
+
+.profile-screen .profile-card label,
+.profile-screen .account-card p,
+.profile-screen .account-form label,
+.profile-screen .account-status,
+.profile-screen .account-card .account-privacy,
+.profile-screen .tutorial-replay-card p {
+  color: rgba(255, 239, 189, 0.75);
+}
+
+.profile-screen .metric-card {
+  border-color: rgba(242, 201, 76, 0.18);
+  background: rgba(255, 239, 189, 0.08);
+}
+
+.profile-screen .metric-card strong {
+  color: #f2c94c;
+}
+
+.profile-screen .metric-card span {
+  color: rgba(255, 239, 189, 0.78);
 }
 
 .treasure-map-screen .view-header,
@@ -2765,11 +2988,11 @@ button:disabled {
 .treasure-map-screen .hunt-map-card {
   position: absolute;
   z-index: 5;
-  top: 420px;
-  left: 61px;
+  top: 548px;
+  left: 118px;
   overflow: visible;
-  width: 1078px;
-  height: 1182px;
+  width: 964px;
+  height: 1072px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -2792,7 +3015,7 @@ button:disabled {
   width: 100%;
   height: 100%;
   background: #efe1bd;
-  opacity: 0.86;
+  opacity: 1;
 }
 
 .treasure-map-screen .hunt-map::before,
@@ -2826,8 +3049,8 @@ button:disabled {
 .treasure-map-screen .map-toolbar {
   position: absolute;
   z-index: 20;
-  top: -150px;
-  left: 171px;
+  top: -205px;
+  left: 170px;
   display: block;
   width: 822px;
   height: 170px;
@@ -2863,8 +3086,8 @@ button:disabled {
 }
 
 .treasure-map-screen #locatePlayerButton {
-  top: 170px;
-  right: -10px;
+  top: -250px;
+  right: -240px;
   width: 112px;
   height: 112px;
   border-radius: 50%;
@@ -2873,7 +3096,7 @@ button:disabled {
 .treasure-map-screen .map-status {
   position: absolute;
   z-index: 18;
-  bottom: -190px;
+  bottom: -120px;
   left: 186px;
   right: 172px;
   min-height: 0;
@@ -2938,7 +3161,7 @@ button:disabled {
   display: none;
 }
 
-.map-frame-nav {
+.screen-frame-nav {
   position: absolute;
   z-index: 30;
   right: 0;
@@ -2949,7 +3172,7 @@ button:disabled {
   grid-template-columns: repeat(5, 1fr);
 }
 
-.map-frame-nav button {
+.screen-frame-nav button {
   min-width: 0;
   min-height: 0;
   margin: 0;

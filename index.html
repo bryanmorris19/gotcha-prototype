@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=41" />
+  <link rel="stylesheet" href="styles.css?v=42" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -230,7 +230,7 @@
           <strong>Daily Prize</strong>
         </button>
 
-        <button class="desk-hotspot desk-hotspot-inventory" type="button" data-target-view="collection">
+        <button class="desk-hotspot desk-hotspot-inventory" type="button" data-target-view="inventory">
           <strong>Inventory</strong>
         </button>
 
@@ -475,7 +475,7 @@
     </section>
     </section>
 
-    <section id="collectionView" class="app-view" data-view="collection">
+    <section id="collectionView" class="app-view collections-screen game-art-screen" data-view="collection">
       <section class="view-header">
         <div>
           <div class="eyebrow">Ancient Map</div>
@@ -697,9 +697,17 @@
           <p class="history-empty">Your rewards will appear here.</p>
         </div>
       </section>
+
+      <div class="screen-frame-nav" aria-label="Collections screen navigation">
+        <button type="button" data-target-view="home" aria-label="Home"></button>
+        <button type="button" data-target-view="collection" aria-label="Collections"></button>
+        <button type="button" data-target-view="map" aria-label="Map"></button>
+        <button type="button" data-target-view="inventory" aria-label="Inventory"></button>
+        <button type="button" data-target-view="profile" aria-label="Profile"></button>
+      </div>
     </section>
 
-    <section id="mapView" class="app-view map-view treasure-map-screen" data-view="map">
+    <section id="mapView" class="app-view map-view treasure-map-screen game-art-screen" data-view="map">
       <section class="view-header map-view-header">
         <div>
           <div class="eyebrow">Weekly Hunt Map</div>
@@ -777,11 +785,11 @@
         </div>
       </section>
 
-      <div class="map-frame-nav" aria-label="Treasure map navigation">
+      <div class="screen-frame-nav" aria-label="Treasure map navigation">
         <button type="button" data-target-view="home" aria-label="Home"></button>
         <button type="button" data-target-view="collection" aria-label="Collections"></button>
         <button type="button" data-target-view="map" aria-label="Map"></button>
-        <button type="button" data-target-view="collection" aria-label="Inventory"></button>
+        <button type="button" data-target-view="inventory" aria-label="Inventory"></button>
         <button type="button" data-target-view="profile" aria-label="Profile"></button>
       </div>
     </section>
@@ -827,7 +835,26 @@
       </section>
     </section>
 
-    <section id="profileView" class="app-view" data-view="profile">
+    <section id="inventoryView" class="app-view inventory-screen game-art-screen" data-view="inventory">
+      <section class="inventory-empty-panel" aria-live="polite">
+        <div class="eyebrow">Inventory</div>
+        <h1>Tools and rewards will appear here</h1>
+        <p>
+          Daily spins and store completions will add helper items to these
+          shelves during beta testing.
+        </p>
+      </section>
+
+      <div class="screen-frame-nav" aria-label="Inventory screen navigation">
+        <button type="button" data-target-view="home" aria-label="Home"></button>
+        <button type="button" data-target-view="collection" aria-label="Collections"></button>
+        <button type="button" data-target-view="map" aria-label="Map"></button>
+        <button type="button" data-target-view="inventory" aria-label="Inventory"></button>
+        <button type="button" data-target-view="profile" aria-label="Profile"></button>
+      </div>
+    </section>
+
+    <section id="profileView" class="app-view profile-screen game-art-screen" data-view="profile">
       <section class="profile-hero card">
         <div class="profile-avatar"><svg><use href="#icon-user"></use></svg></div>
         <div>
@@ -944,6 +971,14 @@
         <button id="installButton" class="secondary hidden" type="button">Install App</button>
         <p id="installHelp" class="install-help">Use your browser menu and choose "Add to Home Screen."</p>
       </section>
+
+      <div class="screen-frame-nav" aria-label="Profile screen navigation">
+        <button type="button" data-target-view="home" aria-label="Home"></button>
+        <button type="button" data-target-view="collection" aria-label="Collections"></button>
+        <button type="button" data-target-view="map" aria-label="Map"></button>
+        <button type="button" data-target-view="inventory" aria-label="Inventory"></button>
+        <button type="button" data-target-view="profile" aria-label="Profile"></button>
+      </div>
     </section>
 
     <footer class="footer">
@@ -964,9 +999,9 @@
         <svg><use href="#icon-map"></use></svg>
         <span>Map</span>
       </button>
-      <button class="nav-button" data-view-button="collection" type="button">
+      <button class="nav-button" data-view-button="inventory" type="button">
         <svg><use href="#icon-box"></use></svg>
-        <span>Collection</span>
+        <span>Inventory</span>
       </button>
       <button class="nav-button" data-view-button="profile" type="button">
         <svg><use href="#icon-user"></use></svg>
