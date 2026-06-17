@@ -1,4 +1,5 @@
 :root {
+  --game-stage-scale: 1;
   --emerald: #107a3e;
   --emerald-bright: #34c759;
   --emerald-dark: #09572b;
@@ -20,8 +21,10 @@
 }
 
 body {
-  min-height: 100vh;
+  width: 100vw;
+  height: 100vh;
   margin: 0;
+  overflow: hidden;
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
   background-color: var(--cream);
@@ -42,7 +45,8 @@ body::before {
   inset: 0;
   z-index: 120;
   display: grid;
-  place-items: stretch;
+  place-items: center;
+  overflow: hidden;
   background:
     radial-gradient(circle at 50% 72%, rgba(242, 201, 76, 0.18), transparent 26%),
     #080604;
@@ -55,8 +59,12 @@ body::before {
 .opening-screen::before {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  width: 1200px;
+  height: 2200px;
   background: url("assets/gotcha-opening-screen.webp") center / cover no-repeat;
+  transform: translate(-50%, -50%) scale(var(--game-stage-scale, 1));
 }
 
 .opening-screen::after {
@@ -72,8 +80,9 @@ body::before {
 .opening-start-button {
   position: relative;
   z-index: 1;
-  width: 100%;
-  min-height: 100vh;
+  width: 1200px;
+  height: 2200px;
+  min-height: 0;
   margin: 0;
   padding: 0;
   border: 0;
@@ -82,6 +91,7 @@ body::before {
   background: transparent;
   box-shadow: none;
   cursor: pointer;
+  transform: scale(var(--game-stage-scale, 1));
 }
 
 .opening-start-button span {
@@ -116,9 +126,16 @@ svg {
 }
 
 .app {
-  width: min(100%, 620px);
-  margin: 0 auto;
-  padding: 22px 18px 40px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 1200px;
+  height: 2200px;
+  margin: 0;
+  overflow: hidden;
+  padding: 54px 54px 160px;
+  transform: translate(-50%, -50%) scale(var(--game-stage-scale, 1));
+  transform-origin: center;
 }
 
 .header {
@@ -331,7 +348,19 @@ svg {
 
 .app-view.active {
   display: block;
+  overflow: hidden;
   animation: view-in 180ms ease-out;
+}
+
+body:not([data-active-view="home"]) .app-view.active {
+  height: calc(100% - 310px);
+}
+
+#huntView .how-it-works,
+#collectionView .reward-history-card,
+#profileView .tutorial-replay-card,
+#profileView .install-card {
+  display: none;
 }
 
 .treasure-desk {
@@ -504,8 +533,8 @@ body[data-active-view="home"] {
 }
 
 body[data-active-view="home"] .app {
-  width: min(100%, 520px);
-  min-height: 100vh;
+  width: 1200px;
+  height: 2200px;
   padding: 0;
 }
 
@@ -517,7 +546,7 @@ body[data-active-view="home"] .footer {
 }
 
 body[data-active-view="home"] #homeView {
-  min-height: 100vh;
+  height: 2200px;
 }
 
 body[data-active-view="home"] #homeView > .card {
@@ -525,7 +554,8 @@ body[data-active-view="home"] #homeView > .card {
 }
 
 .treasure-desk.image-menu {
-  min-height: 100vh;
+  height: 2200px;
+  min-height: 0;
   margin: 0;
   border: 0;
   border-radius: 0;
@@ -5103,17 +5133,17 @@ body.tutorial-open {
 }
 
 .bottom-nav {
-  position: fixed;
+  position: absolute;
   z-index: 50;
   right: 0;
   bottom: 0;
   left: 0;
   display: grid;
-  width: min(100%, 620px);
+  width: 100%;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   margin: 0 auto;
-  padding: 9px max(14px, env(safe-area-inset-right)) calc(9px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  padding: 18px 54px 24px;
   border-top: 1px solid var(--line);
   background: rgba(255, 253, 248, 0.94);
   box-shadow: 0 -8px 28px rgba(33, 42, 35, 0.08);

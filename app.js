@@ -37,6 +37,8 @@ const TABLET_ASSEMBLY_HOLD_DURATION = 1800;
 const TABLET_REVEAL_DURATION = 2600;
 const FINAL_VAULT_KEY_ID = "stone-map-key";
 const FINAL_VAULT_KEY_COUNT = 3;
+const GAME_STAGE_WIDTH = 1200;
+const GAME_STAGE_HEIGHT = 2200;
 const DEFAULT_MAP_ZOOM = 14;
 const PLAYER_MAP_ZOOM = 14;
 const CHECKIN_DURATION_HOURS = 4;
@@ -291,6 +293,7 @@ const elements = {};
 document.addEventListener("DOMContentLoaded", initializeApp);
 
 async function initializeApp() {
+  updateGameStageScale();
   cacheElements();
   bindEvents();
 
@@ -726,7 +729,7 @@ function bindEvents() {
   );
   elements.tabletPreviewViewHunt.addEventListener(
     "click",
-    () => switchView("home")
+    () => switchView("hunt")
   );
   elements.tabletPreviewPrevious.addEventListener(
     "click",
@@ -758,7 +761,7 @@ function bindEvents() {
   elements.locatePlayerButton.addEventListener("click", locatePlayerOnMap);
   elements.viewMapHuntButton.addEventListener(
     "click",
-    () => switchView("home")
+    () => switchView("hunt")
   );
   elements.saveNicknameButton.addEventListener("click", saveNickname);
   elements.accountForm.addEventListener("submit", requestMagicLink);
@@ -797,6 +800,8 @@ function bindEvents() {
   document.addEventListener("keydown", handleTutorialKeydown);
   window.addEventListener("beforeinstallprompt", handleInstallPrompt);
   window.addEventListener("appinstalled", handleAppInstalled);
+  window.addEventListener("resize", updateGameStageScale);
+  window.addEventListener("orientationchange", updateGameStageScale);
 }
 
 async function loadHunts() {
@@ -1162,6 +1167,17 @@ function renderMapLocationStatus() {
   if (elements.viewMapHuntButton) {
     elements.viewMapHuntButton.disabled = !unlocked;
   }
+}
+
+function updateGameStageScale() {
+  const scale = Math.min(
+    window.innerWidth / GAME_STAGE_WIDTH,
+    window.innerHeight / GAME_STAGE_HEIGHT
+  );
+  document.documentElement.style.setProperty(
+    "--game-stage-scale",
+    String(Math.max(0.1, scale))
+  );
 }
 
 function formatCheckInTime(isoDate) {
@@ -4633,7 +4649,7 @@ function setMapStatus(message, type = "") {
 }
 
 function switchView(viewName) {
-  if (viewName !== "home" && state.scannerRunning) {
+  if (viewName !== "hunt" && state.scannerRunning) {
     stopBarcodeScanner();
   }
 

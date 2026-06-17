@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=39" />
+  <link rel="stylesheet" href="styles.css?v=40" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -19,7 +19,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=41" defer></script>
+  <script src="app.js?v=42" defer></script>
 </head>
 
 <body data-active-view="home">
@@ -218,9 +218,9 @@
           </span>
         </button>
 
-        <a class="desk-hotspot desk-hotspot-hints" href="#huntPanel">
+        <button class="desk-hotspot desk-hotspot-hints" type="button" data-target-view="hunt">
           <strong>Hints &amp; Clues</strong>
-        </a>
+        </button>
 
         <button class="desk-hotspot desk-hotspot-collection" type="button" data-target-view="collection">
           <strong>Collections</strong>
@@ -246,7 +246,9 @@
           <strong>Navigation</strong>
         </button>
       </section>
+    </section>
 
+    <section id="huntView" class="app-view" data-view="hunt">
     <section id="huntPanel" class="card hunt-card">
       <div class="card-heading">
         <h1 class="hunt-heading">Today's Treasure Hunt</h1>
@@ -944,6 +946,10 @@
     <nav class="bottom-nav" aria-label="Primary navigation">
       <button class="nav-button active" data-view-button="home" type="button">
         <svg><use href="#icon-home"></use></svg>
+        <span>Menu</span>
+      </button>
+      <button class="nav-button" data-view-button="hunt" type="button">
+        <svg><use href="#icon-scan"></use></svg>
         <span>Hunt</span>
       </button>
       <button class="nav-button" data-view-button="map" type="button">
@@ -953,10 +959,6 @@
       <button class="nav-button" data-view-button="collection" type="button">
         <svg><use href="#icon-box"></use></svg>
         <span>Collection</span>
-      </button>
-      <button class="nav-button" data-view-button="list" type="button">
-        <svg><use href="#icon-list"></use></svg>
-        <span>List</span>
       </button>
       <button class="nav-button" data-view-button="profile" type="button">
         <svg><use href="#icon-user"></use></svg>
