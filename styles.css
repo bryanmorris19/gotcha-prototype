@@ -62,8 +62,8 @@ body::before {
   z-index: 0;
   top: 50%;
   left: 50%;
-  width: 1200px;
-  height: 2200px;
+  width: 1080px;
+  height: 1920px;
   background: url("assets/gotcha-opening-screen.webp") center / cover no-repeat;
   transform: translate(-50%, -50%) scale(var(--game-stage-scale, 1));
 }
@@ -133,8 +133,8 @@ svg {
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 1200px;
-  height: 2200px;
+  width: 1080px;
+  height: 1920px;
   margin: 0;
   overflow: hidden;
   padding: 54px 54px 160px;
@@ -537,8 +537,8 @@ body[data-active-view="home"] {
 }
 
 body[data-active-view="home"] .app {
-  width: 1200px;
-  height: 2200px;
+  width: 1080px;
+  height: 1920px;
   padding: 0;
 }
 
@@ -550,7 +550,7 @@ body[data-active-view="home"] .footer {
 }
 
 body[data-active-view="home"] #homeView {
-  height: 2200px;
+  height: 1920px;
 }
 
 body[data-active-view="home"] #homeView > .card {
@@ -570,8 +570,8 @@ body[data-active-view="collection"] .app,
 body[data-active-view="inventory"] .app,
 body[data-active-view="map"] .app,
 body[data-active-view="profile"] .app {
-  width: 1200px;
-  height: 2200px;
+  width: 1080px;
+  height: 1920px;
   padding: 0;
 }
 
@@ -598,11 +598,11 @@ body[data-active-view="collection"] #collectionView,
 body[data-active-view="inventory"] #inventoryView,
 body[data-active-view="map"] #mapView,
 body[data-active-view="profile"] #profileView {
-  height: 2200px;
+  height: 1920px;
 }
 
 .treasure-desk.image-menu {
-  height: 2200px;
+  height: 1920px;
   min-height: 0;
   margin: 0;
   border: 0;
@@ -2774,7 +2774,7 @@ button:disabled {
 .game-art-screen {
   position: relative;
   overflow: hidden;
-  height: 2200px !important;
+  height: 1920px !important;
   padding: 0;
   color: #f8dda0;
   background-position: center top;
@@ -2824,11 +2824,11 @@ button:disabled {
 .collections-screen .tablet-card {
   position: absolute;
   z-index: 8;
-  top: 505px;
-  left: 150px;
+  top: 441px;
+  left: 135px;
   overflow: visible;
-  width: 900px;
-  height: 990px;
+  width: 810px;
+  height: 864px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -2884,19 +2884,19 @@ button:disabled {
 
 .collections-screen .assemble-tablet-button {
   position: absolute;
-  right: 155px;
-  bottom: -75px;
-  left: 155px;
+  right: 140px;
+  bottom: -65px;
+  left: 140px;
   z-index: 10;
 }
 
 .inventory-empty-panel {
   position: absolute;
   z-index: 8;
-  top: 690px;
-  left: 206px;
+  top: 602px;
+  left: 185px;
   display: grid;
-  width: 790px;
+  width: 711px;
   gap: 10px;
   padding: 24px 30px;
   border: 1px solid rgba(242, 201, 76, 0.25);
@@ -2931,7 +2931,7 @@ button:disabled {
 .profile-screen .tutorial-replay-card {
   position: absolute;
   z-index: 8;
-  width: 860px;
+  width: 774px;
   margin: 0;
   border: 1px solid rgba(242, 201, 76, 0.22);
   color: #f8dda0;
@@ -2947,29 +2947,29 @@ button:disabled {
 }
 
 .profile-screen .profile-hero {
-  top: 372px;
-  left: 170px;
+  top: 325px;
+  left: 153px;
 }
 
 .profile-screen .profile-card {
-  top: 545px;
-  left: 170px;
+  top: 476px;
+  left: 153px;
 }
 
 .profile-screen .account-card {
-  top: 710px;
-  left: 170px;
+  top: 620px;
+  left: 153px;
 }
 
 .profile-screen .profile-metrics {
-  top: 1180px;
-  left: 170px;
+  top: 1030px;
+  left: 153px;
   display: grid;
 }
 
 .profile-screen .tutorial-replay-card {
-  top: 1328px;
-  left: 170px;
+  top: 1159px;
+  left: 153px;
 }
 
 .profile-screen .profile-card label,
@@ -3002,11 +3002,11 @@ button:disabled {
 .treasure-map-screen .hunt-map-card {
   position: absolute;
   z-index: 5;
-  top: 548px;
-  left: 118px;
+  top: 478px;
+  left: 106px;
   overflow: visible;
-  width: 964px;
-  height: 1072px;
+  width: 868px;
+  height: 936px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -3043,17 +3043,17 @@ button:disabled {
 }
 
 .treasure-map-screen .hunt-map .leaflet-control-zoom {
-  margin-top: 38px;
-  margin-left: 28px;
+  margin-top: 33px;
+  margin-left: 25px;
 }
 
 .treasure-map-screen .hunt-map .leaflet-control-zoom a {
-  width: 82px;
-  height: 82px;
+  width: 74px;
+  height: 74px;
   color: #107a3e;
   background: rgba(255, 246, 218, 0.9);
-  font-size: 42px;
-  line-height: 82px;
+  font-size: 38px;
+  line-height: 74px;
 }
 
 .treasure-map-screen .hunt-map .leaflet-control-attribution {
@@ -3063,11 +3063,11 @@ button:disabled {
 .treasure-map-screen .map-toolbar {
   position: absolute;
   z-index: 20;
-  top: -205px;
-  left: 170px;
+  top: -179px;
+  left: 153px;
   display: block;
-  width: 822px;
-  height: 170px;
+  width: 740px;
+  height: 148px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -3094,30 +3094,30 @@ button:disabled {
 .treasure-map-screen #focusTestLocationButton {
   top: 0;
   left: 0;
-  width: 392px;
-  height: 115px;
+  width: 353px;
+  height: 100px;
   border-radius: 20px;
 }
 
 .treasure-map-screen #locatePlayerButton {
-  top: -250px;
-  right: -240px;
-  width: 112px;
-  height: 112px;
+  top: -218px;
+  right: -216px;
+  width: 101px;
+  height: 101px;
   border-radius: 50%;
 }
 
 .treasure-map-screen .map-status {
   position: absolute;
   z-index: 18;
-  bottom: -120px;
-  left: 186px;
-  right: 172px;
+  bottom: -105px;
+  left: 167px;
+  right: 155px;
   min-height: 0;
   padding: 0;
   color: #f8dda0;
   background: transparent;
-  font-size: 24px;
+  font-size: 21px;
   font-weight: 850;
   line-height: 1.25;
   text-align: center;
@@ -3133,9 +3133,9 @@ button:disabled {
 .treasure-map-screen .map-location-card {
   position: absolute;
   z-index: 19;
-  right: 80px;
-  bottom: 364px;
-  width: 258px;
+  right: 72px;
+  bottom: 318px;
+  width: 232px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -3161,7 +3161,7 @@ button:disabled {
 .treasure-map-screen .map-directions-button {
   display: grid;
   min-width: 0;
-  min-height: 88px;
+  min-height: 77px;
   margin: 0;
   place-items: center;
   border: 0;
@@ -3182,7 +3182,7 @@ button:disabled {
   bottom: 0;
   left: 0;
   display: grid;
-  height: 205px;
+  height: 179px;
   grid-template-columns: repeat(5, 1fr);
 }
 
