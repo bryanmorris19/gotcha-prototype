@@ -2126,7 +2126,7 @@ function startBarcodeScanner(options = {}) {
     {
       fps: 10,
       qrbox: { width: 260, height: 160 },
-      aspectRatio: 1.333
+      aspectRatio: 1
     },
     onBarcodeScanned,
     () => {
