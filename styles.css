@@ -2221,14 +2221,37 @@ button:disabled {
 #reader__scan_region {
   width: 100% !important;
   height: 100% !important;
+  min-height: 0 !important;
 }
 
 #reader__scan_region {
+  position: absolute !important;
+  inset: 0 !important;
   display: grid !important;
   place-items: center !important;
+  overflow: hidden !important;
+}
+
+#reader__scan_region > * {
+  margin: 0 auto !important;
+}
+
+#reader__scan_region > div {
+  inset: 50% auto auto 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+#reader__scan_region > div[style*="position: absolute"] {
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
 }
 
 #reader video {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100% !important;
   height: 100% !important;
