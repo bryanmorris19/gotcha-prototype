@@ -740,7 +740,7 @@ body[data-active-view="profile"] #profileView {
   pointer-events: none;
 }
 
-.desk-hotspot-hints {
+.desk-hotspot-scanner {
   left: 3%;
   top: 25%;
   width: 23%;

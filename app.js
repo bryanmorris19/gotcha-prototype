@@ -424,6 +424,7 @@ function cacheElements() {
   elements.deskDailyPrizeButton = document.getElementById(
     "deskDailyPrizeButton"
   );
+  elements.deskScannerButton = document.getElementById("deskScannerButton");
   elements.rewardOddsOverlay = document.getElementById("rewardOddsOverlay");
   elements.closeRewardOddsButton = document.getElementById(
     "closeRewardOddsButton"
@@ -679,6 +680,7 @@ function bindEvents() {
   elements.buyGuessButton.addEventListener("click", buyExtraGuess);
   elements.rewardOddsButton.addEventListener("click", openRewardOdds);
   elements.deskDailyPrizeButton.addEventListener("click", openRewardOdds);
+  elements.deskScannerButton.addEventListener("click", openDeskScanner);
   elements.closeRewardOddsButton.addEventListener("click", closeRewardOdds);
   elements.resetButton.addEventListener("click", resetDemo);
   elements.scannerLaunchButton.addEventListener("click", startBarcodeScanner);
@@ -1153,7 +1155,7 @@ function getLocationCheckIn(location) {
 }
 
 function isLocationUnlocked(location) {
-  return state.tabletPreviewEnabled || Boolean(getLocationCheckIn(location));
+  return true;
 }
 
 function renderLocationCheckInGate(location, unlocked) {
@@ -1171,7 +1173,7 @@ function renderLocationCheckInGate(location, unlocked) {
 function renderMapLocationStatus() {
   const location = getActiveHuntLocation();
   const checkIn = getLocationCheckIn(location);
-  const unlocked = Boolean(checkIn);
+  const unlocked = isLocationUnlocked(location);
 
   if (elements.mapLocationStatus) {
     elements.mapLocationStatus.classList.toggle("unlocked", unlocked);
@@ -1179,21 +1181,19 @@ function renderMapLocationStatus() {
     elements.mapLocationStatus.innerHTML = `
       <span aria-hidden="true"></span>
       ${
-        unlocked
+        checkIn
           ? `Clues unlocked until ${formatCheckInTime(checkIn.expiresAt)}`
-          : "Clues locked. Tap the in-store NFC clue board to check in."
+          : "Hunt available. NFC check-in is optional for testing."
       }
     `;
   }
 
   if (elements.mapLocationActionText) {
-    elements.mapLocationActionText.textContent = unlocked
-      ? "Start Hunt"
-      : "Clues Locked";
+    elements.mapLocationActionText.textContent = "Start Hunt";
   }
 
   if (elements.viewMapHuntButton) {
-    elements.viewMapHuntButton.disabled = !unlocked;
+    elements.viewMapHuntButton.disabled = false;
   }
 }
 
@@ -1988,12 +1988,23 @@ function closeBrandReveal() {
   });
 }
 
-function upgradeClue() {
-  if (!isLocationUnlocked(getActiveHuntLocation())) {
-    showHuntNotice("Tap the in-store NFC clue board to unlock this hunt.", "neutral");
-    return;
-  }
+function openDeskScanner() {
+  switchView("hunt");
+  window.requestAnimationFrame(() => {
+    if (state.brandPuzzleSolved) {
+      startBarcodeScanner();
+      return;
+    }
 
+    showHuntNotice(
+      "Decode the brand first, then the scanner will open.",
+      "neutral"
+    );
+    elements.brandPuzzlePanel.focus?.({ preventScroll: true });
+  });
+}
+
+function upgradeClue() {
   if (!state.brandPuzzleSolved) {
     showHuntNotice("Solve the brand puzzle to unlock the clue.", "neutral");
     return;
@@ -2024,11 +2035,6 @@ function upgradeClue() {
 }
 
 function buyExtraGuess() {
-  if (!isLocationUnlocked(getActiveHuntLocation())) {
-    showHuntNotice("Tap the in-store NFC clue board to unlock this hunt.", "neutral");
-    return;
-  }
-
   if (!state.brandPuzzleSolved) {
     showHuntNotice("Solve the brand puzzle to unlock the hunt tools.", "neutral");
     return;
@@ -2070,11 +2076,6 @@ function closeRewardOdds() {
 }
 
 function startBarcodeScanner() {
-  if (!isLocationUnlocked(getActiveHuntLocation())) {
-    showHuntNotice("Tap the in-store NFC clue board to unlock this hunt.", "neutral");
-    return Promise.resolve();
-  }
-
   if (!state.brandPuzzleSolved) {
     showHuntNotice("Solve the brand puzzle before opening the scanner.", "neutral");
     return Promise.resolve();

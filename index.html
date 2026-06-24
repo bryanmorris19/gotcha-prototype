@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=47" />
+  <link rel="stylesheet" href="styles.css?v=48" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -19,7 +19,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=46" defer></script>
+  <script src="app.js?v=47" defer></script>
 </head>
 
 <body data-active-view="home">
@@ -178,7 +178,7 @@
             <img src="assets/gotcha-icon.svg" alt="" />
           </div>
           <div>
-            <div class="desk-rank">Treasure Hunter</div>
+            <div class="desk-rank">Seeker</div>
             <strong id="deskLevelValue">Level 1</strong>
             <span id="deskProgressValue">0 / 3 hunts today</span>
           </div>
@@ -218,8 +218,14 @@
           </span>
         </button>
 
-        <button class="desk-hotspot desk-hotspot-hints" type="button" data-target-view="hunt">
-          <strong>Hints &amp; Clues</strong>
+        <button
+          id="deskScannerButton"
+          class="desk-hotspot desk-hotspot-scanner"
+          type="button"
+          aria-label="Open barcode scanner"
+          title="Open barcode scanner"
+        >
+          <strong>Scanner</strong>
         </button>
 
         <button class="desk-hotspot desk-hotspot-collection" type="button" data-target-view="collection">
