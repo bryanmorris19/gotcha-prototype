@@ -1991,16 +1991,7 @@ function closeBrandReveal() {
 function openDeskScanner() {
   switchView("hunt");
   window.requestAnimationFrame(() => {
-    if (state.brandPuzzleSolved) {
-      startBarcodeScanner();
-      return;
-    }
-
-    showHuntNotice(
-      "Decode the brand first, then the scanner will open.",
-      "neutral"
-    );
-    elements.brandPuzzlePanel.focus?.({ preventScroll: true });
+    startBarcodeScanner({ bypassBrandPuzzle: true });
   });
 }
 
@@ -2075,8 +2066,10 @@ function closeRewardOdds() {
   elements.rewardOddsOverlay.classList.add("hidden");
 }
 
-function startBarcodeScanner() {
-  if (!state.brandPuzzleSolved) {
+function startBarcodeScanner(options = {}) {
+  const bypassBrandPuzzle = Boolean(options.bypassBrandPuzzle);
+
+  if (!state.brandPuzzleSolved && !bypassBrandPuzzle) {
     showHuntNotice("Solve the brand puzzle before opening the scanner.", "neutral");
     return Promise.resolve();
   }
@@ -2111,7 +2104,7 @@ function startBarcodeScanner() {
 
   clearStatus();
   enableFeedback();
-  trackEvent("scanner_started");
+  trackEvent(bypassBrandPuzzle ? "scanner_test_started" : "scanner_started");
 
   const formatsToSupport = [
     Html5QrcodeSupportedFormats.QR_CODE,
@@ -2155,7 +2148,9 @@ function startBarcodeScanner() {
     elements.scannerState.textContent = "Live";
     updateTorchAvailability();
     showStatus(
-      "Scanner running. Point the camera at a product barcode.",
+      bypassBrandPuzzle
+        ? "Scanner test running. Point the camera at any product barcode."
+        : "Scanner running. Point the camera at a product barcode.",
       "neutral"
     );
   }).catch(error => {
