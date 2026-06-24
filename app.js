@@ -2092,11 +2092,13 @@ function startBarcodeScanner() {
 
   if (state.scannerRunning) {
     elements.scannerOverlay.classList.remove("hidden");
+    elements.scannerShell.classList.remove("treasure-found");
     return Promise.resolve();
   }
 
   elements.scannerOverlay.classList.remove("hidden");
   elements.scannerState.textContent = "Starting";
+  elements.scannerShell.classList.remove("treasure-found");
   elements.scannerLaunchButton.disabled = true;
   clearHuntNotice();
 
@@ -2179,6 +2181,7 @@ function stopBarcodeScanner() {
     elements.scannerState.textContent = "Starting";
     elements.scannerShell.classList.remove("is-live");
     elements.scannerShell.classList.remove("is-preview");
+    elements.scannerShell.classList.remove("treasure-found");
     elements.previewScannerControls.classList.add("hidden");
     state.scanLocked = false;
     return Promise.resolve();
@@ -2190,6 +2193,7 @@ function stopBarcodeScanner() {
 
   if (!state.scanner) {
     state.scannerRunning = false;
+    elements.scannerShell.classList.remove("treasure-found");
     elements.scannerLaunchButton.disabled = state.player?.guesses <= 0;
     return Promise.resolve();
   }
@@ -2201,6 +2205,7 @@ function stopBarcodeScanner() {
   elements.torchButton.classList.add("hidden");
   elements.torchButton.classList.remove("active");
   elements.scannerShell.classList.remove("is-live");
+  elements.scannerShell.classList.remove("treasure-found");
   elements.scannerLaunchButton.disabled = state.player.guesses <= 0;
 
   return scanner.stop()
@@ -2256,17 +2261,20 @@ function completeHunt(hunt, scanned) {
     "success"
   );
   playSuccessFeedback();
-  stopBarcodeScanner();
-  showRewardOverlay({
-    label: "Treasure found!",
-    title: "Gotcha!",
-    context: `${hunt.name} found`,
-    reward: prize,
-    productImage: hunt.productImage,
-    productName: hunt.name,
-    finePrint: "Your guesses have been refreshed for the next hunt.",
-    actionLabel: "Start Next Hunt"
-  });
+  elements.scannerShell.classList.add("treasure-found");
+  window.setTimeout(() => {
+    stopBarcodeScanner();
+    showRewardOverlay({
+      label: "Treasure found!",
+      title: "Gotcha!",
+      context: `${hunt.name} found`,
+      reward: prize,
+      productImage: hunt.productImage,
+      productName: hunt.name,
+      finePrint: "Your guesses have been refreshed for the next hunt.",
+      actionLabel: "Start Next Hunt"
+    });
+  }, 720);
 }
 
 function handleWrongScan(scanned, fragmentResult) {
@@ -2825,6 +2833,7 @@ function openPreviewScanner() {
   elements.scannerOverlay.classList.remove("hidden");
   elements.scannerShell.classList.add("is-live");
   elements.scannerShell.classList.add("is-preview");
+  elements.scannerShell.classList.remove("treasure-found");
   elements.scannerState.textContent = "Preview";
   elements.previewScannerControls.classList.remove("hidden");
   elements.torchButton.classList.add("hidden");
@@ -2851,7 +2860,6 @@ function simulatePreviewCorrectScan() {
   state.scanPreviewRewardActive = true;
   state.scanPreviewRewardQueue = [];
   state.scanPreviewReturnToTablet = false;
-  stopBarcodeScanner();
 
   const reward = prizes[
     (state.scanPreviewProgress - 1) % prizes.length
@@ -2885,19 +2893,23 @@ function simulatePreviewCorrectScan() {
 
   render();
   playSuccessFeedback();
-  showRewardOverlay({
-    label: "Treasure found!",
-    title: "Gotcha!",
-    context: `${hunt.name} found`,
-    reward,
-    productImage: hunt.productImage,
-    productName: hunt.name,
-    finePrint:
-      "Preview reward only. Your walkthrough guesses have been refreshed.",
-    actionLabel: completedDailyHunt
-      ? "Reveal Tablet Fragment"
-      : "Start Next Preview Hunt"
-  });
+  elements.scannerShell.classList.add("treasure-found");
+  window.setTimeout(() => {
+    stopBarcodeScanner();
+    showRewardOverlay({
+      label: "Treasure found!",
+      title: "Gotcha!",
+      context: `${hunt.name} found`,
+      reward,
+      productImage: hunt.productImage,
+      productName: hunt.name,
+      finePrint:
+        "Preview reward only. Your walkthrough guesses have been refreshed.",
+      actionLabel: completedDailyHunt
+        ? "Reveal Tablet Fragment"
+        : "Start Next Preview Hunt"
+    });
+  }, 720);
 }
 
 function simulatePreviewWrongScan() {

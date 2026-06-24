@@ -11,7 +11,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="stylesheet" href="assets/vendor/leaflet-1.9.4.css" />
-  <link rel="stylesheet" href="styles.css?v=46" />
+  <link rel="stylesheet" href="styles.css?v=47" />
   <script src="assets/vendor/html5-qrcode-2.3.8.min.js"></script>
   <script src="assets/vendor/leaflet-1.9.4.min.js"></script>
   <script
@@ -19,7 +19,7 @@
     defer
   ></script>
   <script src="supabase-config.js?v=1" defer></script>
-  <script src="app.js?v=45" defer></script>
+  <script src="app.js?v=46" defer></script>
 </head>
 
 <body data-active-view="home">
@@ -1174,6 +1174,11 @@
 
       <div class="scanner-shell" id="scannerShell">
         <div id="reader"></div>
+        <span class="scanner-jewel-glow scanner-jewel-glow-top" aria-hidden="true"></span>
+        <span class="scanner-jewel-glow scanner-jewel-glow-left" aria-hidden="true"></span>
+        <span class="scanner-jewel-glow scanner-jewel-glow-right" aria-hidden="true"></span>
+        <span class="scanner-jewel-glow scanner-jewel-glow-bottom" aria-hidden="true"></span>
+        <span class="scanner-jewel-glow scanner-jewel-glow-handle" aria-hidden="true"></span>
         <div class="scanner-empty" aria-hidden="true">
           <span class="scan-corners">
             <svg><use href="#icon-scan"></use></svg>
