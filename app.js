@@ -2146,6 +2146,10 @@ function startBarcodeScanner(options = {}) {
     state.scannerRunning = true;
     elements.scannerShell.classList.add("is-live");
     elements.scannerState.textContent = "Live";
+    alignScannerViewport();
+    window.requestAnimationFrame(alignScannerViewport);
+    window.setTimeout(alignScannerViewport, 250);
+    window.setTimeout(alignScannerViewport, 650);
     updateTorchAvailability();
     showStatus(
       bypassBrandPuzzle
@@ -2168,6 +2172,30 @@ function startBarcodeScanner(options = {}) {
       "fail"
     );
     console.error("Scanner start error:", error);
+  });
+}
+
+function alignScannerViewport() {
+  const scanRegion = document.getElementById("reader__scan_region");
+  const videos = elements.scannerShell.querySelectorAll("#reader video");
+
+  if (scanRegion) {
+    scanRegion.style.setProperty("position", "absolute", "important");
+    scanRegion.style.setProperty("inset", "0", "important");
+    scanRegion.style.setProperty("width", "100%", "important");
+    scanRegion.style.setProperty("height", "100%", "important");
+    scanRegion.style.setProperty("overflow", "hidden", "important");
+  }
+
+  videos.forEach(video => {
+    video.style.setProperty("position", "absolute", "important");
+    video.style.setProperty("top", "50%", "important");
+    video.style.setProperty("left", "50%", "important");
+    video.style.setProperty("width", "100%", "important");
+    video.style.setProperty("height", "100%", "important");
+    video.style.setProperty("object-fit", "cover", "important");
+    video.style.setProperty("object-position", "center center", "important");
+    video.style.setProperty("transform", "translate(-50%, -50%)", "important");
   });
 }
 
