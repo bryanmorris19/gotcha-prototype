@@ -2232,6 +2232,7 @@ button:disabled {
 }
 
 #reader__scan_region > div[style*="position: absolute"] {
+  display: none !important;
   top: 39.1% !important;
   left: 50% !important;
   right: auto !important;
