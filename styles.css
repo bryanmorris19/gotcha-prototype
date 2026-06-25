@@ -2236,11 +2236,6 @@ button:disabled {
   margin: 0 auto !important;
 }
 
-#reader__scan_region > div {
-  inset: 50% auto auto 50% !important;
-  transform: translate(-50%, -50%) !important;
-}
-
 #reader__scan_region > div[style*="position: absolute"] {
   top: 50% !important;
   left: 50% !important;
@@ -2251,12 +2246,14 @@ button:disabled {
 
 #reader video {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
   display: block;
-  width: 100% !important;
-  height: 100% !important;
+  width: 136% !important;
+  height: 136% !important;
   min-height: 0;
   object-fit: cover;
+  transform: translate(-50%, -18%);
 }
 
 #reader img {
