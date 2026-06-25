@@ -2123,7 +2123,7 @@ button:disabled {
 }
 
 .overlay-card.scanner-modal-card {
-  width: min(100%, 480px, max(300px, calc(56.25dvh - 94px)));
+  width: min(100%, 480px, max(320px, calc(65.45dvh - 109px)));
   padding: 0;
   overflow: hidden;
   border-color: rgba(242, 201, 76, 0.34);
@@ -2176,7 +2176,7 @@ button:disabled {
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 1080 / 1920;
+  aspect-ratio: 1080 / 1650;
   overflow: hidden;
   color: #fff;
   background: #090504;
@@ -2186,7 +2186,7 @@ button:disabled {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 39%, rgba(18, 42, 35, 0.76), rgba(5, 9, 8, 0.28) 35%, rgba(5, 9, 8, 0.86) 53%),
+    radial-gradient(circle at 50% 38.6%, rgba(18, 42, 35, 0.76), rgba(5, 9, 8, 0.28) 35%, rgba(5, 9, 8, 0.86) 53%),
     linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
   background-size: auto, 32px 32px, 32px 32px;
@@ -2233,7 +2233,7 @@ button:disabled {
 
 #reader__scan_region > div[style*="position: absolute"] {
   display: none !important;
-  top: 39.1% !important;
+  top: 38.6% !important;
   left: 50% !important;
   right: auto !important;
   bottom: auto !important;
@@ -2260,7 +2260,7 @@ button:disabled {
 .scanner-empty {
   position: absolute;
   z-index: 3;
-  top: 39.1%;
+  top: 38.6%;
   left: 50%;
   display: grid;
   width: 66%;
@@ -2324,27 +2324,27 @@ button:disabled {
 
 .scanner-jewel-glow-top {
   left: 50%;
-  top: 11.5%;
+  top: 6.1%;
 }
 
 .scanner-jewel-glow-left {
   left: 8.5%;
-  top: 42.3%;
+  top: 41.9%;
 }
 
 .scanner-jewel-glow-right {
   left: 91.5%;
-  top: 42.3%;
+  top: 41.9%;
 }
 
 .scanner-jewel-glow-bottom {
   left: 50%;
-  top: 67.3%;
+  top: 71%;
 }
 
 .scanner-jewel-glow-handle {
   left: 50%;
-  top: 85.7%;
+  top: 92.4%;
 }
 
 .scanner-shell.is-live .scanner-jewel-glow {
@@ -2358,7 +2358,7 @@ button:disabled {
 .scan-line {
   position: absolute;
   z-index: 4;
-  top: 39.1%;
+  top: 38.6%;
   left: 23%;
   display: none;
   width: 54%;
